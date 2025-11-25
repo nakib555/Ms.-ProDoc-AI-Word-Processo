@@ -40,9 +40,20 @@ export const DEFAULT_CONTENT = `
 
 // Layout Constants
 export const PAGE_MARGIN_PADDING = 24;
-export const PAGE_SIZES = {
-  Letter: { width: 816, height: 1056 },
-  A4: { width: 794, height: 1123 }
+export const PAGE_SIZES: Record<string, { width: number, height: number }> = {
+  'Letter': { width: 816, height: 1056 },
+  'Legal': { width: 816, height: 1344 },
+  'Executive': { width: 696, height: 1008 },
+  'A3': { width: 1122, height: 1588 },
+  'A4': { width: 794, height: 1122 },
+  'A5': { width: 560, height: 794 },
+  'B4 (JIS)': { width: 945, height: 1334 },
+  'B5 (JIS)': { width: 665, height: 945 },
+  'Statement': { width: 528, height: 816 },
+  'Tabloid': { width: 1056, height: 1632 },
+  'Note': { width: 816, height: 1056 },
+  'Envelope #10': { width: 396, height: 912 },
+  'Envelope DL': { width: 416, height: 831 },
 };
 
 export const MARGIN_PRESETS: Record<string, MarginValues> = {

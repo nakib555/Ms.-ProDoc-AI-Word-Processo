@@ -1,6 +1,6 @@
-
 import React, { useRef, useLayoutEffect, useEffect } from 'react';
 import { PageConfig } from '../types';
+import { PAGE_SIZES } from '../constants';
 
 interface EditorPageProps {
   content: string;
@@ -113,11 +113,17 @@ export const EditorPage: React.FC<EditorPageProps> = ({
       };
       
       if (config.background === 'ruled') {
-          base.backgroundImage = 'linear-gradient(#e2e8f0 1px, transparent 1px)';
-          base.backgroundSize = '100% 2rem';
+          return {
+              ...base,
+              backgroundImage: 'linear-gradient(#e2e8f0 1px, transparent 1px)',
+              backgroundSize: '100% 2rem'
+          };
       } else if (config.background === 'grid') {
-          base.backgroundImage = 'linear-gradient(#e2e8f0 1px, transparent 1px), linear-gradient(90deg, #e2e8f0 1px, transparent 1px)';
-          base.backgroundSize = '20px 20px';
+          return {
+              ...base,
+              backgroundImage: 'linear-gradient(#e2e8f0 1px, transparent 1px), linear-gradient(90deg, #e2e8f0 1px, transparent 1px)',
+              backgroundSize: '20px 20px'
+          };
       }
       return base;
   };
@@ -128,27 +134,29 @@ export const EditorPage: React.FC<EditorPageProps> = ({
       width = config.customWidth * 96;
       height = config.customHeight * 96;
   } else {
-      const baseWidth = config.size === 'A4' ? 794 : 816; 
-      const baseHeight = config.size === 'A4' ? 1123 : 1056;
+      const base = PAGE_SIZES[config.size as keyof typeof PAGE_SIZES] || PAGE_SIZES['Letter'];
       
-      width = config.orientation === 'portrait' ? baseWidth : baseHeight;
-      height = config.orientation === 'portrait' ? baseHeight : baseWidth;
+      width = config.orientation === 'portrait' ? base.width : base.height;
+      height = config.orientation === 'portrait' ? base.height : base.width;
   }
 
   const margins = getMargins();
   const gutterTop = (!['mirrorMargins', 'bookFold'].includes(config.multiplePages || '') && config.gutterPosition === 'top') ? margins.gutterPx : 0;
 
   // Vertical Alignment
-  const getVerticalAlignStyle = () => {
+  const getVerticalAlignStyle = (): React.CSSProperties => {
       const style: React.CSSProperties = {
           display: 'flex',
           flexDirection: 'column'
       };
-      if (config.verticalAlign === 'center') style.justifyContent = 'center';
-      else if (config.verticalAlign === 'bottom') style.justifyContent = 'flex-end';
-      else if (config.verticalAlign === 'justify') style.justifyContent = 'space-between';
-      else style.justifyContent = 'flex-start';
-      return style;
+      
+      let justifyContent: 'center' | 'flex-end' | 'space-between' | 'flex-start' = 'flex-start';
+
+      if (config.verticalAlign === 'center') justifyContent = 'center';
+      else if (config.verticalAlign === 'bottom') justifyContent = 'flex-end';
+      else if (config.verticalAlign === 'justify') justifyContent = 'space-between';
+      
+      return { ...style, justifyContent };
   };
 
   return (

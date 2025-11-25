@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Settings, Check } from 'lucide-react';
 import { useEditor } from '../../../../../contexts/EditorContext';
@@ -13,12 +12,12 @@ export const FontDialogLauncher: React.FC = () => {
   });
 
   const applyFontSettings = () => {
-    const styles: React.CSSProperties = {};
+    const styles: any = {};
     if (fontSettings.letterSpacing !== '0px') styles.letterSpacing = fontSettings.letterSpacing;
     
     if (fontSettings.textDecorationStyle !== 'solid') {
         styles.textDecorationLine = 'underline';
-        styles.textDecorationStyle = fontSettings.textDecorationStyle as any;
+        styles.textDecorationStyle = fontSettings.textDecorationStyle;
     }
     
     if (fontSettings.doubleStrikethrough) {

@@ -173,7 +173,7 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       width = pageConfig.customWidth * 96;
       height = pageConfig.customHeight * 96;
     } else {
-      const base = pageConfig.size === 'A4' ? PAGE_SIZES.A4 : PAGE_SIZES.Letter;
+      const base = PAGE_SIZES[pageConfig.size as string] || PAGE_SIZES['Letter'];
       width = base.width;
       height = base.height;
     }

@@ -50,6 +50,8 @@ export const PageSetupDialog: React.FC<PageSetupDialogProps> = ({
         let newHeight = localConfig.customHeight;
         
         if (localConfig.size !== 'Custom') {
+             // Calculate dimensions from size if not custom
+             // The constant PAGE_SIZES stores values in pixels (96 DPI)
              const base = PAGE_SIZES[localConfig.size as keyof typeof PAGE_SIZES] || PAGE_SIZES.Letter;
              newWidth = base.width / 96;
              newHeight = base.height / 96;
@@ -71,11 +73,23 @@ export const PageSetupDialog: React.FC<PageSetupDialogProps> = ({
 
   const handlePaperSizeChange = (size: PageSize) => {
       let w, h;
-      if (size === 'Letter') { w = 8.5; h = 11; }
-      else if (size === 'Legal') { w = 8.5; h = 14; }
-      else if (size === 'A4') { w = 8.27; h = 11.69; }
-      else if (size === 'A5') { w = 5.83; h = 8.27; }
-      else if (size === 'Executive') { w = 7.25; h = 10.5; }
+      
+      switch(size) {
+          case 'Letter': w = 8.5; h = 11; break;
+          case 'Legal': w = 8.5; h = 14; break;
+          case 'Executive': w = 7.25; h = 10.5; break;
+          case 'A3': w = 11.69; h = 16.54; break;
+          case 'A4': w = 8.27; h = 11.69; break;
+          case 'A5': w = 5.83; h = 8.27; break;
+          case 'B4 (JIS)': w = 9.84; h = 13.90; break;
+          case 'B5 (JIS)': w = 6.93; h = 9.84; break;
+          case 'Statement': w = 5.5; h = 8.5; break;
+          case 'Tabloid': w = 11; h = 17; break;
+          case 'Note': w = 8.5; h = 11; break;
+          case 'Envelope #10': w = 4.125; h = 9.5; break;
+          case 'Envelope DL': w = 4.33; h = 8.66; break;
+          default: break;
+      }
       
       if (localConfig.orientation === 'landscape' && w && h) {
           const temp = w; w = h; h = temp;
@@ -84,8 +98,8 @@ export const PageSetupDialog: React.FC<PageSetupDialogProps> = ({
       setLocalConfig(prev => ({
           ...prev,
           size,
-          customWidth: w,
-          customHeight: h
+          customWidth: w || prev.customWidth,
+          customHeight: h || prev.customHeight
       }));
   };
 
@@ -216,9 +230,17 @@ export const PageSetupDialog: React.FC<PageSetupDialogProps> = ({
                         options={[
                             { value: 'Letter', label: 'Letter (8.5" x 11")' },
                             { value: 'Legal', label: 'Legal (8.5" x 14")' },
+                            { value: 'Executive', label: 'Executive (7.25" x 10.5")' },
+                            { value: 'A3', label: 'A3 (11.69" x 16.54")' },
                             { value: 'A4', label: 'A4 (8.27" x 11.69")' },
                             { value: 'A5', label: 'A5 (5.83" x 8.27")' },
-                            { value: 'Executive', label: 'Executive (7.25" x 10.5")' },
+                            { value: 'B4 (JIS)', label: 'B4 JIS (9.84" x 13.90")' },
+                            { value: 'B5 (JIS)', label: 'B5 JIS (6.93" x 9.84")' },
+                            { value: 'Statement', label: 'Statement (5.5" x 8.5")' },
+                            { value: 'Tabloid', label: 'Tabloid (11" x 17")' },
+                            { value: 'Note', label: 'Note (8.5" x 11")' },
+                            { value: 'Envelope #10', label: 'Envelope #10 (4.125" x 9.5")' },
+                            { value: 'Envelope DL', label: 'Envelope DL (4.33" x 8.66")' },
                             { value: 'Custom', label: 'Custom Size' },
                         ]}
                     />

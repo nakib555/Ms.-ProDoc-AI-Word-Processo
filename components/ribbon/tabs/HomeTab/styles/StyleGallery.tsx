@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useEditor } from '../../../../../contexts/EditorContext';
 
@@ -38,10 +37,10 @@ export const StyleGallery: React.FC = () => {
                 <span 
                     className="text-[11px] whitespace-nowrap overflow-hidden text-ellipsis"
                     style={{ 
-                        fontWeight: style.styles.fontWeight as any,
-                        fontStyle: style.styles.fontStyle,
-                        color: style.styles.color,
-                        textDecoration: style.styles.textDecoration
+                        fontWeight: (style.styles as any).fontWeight,
+                        fontStyle: (style.styles as any).fontStyle,
+                        color: (style.styles as any).color,
+                        textDecoration: (style.styles as any).textDecoration
                     }}
                 >
                     {style.name}

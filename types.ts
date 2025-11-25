@@ -62,7 +62,7 @@ export type ViewMode = 'print' | 'web' | 'read';
 
 export type SaveStatus = 'saved' | 'saving' | 'unsaved';
 
-export type PageSize = 'A4' | 'Letter' | 'Legal' | 'Executive' | 'A5' | 'Custom';
+export type PageSize = 'Letter' | 'Legal' | 'Executive' | 'A3' | 'A4' | 'A5' | 'B4 (JIS)' | 'B5 (JIS)' | 'Statement' | 'Tabloid' | 'Note' | 'Envelope #10' | 'Envelope DL' | 'Custom';
 export type PageOrientation = 'portrait' | 'landscape';
 export type PageBackground = 'none' | 'ruled' | 'grid';
 export type VerticalAlignment = 'top' | 'center' | 'justify' | 'bottom';

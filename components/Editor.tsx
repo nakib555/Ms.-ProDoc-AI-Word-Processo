@@ -28,11 +28,17 @@ const Editor: React.FC = () => {
           backgroundColor: pageConfig.pageColor || '#ffffff',
       };
       if (pageConfig.background === 'ruled') {
-          base.backgroundImage = 'linear-gradient(#e2e8f0 1px, transparent 1px)';
-          base.backgroundSize = '100% 2rem';
+          return {
+              ...base,
+              backgroundImage: 'linear-gradient(#e2e8f0 1px, transparent 1px)',
+              backgroundSize: '100% 2rem'
+          };
       } else if (pageConfig.background === 'grid') {
-          base.backgroundImage = 'linear-gradient(#e2e8f0 1px, transparent 1px), linear-gradient(90deg, #e2e8f0 1px, transparent 1px)';
-          base.backgroundSize = '20px 20px';
+          return {
+              ...base,
+              backgroundImage: 'linear-gradient(#e2e8f0 1px, transparent 1px), linear-gradient(90deg, #e2e8f0 1px, transparent 1px)',
+              backgroundSize: '20px 20px'
+          };
       }
       return base;
   };

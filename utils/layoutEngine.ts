@@ -1,3 +1,4 @@
+
 import { PageConfig, PaginatorResult } from '../types';
 import { PAGE_SIZES } from '../constants';
 
@@ -16,7 +17,7 @@ const createSandbox = (width: number) => {
 };
 
 const getPageDimensions = (config: PageConfig) => {
-  const base = config.size === 'A4' ? PAGE_SIZES.A4 : PAGE_SIZES.Letter;
+  const base = PAGE_SIZES[config.size as string] || PAGE_SIZES['Letter'];
   const width = config.orientation === 'portrait' ? base.width : base.height;
   const height = config.orientation === 'portrait' ? base.height : base.width;
   
