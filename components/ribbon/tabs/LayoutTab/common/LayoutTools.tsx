@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { useLayoutTab } from '../LayoutTabContext';
@@ -23,6 +22,7 @@ export const DropdownButton: React.FC<DropdownButtonProps> = ({
       >
           <button
               onClick={(e) => { e.stopPropagation(); !disabled && toggleMenu(id); }}
+              onMouseDown={(e) => e.preventDefault()}
               className={`flex flex-col items-center justify-center px-1 py-1 min-w-[52px] md:min-w-[60px] h-full rounded-lg transition-all duration-200 group relative text-slate-600 hover:text-blue-700 hover:bg-slate-50 ${activeMenu === id ? 'bg-slate-100 text-blue-700 shadow-inner ring-1 ring-slate-200' : ''}`}
           >
               <div className="p-1 rounded-md group-hover:bg-white group-hover:shadow-sm transition-all mb-0.5">
@@ -51,10 +51,10 @@ export const ParagraphInput: React.FC<{ label: string, value: string, icon: any,
                 onBlur={(e) => onChange && onChange(e.target.value)}
             />
             <div className="flex flex-col border-l border-slate-200 w-5 h-full absolute right-0 bg-slate-50 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button className="flex-1 flex items-center justify-center hover:bg-blue-100 text-slate-500 hover:text-blue-600 transition-colors border-b border-slate-200">
+                <button onMouseDown={(e) => e.preventDefault()} className="flex-1 flex items-center justify-center hover:bg-blue-100 text-slate-500 hover:text-blue-600 transition-colors border-b border-slate-200">
                     <ChevronUp size={8} strokeWidth={2.5} />
                 </button>
-                <button className="flex-1 flex items-center justify-center hover:bg-blue-100 text-slate-500 hover:text-blue-600 transition-colors">
+                <button onMouseDown={(e) => e.preventDefault()} className="flex-1 flex items-center justify-center hover:bg-blue-100 text-slate-500 hover:text-blue-600 transition-colors">
                     <ChevronDown size={8} strokeWidth={2.5} />
                 </button>
             </div>

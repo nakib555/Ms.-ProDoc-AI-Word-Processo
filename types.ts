@@ -29,7 +29,10 @@ export enum RibbonTab {
   MAILINGS = 'Mailings',
   REVIEW = 'Review',
   VIEW = 'View',
-  AI_ASSISTANT = '🤖 AI Assistant'
+  AI_ASSISTANT = '🤖 AI Assistant',
+  // Contextual Tabs
+  TABLE_DESIGN = 'Table Design',
+  TABLE_LAYOUT = 'Table Layout'
 }
 
 export interface AIResponse {

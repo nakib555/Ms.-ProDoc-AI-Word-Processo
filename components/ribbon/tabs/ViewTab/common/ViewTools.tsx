@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Check } from 'lucide-react';
 
@@ -11,6 +10,7 @@ export const SmallRibbonButton: React.FC<{
 }> = ({ icon: Icon, label, onClick, disabled, className }) => (
   <button 
     onClick={onClick}
+    onMouseDown={(e) => e.preventDefault()}
     disabled={disabled}
     className={`flex items-center w-full px-2 py-[1px] text-left hover:bg-slate-100 rounded-sm group transition-colors ${className || ''} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
     title={label}
@@ -27,6 +27,7 @@ export const CheckboxItem: React.FC<{
 }> = ({ label, checked, onChange }) => (
   <button 
     onClick={onChange}
+    onMouseDown={(e) => e.preventDefault()}
     className="flex items-center gap-2 px-2 py-0.5 w-full hover:bg-slate-100 rounded-sm group"
   >
     <div 

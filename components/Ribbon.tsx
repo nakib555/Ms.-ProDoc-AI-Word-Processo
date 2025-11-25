@@ -12,6 +12,8 @@ import { AIAssistantTab } from './ribbon/tabs/AIAssistantTab/AIAssistantTab';
 import { DrawTab } from './ribbon/tabs/DrawTab/DrawTab';
 import { DesignTab } from './ribbon/tabs/DesignTab/DesignTab';
 import { ReviewTab } from './ribbon/tabs/ReviewTab/ReviewTab';
+import { TableDesignTab } from './ribbon/tabs/InsertTab/tables/tabledesign_subTab/tabledesign';
+import { TableLayoutTab } from './ribbon/tabs/InsertTab/tables/tablelayout_subTab/tablelayout';
 
 interface RibbonProps {
   activeTab: RibbonTab | null;
@@ -78,6 +80,10 @@ const Ribbon: React.FC<RibbonProps> = ({
         return <FileTab />;
       case RibbonTab.AI_ASSISTANT:
         return <AIAssistantTab />;
+      case RibbonTab.TABLE_DESIGN:
+        return <TableDesignTab />;
+      case RibbonTab.TABLE_LAYOUT:
+        return <TableLayoutTab />;
       default:
         return activeTab ? <div className="flex items-center justify-center w-full h-full text-slate-400 italic text-xs">Tools coming soon...</div> : null;
     }

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { ChevronDown } from 'lucide-react';
 
@@ -11,6 +10,7 @@ export const SmallRibbonButton: React.FC<{
 }> = ({ icon: Icon, label, onClick, className, hasArrow }) => (
   <button 
     onClick={onClick}
+    onMouseDown={(e) => e.preventDefault()}
     className={`flex items-center w-full px-2 py-[1px] text-left hover:bg-slate-100 rounded-sm group transition-colors ${className || ''}`}
     title={label}
   >

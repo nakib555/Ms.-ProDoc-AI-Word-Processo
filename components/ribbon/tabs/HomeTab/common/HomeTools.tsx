@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { ChevronDown } from 'lucide-react';
 import { useHomeTab } from '../HomeTabContext';
@@ -51,6 +50,7 @@ export const ToolBtn: React.FC<{
 }> = ({ icon: Icon, onClick, title, active, color, className, disabled }) => (
   <button 
     onClick={onClick}
+    onMouseDown={(e) => e.preventDefault()}
     disabled={disabled} 
     className={`
       p-1 rounded-md flex items-center justify-center transition-all w-7 h-7 relative group

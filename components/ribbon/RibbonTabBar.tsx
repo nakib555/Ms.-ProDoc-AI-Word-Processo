@@ -1,10 +1,11 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { RibbonTab } from '../../types';
+import { useEditor } from '../../contexts/EditorContext';
 import { 
   ChevronLeft, ChevronRight,
   FileText, Home, Blocks, PenTool, Palette,
   Layout, BookOpen, Mail, CheckSquare,
-  Eye, Sparkles
+  Eye, Sparkles, Table, PaintBucket
 } from 'lucide-react';
 
 interface RibbonTabBarProps {
@@ -30,6 +31,7 @@ export const RibbonTabBar: React.FC<RibbonTabBarProps> = ({ activeTab, onTabChan
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [showLeftArrow, setShowLeftArrow] = useState(false);
   const [showRightArrow, setShowRightArrow] = useState(false);
+  const { activeElementType } = useEditor();
 
   const checkScroll = () => {
     if (scrollContainerRef.current) {
@@ -67,6 +69,21 @@ export const RibbonTabBar: React.FC<RibbonTabBarProps> = ({ activeTab, onTabChan
     }
   }, [activeTab]);
 
+  // If table is selected and we aren't already on a table tab, switching isn't forced,
+  // but if the selection moves away from table, we should probably switch back to Home if on a table tab.
+  useEffect(() => {
+      if (activeElementType !== 'table') {
+          if (activeTab === RibbonTab.TABLE_DESIGN || activeTab === RibbonTab.TABLE_LAYOUT) {
+              onTabChange(RibbonTab.HOME);
+          }
+      } else {
+          // Optional: Auto-switch to Table Design when table is first selected
+          // if (![RibbonTab.TABLE_DESIGN, RibbonTab.TABLE_LAYOUT].includes(activeTab as RibbonTab)) {
+          //    onTabChange(RibbonTab.TABLE_DESIGN);
+          // }
+      }
+  }, [activeElementType, activeTab, onTabChange]);
+
   // Handle horizontal scrolling via mouse wheel & update arrows on scroll
   useEffect(() => {
     const el = scrollContainerRef.current;
@@ -92,11 +109,11 @@ export const RibbonTabBar: React.FC<RibbonTabBarProps> = ({ activeTab, onTabChan
         el.removeEventListener('scroll', onScroll);
       };
     }
-  }, []);
+  }, [activeElementType]); // Re-bind when tabs change
 
-  const renderTabButton = (tabId: string, Icon: any, label: string, isContextual = false) => {
+  const renderTabButton = (tabId: string, Icon: any, label: string, isContextual = false, colorClass = 'text-amber-600') => {
       const isActive = activeTab === tabId;
-      const baseColor = isContextual ? 'text-amber-600 dark:text-amber-400 hover:text-amber-700' : 'text-slate-400 hover:text-slate-200';
+      const baseColor = isContextual ? `${colorClass} dark:text-amber-400 hover:text-amber-700` : 'text-slate-400 hover:text-slate-200';
       const activeColor = isContextual ? 'text-amber-700 dark:text-amber-300' : 'text-blue-900 dark:text-blue-200';
       const activeBg = 'bg-white dark:bg-slate-800';
       
@@ -158,6 +175,15 @@ export const RibbonTabBar: React.FC<RibbonTabBarProps> = ({ activeTab, onTabChan
           const config = TAB_CONFIG[tab];
           return renderTabButton(tab, config.icon, config.label || tab);
         })}
+
+        {/* Contextual Table Tabs */}
+        {activeElementType === 'table' && (
+            <>
+                <div className="w-[1px] h-6 bg-slate-700 mx-1 mb-2"></div>
+                {renderTabButton(RibbonTab.TABLE_DESIGN, PaintBucket, "Table Design", true)}
+                {renderTabButton(RibbonTab.TABLE_LAYOUT, Table, "Table Layout", true)}
+            </>
+        )}
 
         {/* Spacer */}
         <div className="w-8 flex-shrink-0 h-1"></div> 
