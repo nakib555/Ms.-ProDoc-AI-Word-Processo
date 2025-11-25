@@ -1,7 +1,7 @@
-
 import { GoogleGenAI, LiveServerMessage, Modality, Blob } from '@google/genai';
 
 export class LiveService {
+  private client: GoogleGenAI | null = null;
   private session: any = null;
   private audioContext: AudioContext | null = null;
   private processor: ScriptProcessorNode | null = null;
@@ -14,12 +14,14 @@ export class LiveService {
   }
 
   private getClient(): GoogleGenAI {
-    const apiKey = process.env.API_KEY;
-    if (!apiKey) {
-      throw new Error("API Key is missing. Please configure it in the AI Assistant tab.");
+    if (!this.client) {
+      const apiKey = process.env.API_KEY;
+      if (!apiKey) {
+        throw new Error("API Key is missing. Please check your environment configuration.");
+      }
+      this.client = new GoogleGenAI({ apiKey });
     }
-    // Always create a fresh client to ensure we use the most up-to-date key
-    return new GoogleGenAI({ apiKey });
+    return this.client;
   }
 
   async connect(

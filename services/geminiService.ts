@@ -3,8 +3,13 @@ import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 import { AIOperation } from '../types';
 
 const getClient = () => {
-  // Always create a new instance to ensure we use the latest API key
-  // if the user has updated it via the API Key Selection dialog.
+  // Check localStorage first for user-provided key
+  const localKey = localStorage.getItem('gemini_api_key');
+  if (localKey) {
+    return new GoogleGenAI({ apiKey: localKey });
+  }
+  
+  // Always create a new client to ensure we use the latest API Key from the environment if available
   if (process.env.API_KEY) {
     return new GoogleGenAI({ apiKey: process.env.API_KEY });
   }
@@ -111,7 +116,7 @@ export const generateAIContent = async (
 ): Promise<string> => {
   const client = getClient();
   if (!client) {
-    return "Error: API Key not configured. Please use the 'API Key' button in the AI Assistant tab to configure it.";
+    return "Error: API Key not configured. Please use the API Key tool in the AI Assistant tab to configure your key.";
   }
 
   const systemPrompt = getSystemPrompt(operation, userPrompt);
@@ -133,7 +138,7 @@ export const generateAIContent = async (
     if (error.message?.includes('timed out')) {
       return "The request took too long to process. Please try a shorter text selection.";
     }
-    return "Sorry, I encountered an error processing your request. Please try again.";
+    return "Sorry, I encountered an error processing your request. Please check your API key and internet connection.";
   }
 };
 
@@ -143,7 +148,7 @@ export const streamAIContent = async function* (
   userPrompt?: string
 ): AsyncGenerator<string, void, unknown> {
   const client = getClient();
-  if (!client) throw new Error("API Key not configured");
+  if (!client) throw new Error("API Key not configured. Please select an API key in the AI Assistant tab.");
 
   const systemPrompt = getSystemPrompt(operation, userPrompt);
 

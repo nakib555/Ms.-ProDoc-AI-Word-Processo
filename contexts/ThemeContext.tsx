@@ -15,7 +15,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const saved = localStorage.getItem('theme');
     if (saved) return saved as Theme;
     
-    // Default to light mode
+    // Default to light mode as requested
     return 'light';
   });
 

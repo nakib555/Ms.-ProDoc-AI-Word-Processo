@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { RibbonSection } from '../../../common/RibbonSection';
 import { ApiKeyTool } from './ApiKeyTool';
