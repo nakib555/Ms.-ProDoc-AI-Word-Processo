@@ -41,7 +41,10 @@ export const SizeTool: React.FC = () => {
              label="Size" 
          />
          <MenuPortal id={menuId} activeMenu={activeMenu} menuPos={menuPos} closeMenu={closeMenu} width={260}>
-             <div className="p-1 space-y-0.5 max-h-[60vh] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-200">
+             <div 
+                className="p-1 space-y-0.5 max-h-[60vh] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-200 overscroll-contain"
+                onWheel={(e) => e.stopPropagation()}
+             >
                  {paperSizes.map((item) => (
                      <button 
                         key={item.size} 
