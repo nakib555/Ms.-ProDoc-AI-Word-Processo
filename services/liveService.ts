@@ -10,7 +10,6 @@ export class LiveService {
   private isConnected: boolean = false;
 
   constructor() {
-    // Assuming process.env.API_KEY is configured as per other services
     this.client = new GoogleGenAI({ apiKey: process.env.API_KEY });
   }
 
@@ -22,12 +21,12 @@ export class LiveService {
     if (this.isConnected) return;
 
     try {
-      // 1. Initialize Audio Context
+      // Initialize Audio Context
       this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)({
         sampleRate: 16000,
       });
 
-      // 2. Get Microphone Stream
+      // Get Microphone Stream
       this.stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           channelCount: 1,
@@ -35,47 +34,45 @@ export class LiveService {
         },
       });
 
-      // 3. Establish Live Session
+      // Initialize Session
       this.session = await this.client.live.connect({
         model: 'gemini-2.5-flash-native-audio-preview-09-2025',
         config: {
-          responseModalities: [Modality.AUDIO], // Required by API
-          inputAudioTranscription: {}, // Enable user speech transcription
-          systemInstruction: "You are a precise dictation assistant. Transcribe the user's speech exactly as spoken. Do not generate conversational responses or audio output. If the user pauses, wait. Ignore non-speech sounds.",
+          responseModalities: [Modality.AUDIO], // Audio response is required by API, but we will ignore it
+          inputAudioTranscription: {}, // Enable transcription of user input
+          systemInstruction: "You are a precise dictation assistant. Your only task is to transcribe the user's speech exactly. Do not reply, do not chat, and do not generate audio output.",
         },
         callbacks: {
           onopen: () => {
-            console.log("Gemini Live Session Opened");
+            console.log("Dictation Session Opened");
             this.isConnected = true;
+            // Start streaming only after session is ready
             this.startAudioStreaming();
           },
           onmessage: (message: LiveServerMessage) => {
-            // Handle Input Transcription (User's Voice)
-            const transcription = message.serverContent?.inputTranscription?.text;
-            if (transcription) {
-              onTranscription(transcription);
+            // We only care about the input transcription (what the user said)
+            const transcript = message.serverContent?.inputTranscription?.text;
+            if (transcript) {
+              onTranscription(transcript);
             }
-            
-            // Note: We intentionally ignore message.serverContent.modelTurn 
-            // because we want this to be a dictation tool, not a conversation.
           },
           onclose: () => {
-            console.log("Gemini Live Session Closed");
+            console.log("Dictation Session Closed");
             this.cleanup();
             onClose();
           },
           onerror: (err) => {
-            console.error("Gemini Live Error:", err);
-            onError(new Error("Connection error"));
+            console.error("Dictation Error:", err);
             this.cleanup();
+            onError(new Error("Connection error"));
           }
         }
       });
 
     } catch (error: any) {
-      console.error("Failed to start live session:", error);
-      onError(error);
+      console.error("Failed to start dictation:", error);
       this.cleanup();
+      onError(error);
     }
   }
 
@@ -83,16 +80,14 @@ export class LiveService {
     if (!this.audioContext || !this.stream || !this.session) return;
 
     this.source = this.audioContext.createMediaStreamSource(this.stream);
-    // Buffer size 4096 is standard for this type of processing
     this.processor = this.audioContext.createScriptProcessor(4096, 1, 1);
 
     this.processor.onaudioprocess = (e) => {
-      if (!this.isConnected) return;
+      if (!this.isConnected || !this.session) return;
       
       const inputData = e.inputBuffer.getChannelData(0);
       const pcmBlob = this.createBlob(inputData);
       
-      // Send audio chunk to Gemini
       this.session.sendRealtimeInput({ media: pcmBlob });
     };
 
@@ -100,35 +95,9 @@ export class LiveService {
     this.processor.connect(this.audioContext.destination);
   }
 
-  private createBlob(data: Float32Array): Blob {
-    const l = data.length;
-    const int16 = new Int16Array(l);
-    for (let i = 0; i < l; i++) {
-      // Convert float32 audio to int16 PCM
-      const s = Math.max(-1, Math.min(1, data[i]));
-      int16[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
-    }
-    
-    return {
-      data: this.base64EncodeInt16(int16),
-      mimeType: 'audio/pcm;rate=16000',
-    };
-  }
-
-  private base64EncodeInt16(int16: Int16Array): string {
-    let binary = '';
-    const bytes = new Uint8Array(int16.buffer);
-    const len = bytes.byteLength;
-    for (let i = 0; i < len; i++) {
-      binary += String.fromCharCode(bytes[i]);
-    }
-    return btoa(binary);
-  }
-
   disconnect() {
     if (this.session) {
-      // Attempt to close session nicely, but don't await heavily
-      try { this.session.close(); } catch (e) { /* ignore */ }
+      this.session.close();
     }
     this.cleanup();
   }
@@ -157,6 +126,29 @@ export class LiveService {
       this.audioContext.close();
       this.audioContext = null;
     }
+  }
+
+  private createBlob(data: Float32Array): Blob {
+    const l = data.length;
+    const int16 = new Int16Array(l);
+    for (let i = 0; i < l; i++) {
+      const s = Math.max(-1, Math.min(1, data[i]));
+      int16[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+    }
+    return {
+      data: this.base64EncodeInt16(int16),
+      mimeType: 'audio/pcm;rate=16000',
+    };
+  }
+
+  private base64EncodeInt16(int16: Int16Array): string {
+    let binary = '';
+    const bytes = new Uint8Array(int16.buffer);
+    const len = bytes.byteLength;
+    for (let i = 0; i < len; i++) {
+      binary += String.fromCharCode(bytes[i]);
+    }
+    return btoa(binary);
   }
 }
 

@@ -7,22 +7,19 @@ export const useDictation = () => {
   const { executeCommand, editorRef } = useEditor();
 
   const handleTranscription = useCallback((text: string) => {
-    // Insert text at current cursor position
-    // We append a space if the text doesn't start with punctuation to keep flow natural
-    const textToInsert = text; 
-    executeCommand('insertText', textToInsert);
+    // Insert transcribed text at the current cursor position
+    executeCommand('insertText', text);
     
-    // Ensure editor stays focused and scroll to bottom/cursor if needed
-    // Note: executeCommand usually handles focus, but we ensure it here for continuous dictation
+    // Ensure the editor keeps focus for continuous typing
     if (editorRef.current) {
-        // Optional: Scroll logic if needed
+      // Optional: Scroll to cursor if needed
     }
   }, [executeCommand, editorRef]);
 
   const handleError = useCallback((err: Error) => {
     console.error("Dictation error:", err);
     setIsListening(false);
-    alert("Dictation connection lost. Please try again.");
+    alert("Dictation stopped: " + err.message);
   }, []);
 
   const handleClose = useCallback(() => {
@@ -34,12 +31,12 @@ export const useDictation = () => {
       liveService.disconnect();
       setIsListening(false);
     } else {
-      setIsListening(true);
-      // Ensure editor is focused before starting so we have a valid cursor position
+      // Focus editor before starting so we have a valid selection/cursor range
       if (editorRef.current) {
         editorRef.current.focus();
       }
       
+      setIsListening(true);
       await liveService.connect(
         handleTranscription,
         handleError,
