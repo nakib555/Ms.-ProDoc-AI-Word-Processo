@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>ProDoc AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Serif:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+              serif: ['Noto Serif', 'serif'],
+            },
+            animation: {
+              'in': 'fadeIn 0.2s ease-out',
+              'slide-in-from-top': 'slideInFromTop 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+              'slide-in-from-left': 'slideInFromLeft 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+              'zoom-in': 'zoomIn 0.2s ease-out',
+            },
+            keyframes: {
+              fadeIn: {
+                '0%': { opacity: '0' },
+                '100%': { opacity: '1' },
+              },
+              slideInFromTop: {
+                '0%': { transform: 'translateY(-10px)', opacity: 0 },
+                '100%': { transform: 'translateY(0)', opacity: 1 },
+              },
+              slideInFromLeft: {
+                '0%': { transform: 'translateX(-100%)' },
+                '100%': { transform: 'translateX(0)' },
+              },
+              zoomIn: {
+                '0%': { transform: 'scale(0.95)', opacity: 0 },
+                '100%': { transform: 'scale(1)', opacity: 1 },
+              }
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+      /* Custom scrollbar for a cleaner look */
+      ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent; 
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #cbd5e1; 
+        border-radius: 3px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8; 
+      }
+      
+      .dark ::-webkit-scrollbar-thumb {
+        background: #475569;
+      }
+      .dark ::-webkit-scrollbar-thumb:hover {
+        background: #64748b;
+      }
+      
+      /* Hide scrollbar for chrome/safari/opera */
+      .no-scrollbar::-webkit-scrollbar {
+        display: none;
+      }
+      /* Hide scrollbar for IE, Edge and Firefox */
+      .no-scrollbar {
+        -ms-overflow-style: none;  /* IE and Edge */
+        scrollbar-width: none;  /* Firefox */
+      }
+
+      /* Editor specific styles */
+      .prodoc-editor:focus {
+        outline: none;
+      }
+
+      /* Formatting Marks */
+      .show-formatting-marks p::after, 
+      .show-formatting-marks div::after,
+      .show-formatting-marks h1::after,
+      .show-formatting-marks h2::after,
+      .show-formatting-marks h3::after,
+      .show-formatting-marks h4::after,
+      .show-formatting-marks h5::after,
+      .show-formatting-marks h6::after,
+      .show-formatting-marks li::after {
+        content: '¶';
+        color: #94a3b8;
+        font-size: 0.8em;
+        margin-left: 4px;
+        user-select: none;
+      }
+      
+      /* Print styles */
+      @media print {
+        .no-print {
+          display: none !important;
+        }
+        .print-only {
+          display: block !important;
+          width: 100%;
+          height: 100%;
+          overflow: visible;
+        }
+        body, html, #root {
+          height: auto;
+          background: white;
+        }
+        .prodoc-page {
+          box-shadow: none !important;
+          margin: 0 !important;
+          page-break-after: always;
+        }
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "react-dom": "https://aistudiocdn.com/react-dom@^19.2.0",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.30.0",
+    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.554.0",
+    "@vitejs/plugin-react": "https://aistudiocdn.com/@vitejs/plugin-react@^5.1.1",
+    "path": "https://aistudiocdn.com/path@^0.12.7",
+    "vite": "https://aistudiocdn.com/vite@^7.2.4",
+    "url": "https://aistudiocdn.com/url@^0.11.4"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+  <body class="bg-slate-100 dark:bg-slate-950 h-[100dvh] overflow-hidden text-slate-900 dark:text-slate-100 font-sans antialiased selection:bg-blue-200 selection:text-blue-900">
+    <div id="root" class="h-full flex flex-col"></div>
+    <script type="module" src="./index.tsx"></script>
+  <script type="module" src="/index.tsx"></script>
+</body>
+</html>

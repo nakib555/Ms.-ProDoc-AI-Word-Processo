@@ -1,0 +1,8 @@
+{
+  "name": "ProDoc AI - M Word Processor",
+  "description": "A production-grade, feature-rich word processor inspired by modern MS Word. Features a familiar ribbon interface, rich text editing, document formatting, and integrated Gemini AI for smart writing assistance.",
+  "requestFramePermissions": [
+    "clipboard-read",
+    "microphone"
+  ]
+}
