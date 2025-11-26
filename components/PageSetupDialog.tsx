@@ -414,11 +414,11 @@ export const PageSetupDialog: React.FC<PageSetupDialogProps> = ({
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-md p-4 animate-in fade-in duration-200">
       <div 
-        className="bg-white dark:bg-slate-900 w-[95vw] md:w-[50vw] lg:w-[30vw] max-w-[400px] h-[75vh] max-h-[600px] rounded-2xl shadow-2xl border border-white/50 dark:border-slate-700 flex flex-col overflow-hidden animate-in zoom-in-95 duration-200 ring-1 ring-black/5"
+        className="bg-white dark:bg-slate-900 w-[95vw] md:w-[50vw] lg:w-[30vw] max-w-[400px] h-[77.5vh] max-h-[600px] rounded-2xl shadow-2xl border border-white/50 dark:border-slate-700 flex flex-col overflow-hidden animate-in zoom-in-95 duration-200 ring-1 ring-black/5"
         onClick={e => e.stopPropagation()}
       >
-        {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0">
+        {/* Header - Increased padding py-5 */}
+        <div className="flex items-center justify-between px-5 py-5 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0">
             <h2 className="text-sm font-bold text-slate-800 dark:text-slate-100 tracking-tight flex items-center gap-2">
                 <div className="p-1.5 bg-blue-50 dark:bg-slate-800 rounded-md text-blue-600 dark:text-blue-400">
                     <LayoutTemplate size={16} /> 
@@ -433,8 +433,8 @@ export const PageSetupDialog: React.FC<PageSetupDialogProps> = ({
             </button>
         </div>
 
-        {/* Main Tabs */}
-        <div className="px-5 pt-4 pb-2 bg-white dark:bg-slate-900 shrink-0">
+        {/* Main Tabs - Increased top padding pt-6 */}
+        <div className="px-5 pt-6 pb-2 bg-white dark:bg-slate-900 shrink-0">
             <div className="flex p-1 bg-slate-100 dark:bg-slate-800 rounded-xl">
                 {['margins', 'paper', 'layout'].map((tab) => (
                     <button
@@ -698,8 +698,8 @@ export const PageSetupDialog: React.FC<PageSetupDialogProps> = ({
             </div>
         </div>
 
-        {/* Footer */}
-        <div className="flex items-center justify-between px-5 py-4 bg-slate-50 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 shrink-0">
+        {/* Footer - Increased padding py-5 */}
+        <div className="flex items-center justify-between px-5 py-5 bg-slate-50 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 shrink-0">
             <button 
                 onClick={() => alert("Defaults not yet implemented.")}
                 className="text-xs font-semibold text-slate-500 hover:text-blue-600 transition-colors flex items-center gap-1.5 group"
