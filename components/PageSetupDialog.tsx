@@ -414,7 +414,7 @@ export const PageSetupDialog: React.FC<PageSetupDialogProps> = ({
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-md p-4 animate-in fade-in duration-200">
       <div 
-        className="bg-white dark:bg-slate-900 w-[360px] h-[540px] rounded-2xl shadow-2xl border border-white/50 dark:border-slate-700 flex flex-col overflow-hidden animate-in zoom-in-95 duration-200 ring-1 ring-black/5"
+        className="bg-white dark:bg-slate-900 w-[95vw] md:w-[50vw] lg:w-[30vw] max-w-[450px] h-[85vh] max-h-[700px] rounded-2xl shadow-2xl border border-white/50 dark:border-slate-700 flex flex-col overflow-hidden animate-in zoom-in-95 duration-200 ring-1 ring-black/5"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
@@ -453,7 +453,7 @@ export const PageSetupDialog: React.FC<PageSetupDialogProps> = ({
             
             {/* Beautiful Preview Section */}
             <div className="px-5 pt-2 pb-4 shrink-0 relative z-0">
-                 <div className="w-full h-40 rounded-xl border border-slate-200 dark:border-slate-700 relative overflow-hidden flex items-center justify-center shadow-inner group"
+                 <div className="w-full h-[20vh] min-h-[140px] rounded-xl border border-slate-200 dark:border-slate-700 relative overflow-hidden flex items-center justify-center shadow-inner group"
                       style={{
                           backgroundColor: '#f1f5f9',
                           backgroundImage: 'linear-gradient(#e2e8f0 1px, transparent 1px), linear-gradient(90deg, #e2e8f0 1px, transparent 1px)',
