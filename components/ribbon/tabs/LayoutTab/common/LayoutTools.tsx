@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { useLayoutTab } from '../LayoutTabContext';
@@ -10,7 +11,7 @@ interface DropdownButtonProps {
   hasArrow?: boolean;
 }
 
-export const DropdownButton: React.FC<DropdownButtonProps> = ({ 
+export const DropdownButton: React.FC<DropdownButtonProps> = React.memo(({ 
   id, icon: Icon, label, disabled = false, hasArrow = true 
 }) => {
    const { activeMenu, toggleMenu, registerTrigger } = useLayoutTab();
@@ -35,9 +36,9 @@ export const DropdownButton: React.FC<DropdownButtonProps> = ({
           </button>
       </div>
    );
-};
+});
 
-export const ParagraphInput: React.FC<{ label: string, value: string, icon: any, onChange?: (val: string) => void }> = ({ label, value, icon: Icon, onChange }) => (
+export const ParagraphInput: React.FC<{ label: string, value: string, icon: any, onChange?: (val: string) => void }> = React.memo(({ label, value, icon: Icon, onChange }) => (
     <div className="flex items-center gap-2 h-7">
         <div className="flex items-center justify-end w-[64px] gap-1.5 opacity-90">
              <Icon size={13} className="text-slate-400 stroke-[1.5]" />
@@ -60,4 +61,4 @@ export const ParagraphInput: React.FC<{ label: string, value: string, icon: any,
             </div>
         </div>
     </div>
-);
+));

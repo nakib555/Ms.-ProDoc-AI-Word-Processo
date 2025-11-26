@@ -95,7 +95,7 @@ const ShapeItem: React.FC<{
     onClick: () => void; 
     path: string; 
     title: string; 
-}> = ({ onClick, path, title }) => (
+}> = React.memo(({ onClick, path, title }) => (
     <button 
         type="button"
         onClick={onClick}
@@ -115,9 +115,9 @@ const ShapeItem: React.FC<{
             <path d={path} />
         </svg>
     </button>
-);
+));
 
-const ShapeCategory: React.FC<{ title: string; shapes: Array<ShapeDef>; onInsert: (shape: ShapeDef) => void }> = ({ title, shapes, onInsert }) => (
+const ShapeCategory: React.FC<{ title: string; shapes: Array<ShapeDef>; onInsert: (shape: ShapeDef) => void }> = React.memo(({ title, shapes, onInsert }) => (
     <div className="mb-3 px-2">
         <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">{title}</div>
         <div className="grid grid-cols-8 gap-1">
@@ -131,9 +131,9 @@ const ShapeCategory: React.FC<{ title: string; shapes: Array<ShapeDef>; onInsert
             ))}
         </div>
     </div>
-);
+));
 
-const ShapesMenu: React.FC<{ onInsert: (shape: ShapeDef) => void }> = ({ onInsert }) => {
+const ShapesMenu = React.memo<{ onInsert: (shape: ShapeDef) => void }>(({ onInsert }) => {
     return (
         <div className="p-3 max-h-[60vh] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-200 select-none" onScroll={(e) => e.stopPropagation()}>
             <ShapeCategory title="Lines" shapes={LineShapes} onInsert={onInsert} />
@@ -145,7 +145,7 @@ const ShapesMenu: React.FC<{ onInsert: (shape: ShapeDef) => void }> = ({ onInser
             <ShapeCategory title="Stars and Banners" shapes={StarsAndBannersShapes} onInsert={onInsert} />
         </div>
     );
-};
+});
 
 export const ShapesTool: React.FC = () => {
   const { executeCommand } = useEditor();

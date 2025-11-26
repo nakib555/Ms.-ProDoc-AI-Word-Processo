@@ -1,15 +1,24 @@
 
 import React, { useMemo } from 'react';
-import { useEditor } from '../contexts/EditorContext';
+import { PageConfig } from '../types';
+import { PAGE_SIZES, PAGE_MARGIN_PADDING } from '../constants';
 
-export const Ruler: React.FC = React.memo(() => {
-  const { pageDimensions, zoom, pageConfig, viewMode } = useEditor();
+interface RulerProps {
+  pageConfig: PageConfig;
+  zoom: number;
+}
+
+export const Ruler: React.FC<RulerProps> = React.memo(({ pageConfig, zoom }) => {
   
-  // Ruler is only relevant for Print Layout where fixed inch dimensions matter
-  if (viewMode !== 'print') return null;
-
   // Width in px (96 DPI)
-  const width = pageDimensions.width;
+  const width = useMemo(() => {
+      if (pageConfig.size === 'Custom' && pageConfig.customWidth) {
+          return pageConfig.customWidth * 96;
+      }
+      const base = PAGE_SIZES[pageConfig.size as string] || PAGE_SIZES['Letter'];
+      return pageConfig.orientation === 'portrait' ? base.width : base.height;
+  }, [pageConfig.size, pageConfig.orientation, pageConfig.customWidth]);
+
   const scale = zoom / 100;
   
   // Calculate margins in pixels based on explicit config
@@ -19,12 +28,8 @@ export const Ruler: React.FC = React.memo(() => {
     let right = m.right * 96;
     
     // Add gutter to left for simplified global ruler view
-    // (For detailed per-page mirrored ruler, we'd need active page context)
     left += m.gutter * 96;
 
-    // If mirrored, just show standard odd page layout (Inside Left, Outside Right) on the main ruler
-    // for simplicity as the ruler is global.
-    
     return { left, right };
   }, [pageConfig.margins]);
 

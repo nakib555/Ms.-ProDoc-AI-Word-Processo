@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { ChevronDown } from 'lucide-react';
 import { useAIAssistantTab } from '../AIAssistantTabContext';
@@ -8,7 +9,7 @@ export const SmallRibbonButton: React.FC<{
   onClick: () => void, 
   className?: string,
   disabled?: boolean
-}> = ({ icon: Icon, label, onClick, className, disabled }) => (
+}> = React.memo(({ icon: Icon, label, onClick, className, disabled }) => (
   <button 
     onClick={onClick}
     onMouseDown={(e) => e.preventDefault()}
@@ -19,7 +20,7 @@ export const SmallRibbonButton: React.FC<{
     <Icon size={14} className="text-slate-500 group-hover:text-blue-600 mr-2 shrink-0" />
     <span className="text-[11px] font-medium text-slate-600 group-hover:text-blue-700 truncate leading-tight flex-1">{label}</span>
   </button>
-);
+));
 
 interface DropdownButtonProps {
   id: string;
@@ -28,7 +29,7 @@ interface DropdownButtonProps {
   hasArrow?: boolean;
 }
 
-export const DropdownRibbonButton: React.FC<DropdownButtonProps> = ({ 
+export const DropdownRibbonButton: React.FC<DropdownButtonProps> = React.memo(({ 
   id, icon: Icon, label, hasArrow = true 
 }) => {
   const { activeMenu, toggleMenu, registerTrigger } = useAIAssistantTab();
@@ -49,4 +50,4 @@ export const DropdownRibbonButton: React.FC<DropdownButtonProps> = ({
       </div>
     </button>
   );
-};
+});

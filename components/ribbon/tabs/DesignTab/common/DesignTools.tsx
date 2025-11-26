@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { ChevronDown } from 'lucide-react';
 import { useDesignTab } from '../DesignTabContext';
@@ -9,7 +10,7 @@ interface DropdownButtonProps {
   hasArrow?: boolean;
 }
 
-export const DropdownRibbonButton: React.FC<DropdownButtonProps> = ({ 
+export const DropdownRibbonButton: React.FC<DropdownButtonProps> = React.memo(({ 
   id, icon: Icon, label, hasArrow = true 
 }) => {
   const { activeMenu, toggleMenu, registerTrigger } = useDesignTab();
@@ -30,7 +31,7 @@ export const DropdownRibbonButton: React.FC<DropdownButtonProps> = ({
       </div>
     </button>
   );
-};
+});
 
 export const FormattingCard: React.FC<{ 
     title: string; 
@@ -38,7 +39,7 @@ export const FormattingCard: React.FC<{
     fontBody: string; 
     color: string;
     onClick: () => void 
-}> = ({ title, fontHead, fontBody, color, onClick }) => (
+}> = React.memo(({ title, fontHead, fontBody, color, onClick }) => (
     <button 
         onClick={onClick}
         onMouseDown={(e) => e.preventDefault()}
@@ -56,4 +57,4 @@ export const FormattingCard: React.FC<{
             {title}
         </div>
     </button>
-);
+));

@@ -21,42 +21,44 @@ export const PrintLayoutTool: React.FC = () => {
 };
 
 interface PrintLayoutViewProps {
+  width: number;
+  height: number;
   content: string;
   setContent: (content: string) => void;
   pageConfig: PageConfig;
   zoom: number;
   showRuler: boolean;
   showFormattingMarks: boolean;
+  containerRef: (node: HTMLDivElement | null) => void;
 }
 
 export const PrintLayoutView: React.FC<PrintLayoutViewProps> = ({
+  width,
+  height,
   content,
   setContent,
   pageConfig,
   zoom,
   showRuler,
-  showFormattingMarks
+  showFormattingMarks,
+  containerRef
 }) => {
   // Initialize state with synchronous pagination to prevent flash
   const [pages, setPages] = useState<string[]>(() => paginateContent(content, pageConfig).pages);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [isPaginating, setIsPaginating] = useState(false);
   const activePageRef = useRef<number>(0);
-  const scale = zoom / 100;
+  const rulerContainerRef = useRef<HTMLDivElement>(null);
+  const listOuterRef = useRef<HTMLDivElement>(null);
 
   // Pagination Effect: Runs when content or config changes
   useEffect(() => {
     let isMounted = true;
     const runPagination = async () => {
       if (!isMounted) return;
-      setIsPaginating(true);
       // Use a timeout to allow React to render and unblock the main thread
-      // This mimics the "incremental layout" of Word
       setTimeout(() => {
         if (!isMounted) return;
         const result = paginateContent(content, pageConfig);
         setPages(result.pages);
-        setIsPaginating(false);
       }, 10);
     };
 
@@ -64,58 +66,83 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = ({
     return () => { isMounted = false; };
   }, [content, pageConfig]);
 
+  // Sync Ruler scroll with List scroll
+  useEffect(() => {
+      const el = listOuterRef.current;
+      if (el) {
+          // Pass the outer ref to the parent container registration logic (for fit-to-width etc)
+          containerRef(el);
+
+          const handleScroll = () => {
+              if (rulerContainerRef.current) {
+                  rulerContainerRef.current.scrollLeft = el.scrollLeft;
+              }
+          };
+          
+          el.addEventListener('scroll', handleScroll);
+          return () => {
+              el.removeEventListener('scroll', handleScroll);
+              containerRef(null);
+          };
+      }
+  }, [containerRef]);
+
   // Handle updates from specific pages
   const handlePageUpdate = useCallback((newHtml: string, pageIndex: number) => {
     setPages(currentPages => {
         const updatedPages = [...currentPages];
         updatedPages[pageIndex] = newHtml;
         const fullContent = updatedPages.join('');
-        
-        // We update the global content context. 
-        // This will trigger the Pagination Effect above (debounced via setTimeout).
         setContent(fullContent);
-        
         return updatedPages;
     });
-    
     activePageRef.current = pageIndex;
   }, [setContent]);
 
+  const setActivePage = useCallback((index: number) => {
+      activePageRef.current = index;
+  }, []);
+
   return (
-    <div className="flex flex-col min-h-full pt-8 pb-20 w-full relative">
+    <div className="w-full h-full flex flex-col relative">
+       {/* Sticky Ruler Container */}
        {showRuler && (
          <div 
-           className="sticky top-0 z-20 mb-6 origin-top transition-all duration-300 mx-auto" 
-           style={{ 
-             transform: `scale(${scale})`,
-             marginBottom: `${24 * scale}px`
-           }}
+            ref={rulerContainerRef}
+            className="w-full overflow-hidden bg-[#f1f5f9] border-b border-slate-200 z-20 shrink-0 flex justify-center"
+            style={{ height: '25px' }}
          >
-           <Ruler />
+             <div style={{ transformOrigin: 'top left', display: 'inline-block' }}>
+                <Ruler pageConfig={pageConfig} zoom={zoom} />
+             </div>
          </div>
        )}
 
-       {pages.map((pageContent, index) => (
-         <EditorPage
-            key={`page-${index}`}
-            pageNumber={index + 1}
-            totalPages={pages.length}
-            content={pageContent}
-            config={pageConfig}
-            zoom={zoom}
-            showFormattingMarks={showFormattingMarks}
-            onContentChange={handlePageUpdate}
-            onFocus={() => { activePageRef.current = index; }}
-         />
-       ))}
-       
-       {/* Click area below pages to focus last page */}
+       {/* Scrollable Page Container */}
        <div 
-         className="flex-1 w-full min-h-[200px] cursor-text" 
-         onClick={() => {
-            // Logic to focus the last page would go here
-         }}
-       ></div>
+            ref={listOuterRef}
+            className="flex-1 relative overflow-auto scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-600 scrollbar-track-transparent bg-[#F8F9FA] dark:bg-slate-950"
+            style={{
+                height: height - (showRuler ? 25 : 0),
+            }}
+       >
+           <div className="flex flex-col items-center py-8 gap-8 min-h-full">
+                {pages.map((pageContent, index) => (
+                    <div key={index} className="flex justify-center w-full shrink-0">
+                        <EditorPage
+                            pageNumber={index + 1}
+                            totalPages={pages.length}
+                            content={pageContent}
+                            config={pageConfig}
+                            zoom={zoom}
+                            showFormattingMarks={showFormattingMarks}
+                            onContentChange={handlePageUpdate}
+                            onFocus={() => setActivePage(index)}
+                        />
+                    </div>
+                ))}
+           </div>
+       </div>
     </div>
   );
 };

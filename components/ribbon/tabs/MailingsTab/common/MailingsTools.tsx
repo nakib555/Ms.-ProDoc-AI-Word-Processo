@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { ChevronDown } from 'lucide-react';
 
@@ -7,7 +8,7 @@ export const SmallRibbonButton: React.FC<{
   onClick: () => void, 
   className?: string,
   hasArrow?: boolean
-}> = ({ icon: Icon, label, onClick, className, hasArrow }) => (
+}> = React.memo(({ icon: Icon, label, onClick, className, hasArrow }) => (
   <button 
     onClick={onClick}
     onMouseDown={(e) => e.preventDefault()}
@@ -18,4 +19,4 @@ export const SmallRibbonButton: React.FC<{
     <span className="text-[11px] font-medium text-slate-600 group-hover:text-blue-700 truncate leading-tight flex-1">{label}</span>
     {hasArrow && <ChevronDown size={8} className="text-slate-400 group-hover:text-blue-600 shrink-0 ml-1" />}
   </button>
-);
+));

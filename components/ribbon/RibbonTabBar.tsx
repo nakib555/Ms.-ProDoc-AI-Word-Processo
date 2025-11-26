@@ -1,3 +1,4 @@
+
 import React, { useRef, useEffect, useState } from 'react';
 import { RibbonTab } from '../../types';
 import { useEditor } from '../../contexts/EditorContext';
@@ -27,7 +28,7 @@ const TAB_CONFIG: Record<string, { icon: React.ElementType, label?: string }> = 
   [RibbonTab.AI_ASSISTANT]: { icon: Sparkles, label: "AI Assistant" }
 };
 
-export const RibbonTabBar: React.FC<RibbonTabBarProps> = ({ activeTab, onTabChange }) => {
+export const RibbonTabBar: React.FC<RibbonTabBarProps> = React.memo(({ activeTab, onTabChange }) => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [showLeftArrow, setShowLeftArrow] = useState(false);
   const [showRightArrow, setShowRightArrow] = useState(false);
@@ -210,4 +211,4 @@ export const RibbonTabBar: React.FC<RibbonTabBarProps> = ({ activeTab, onTabChan
        </div>
     </div>
   );
-};
+});

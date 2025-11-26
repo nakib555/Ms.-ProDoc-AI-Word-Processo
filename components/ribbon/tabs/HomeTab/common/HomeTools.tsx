@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { ChevronDown } from 'lucide-react';
 import { useHomeTab } from '../HomeTabContext';
@@ -10,7 +11,7 @@ export interface DropdownButtonProps {
   color?: string;
 }
 
-export const DropdownToolBtn: React.FC<DropdownButtonProps> = ({ 
+export const DropdownToolBtn: React.FC<DropdownButtonProps> = React.memo(({ 
   id, icon: Icon, title, className, color 
 }) => {
   const { activeMenu, toggleMenu, registerTrigger } = useHomeTab();
@@ -37,7 +38,7 @@ export const DropdownToolBtn: React.FC<DropdownButtonProps> = ({
       <ChevronDown size={8} className="ml-0.5 text-slate-400 dark:text-slate-500" />
     </button>
   );
-};
+});
 
 export const ToolBtn: React.FC<{ 
   icon: any, 
@@ -47,7 +48,7 @@ export const ToolBtn: React.FC<{
   color?: string,
   className?: string,
   disabled?: boolean
-}> = ({ icon: Icon, onClick, title, active, color, className, disabled }) => (
+}> = React.memo(({ icon: Icon, onClick, title, active, color, className, disabled }) => (
   <button 
     onClick={onClick}
     onMouseDown={(e) => e.preventDefault()}
@@ -68,7 +69,7 @@ export const ToolBtn: React.FC<{
       />
     )}
   </button>
-);
+));
 
 export const GroupRow: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <div className="flex items-center space-x-1">{children}</div>

@@ -1,9 +1,20 @@
 
-import React, { useRef, useEffect, useLayoutEffect, useCallback } from 'react';
+import React, { useRef, useEffect, useLayoutEffect, useCallback, Suspense } from 'react';
 import { useEditor } from '../contexts/EditorContext';
-import { WebLayoutView } from './ribbon/tabs/ViewTab/views/WebLayoutTool';
-import { PrintLayoutView } from './ribbon/tabs/ViewTab/views/PrintLayoutTool';
-import { ReadLayoutView } from './ribbon/tabs/ViewTab/views/ReadLayoutView';
+import AutoSizer from 'react-virtualized-auto-sizer';
+import { Loader2 } from 'lucide-react';
+
+// Lazy Load Views
+const PrintLayoutView = React.lazy(() => import('./ribbon/tabs/ViewTab/views/PrintLayoutTool').then(m => ({ default: m.PrintLayoutView })));
+const WebLayoutView = React.lazy(() => import('./ribbon/tabs/ViewTab/views/WebLayoutTool').then(m => ({ default: m.WebLayoutView })));
+const ReadLayoutView = React.lazy(() => import('./ribbon/tabs/ViewTab/views/ReadLayoutView').then(m => ({ default: m.ReadLayoutView })));
+
+const ViewLoading = () => (
+  <div className="flex flex-col items-center justify-center h-full w-full text-slate-400 gap-3">
+    <Loader2 className="animate-spin text-blue-500" size={32} />
+    <span className="text-sm font-medium">Loading document view...</span>
+  </div>
+);
 
 const Editor: React.FC = () => {
   const { 
@@ -23,6 +34,7 @@ const Editor: React.FC = () => {
   const pendingScrollRef = useRef<{left: number, top: number} | null>(null);
 
   // Stable callback for ref registration
+  // We pass this to the specific view which will attach it to the scrollable element
   const handleRegister = useCallback((node: HTMLDivElement | null) => {
       containerRef.current = node;
       registerContainer(node);
@@ -92,7 +104,11 @@ const Editor: React.FC = () => {
 
   // Read Mode Route
   if (viewMode === 'read') {
-      return <ReadLayoutView />;
+      return (
+        <Suspense fallback={<ViewLoading />}>
+            <ReadLayoutView />
+        </Suspense>
+      );
   }
 
   // Web Layout Background
@@ -119,35 +135,49 @@ const Editor: React.FC = () => {
   const isPrint = viewMode === 'print';
 
   return (
-    <div 
-        ref={handleRegister}
-        className={`flex-1 overflow-y-auto overflow-x-auto relative flex flex-col scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-600 scrollbar-track-transparent overscroll-none transition-colors duration-500 ${isPrint ? 'bg-[#F8F9FA] dark:bg-slate-950' : 'bg-white dark:bg-slate-900'}`}
-        style={!isPrint ? { backgroundColor: pageConfig.pageColor } : undefined}
-    >
-      {isPrint ? (
-        /* Print Layout: Vertical stack of Pages */
-        <PrintLayoutView 
-            content={content}
-            setContent={setContent}
-            pageConfig={pageConfig}
-            zoom={zoom}
-            showRuler={showRuler}
-            showFormattingMarks={showFormattingMarks}
-        />
-      ) : (
-        /* Web Layout: Fluid View */
-        <WebLayoutView 
-            editorRef={editorRef}
-            content={content}
-            onInput={(e) => setContent(e.currentTarget.innerHTML)}
-            onPaste={() => {}}
-            onPageClick={() => {}}
-            pageConfig={pageConfig}
-            zoom={zoom}
-            showFormattingMarks={showFormattingMarks}
-            backgroundStyle={getBackgroundStyle()}
-        />
-      )}
+    <div className={`flex-1 flex flex-col relative transition-colors duration-500 overflow-hidden ${isPrint ? 'bg-[#F8F9FA] dark:bg-slate-950' : 'bg-white dark:bg-slate-900'}`}
+         style={!isPrint ? { backgroundColor: pageConfig.pageColor } : undefined}>
+      
+      <AutoSizer>
+        {({ height, width }) => (
+            <div style={{ height, width }} className="relative">
+                <Suspense fallback={<ViewLoading />}>
+                    {isPrint ? (
+                        /* Print Layout: Vertical stack of Pages with Virtualization */
+                        <PrintLayoutView 
+                            width={width}
+                            height={height}
+                            content={content}
+                            setContent={setContent}
+                            pageConfig={pageConfig}
+                            zoom={zoom}
+                            showRuler={showRuler}
+                            showFormattingMarks={showFormattingMarks}
+                            containerRef={handleRegister}
+                        />
+                    ) : (
+                        /* Web Layout: Fluid View */
+                        <div 
+                            ref={handleRegister}
+                            className="w-full h-full overflow-y-auto overflow-x-auto scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-600 scrollbar-track-transparent"
+                        >
+                            <WebLayoutView 
+                                editorRef={editorRef}
+                                content={content}
+                                onInput={(e) => setContent(e.currentTarget.innerHTML)}
+                                onPaste={() => {}}
+                                onPageClick={() => {}}
+                                pageConfig={pageConfig}
+                                zoom={zoom}
+                                showFormattingMarks={showFormattingMarks}
+                                backgroundStyle={getBackgroundStyle()}
+                            />
+                        </div>
+                    )}
+                </Suspense>
+            </div>
+        )}
+      </AutoSizer>
     </div>
   );
 };

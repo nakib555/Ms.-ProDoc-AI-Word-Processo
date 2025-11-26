@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useState, useEffect, useCallback } from 'react';
 import Ribbon from './components/Ribbon';
 import Editor from './components/Editor';
 import StatusBar from './components/StatusBar';
@@ -26,9 +27,9 @@ const AppContent: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isMobile, setViewMode]); // Removed viewMode to allow manual override
 
-  const handleTabChange = (tab: RibbonTab) => {
+  const handleTabChange = useCallback((tab: RibbonTab) => {
     setActiveTab(prev => prev === tab ? null : tab);
-  };
+  }, []);
 
   const isReadMode = viewMode === 'read';
 

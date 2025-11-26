@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { ChevronDown } from 'lucide-react';
 import { useReferencesTab } from '../ReferencesTabContext';
@@ -9,7 +10,7 @@ export const SmallRibbonButton: React.FC<{
   className?: string,
   hasArrow?: boolean,
   disabled?: boolean
-}> = ({ icon: Icon, label, onClick, className, hasArrow, disabled }) => (
+}> = React.memo(({ icon: Icon, label, onClick, className, hasArrow, disabled }) => (
   <button 
     onClick={onClick}
     onMouseDown={(e) => e.preventDefault()}
@@ -21,7 +22,7 @@ export const SmallRibbonButton: React.FC<{
     <span className="text-[11px] font-medium text-slate-600 group-hover:text-blue-700 truncate leading-tight flex-1">{label}</span>
     {hasArrow && <ChevronDown size={8} className="text-slate-400 group-hover:text-blue-600 shrink-0 ml-1" />}
   </button>
-);
+));
 
 interface DropdownButtonProps {
   id: string;
@@ -30,7 +31,7 @@ interface DropdownButtonProps {
   hasArrow?: boolean;
 }
 
-export const DropdownRibbonButton: React.FC<DropdownButtonProps> = ({ 
+export const DropdownRibbonButton: React.FC<DropdownButtonProps> = React.memo(({ 
   id, icon: Icon, label, hasArrow = true 
 }) => {
   const { activeMenu, toggleMenu, registerTrigger } = useReferencesTab();
@@ -51,4 +52,4 @@ export const DropdownRibbonButton: React.FC<DropdownButtonProps> = ({
       </div>
     </button>
   );
-};
+});
