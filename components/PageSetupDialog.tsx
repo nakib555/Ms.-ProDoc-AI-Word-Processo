@@ -503,26 +503,32 @@ export const PageSetupDialog: React.FC<PageSetupDialogProps> = ({
                         )}
 
                         {marginSubTab === 'orientation' && (
-                            <div className="flex flex-col gap-4 pt-2">
-                                <div className="flex gap-4">
-                                     <button 
+                            <div className="flex flex-col h-full pt-2">
+                                <div className="flex-1 flex gap-4 items-center justify-center min-h-[200px]">
+                                        <button 
                                         onClick={() => handleOrientationChange('portrait')}
-                                        className={`flex-1 flex flex-col items-center justify-center py-6 rounded-xl border transition-all duration-200 group ${localConfig.orientation === 'portrait' ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-500 dark:border-blue-600 text-blue-700 dark:text-blue-300 shadow-sm ring-1 ring-blue-200 dark:ring-blue-800' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500 hover:border-blue-300 dark:hover:border-blue-600 hover:bg-slate-50'}`}
-                                     >
-                                        <div className={`mb-3 p-3 rounded-full ${localConfig.orientation === 'portrait' ? 'bg-blue-100 text-blue-600' : 'bg-slate-100 text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-500'}`}>
-                                            <FileText size={24} />
+                                        className={`flex-1 min-w-0 h-full max-h-[240px] flex flex-col items-center justify-center p-6 rounded-2xl border-1 transition-all duration-300 group relative overflow-hidden ${localConfig.orientation === 'portrait' ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-600 dark:border-blue-500 text-blue-700 dark:text-blue-300 shadow-md' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500 hover:border-blue-300 dark:hover:border-blue-600 hover:bg-slate-50 hover:shadow-sm'}`}
+                                        >
+                                        <div className={`mb-4 p-5 rounded-full transition-transform duration-300 group-hover:scale-110 shadow-sm ${localConfig.orientation === 'portrait' ? 'bg-blue-100 dark:bg-blue-800 text-blue-600 dark:text-blue-300' : 'bg-slate-100 dark:bg-slate-700 text-slate-400 group-hover:bg-blue-100 dark:group-hover:bg-blue-900/50 group-hover:text-blue-600'}`}>
+                                            <FileText size={32} strokeWidth={1.5} />
                                         </div>
-                                        <span className="text-sm font-bold">Portrait</span>
-                                     </button>
-                                     <button 
+                                        <span className="text-base font-bold tracking-tight">Portrait</span>
+                                        {localConfig.orientation === 'portrait' && <div className="absolute top-3 right-3 w-2.5 h-2.5 bg-blue-600 rounded-full animate-in zoom-in"></div>}
+                                        </button>
+                                        
+                                        <button 
                                         onClick={() => handleOrientationChange('landscape')}
-                                        className={`flex-1 flex flex-col items-center justify-center py-6 rounded-xl border transition-all duration-200 group ${localConfig.orientation === 'landscape' ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-500 dark:border-blue-600 text-blue-700 dark:text-blue-300 shadow-sm ring-1 ring-blue-200 dark:ring-blue-800' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500 hover:border-blue-300 dark:hover:border-blue-600 hover:bg-slate-50'}`}
-                                     >
-                                        <div className={`mb-3 p-3 rounded-full ${localConfig.orientation === 'landscape' ? 'bg-blue-100 text-blue-600' : 'bg-slate-100 text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-500'}`}>
-                                            <FileText size={24} className="rotate-90"/>
+                                        className={`flex-1 min-w-0 h-full max-h-[240px] flex flex-col items-center justify-center p-6 rounded-2xl border-1 transition-all duration-300 group relative overflow-hidden ${localConfig.orientation === 'landscape' ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-600 dark:border-blue-500 text-blue-700 dark:text-blue-300 shadow-md' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500 hover:border-blue-300 dark:hover:border-blue-600 hover:bg-slate-50 hover:shadow-sm'}`}
+                                        >
+                                        <div className={`mb-4 p-5 rounded-full transition-transform duration-300 group-hover:scale-110 shadow-sm ${localConfig.orientation === 'landscape' ? 'bg-blue-100 dark:bg-blue-800 text-blue-600 dark:text-blue-300' : 'bg-slate-100 dark:bg-slate-700 text-slate-400 group-hover:bg-blue-100 dark:group-hover:bg-blue-900/50 group-hover:text-blue-600'}`}>
+                                            <FileText size={32} className="rotate-90" strokeWidth={1.5} />
                                         </div>
-                                        <span className="text-sm font-bold">Landscape</span>
-                                     </button>
+                                        <span className="text-base font-bold tracking-tight">Landscape</span>
+                                        {localConfig.orientation === 'landscape' && <div className="absolute top-3 right-3 w-2.5 h-2.5 bg-blue-600 rounded-full animate-in zoom-in"></div>}
+                                        </button>
+                                </div>
+                                <div className="mt-4 text-center text-xs text-slate-400 font-medium">
+                                    {localConfig.orientation === 'portrait' ? 'Standard vertical orientation.' : 'Wide horizontal orientation.'}
                                 </div>
                             </div>
                         )}
