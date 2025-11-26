@@ -1,6 +1,6 @@
 
 import React, { useState, Suspense } from 'react';
-import { LayoutTemplate, Columns, ArrowLeftRight, MoveVertical, ArrowRightLeft, Monitor } from 'lucide-react';
+import { LayoutTemplate, Columns, ArrowLeftRight, MoveVertical, ArrowRightLeft, Monitor, Settings2 } from 'lucide-react';
 import { useEditor } from '../../../../../contexts/EditorContext';
 import { useLayoutTab } from '../LayoutTabContext';
 import { DropdownButton } from '../common/LayoutTools';
@@ -39,7 +39,14 @@ export const MarginsTool: React.FC = () => {
       setShowCustomDialog(false);
   };
 
-  const isPresetActive = (preset: string) => pageConfig.marginPreset === preset;
+  const marginOptions = [
+    { id: 'normal', label: 'Normal', desc: 'Top 1" Bottom 1" Left 1" Right 1"', icon: LayoutTemplate },
+    { id: 'narrow', label: 'Narrow', desc: 'Top 0.5" Bottom 0.5" Left 0.5" Right 0.5"', icon: Columns },
+    { id: 'moderate', label: 'Moderate', desc: 'Top 1" Bottom 1" Left 0.75" Right 0.75"', icon: MoveVertical },
+    { id: 'wide', label: 'Wide', desc: 'Top 1" Bottom 1" Left 2" Right 2"', icon: ArrowLeftRight },
+    { id: 'mirrored', label: 'Mirrored', desc: 'Top 1" Bottom 1" Inside 1.25" Outside 1"', icon: ArrowRightLeft },
+    { id: 'office2003', label: 'Office 2003 Default', desc: 'Top 1" Bottom 1" Left 1.25" Right 1.25"', icon: Monitor },
+  ];
 
   return (
     <>
@@ -48,93 +55,35 @@ export const MarginsTool: React.FC = () => {
              icon={LayoutTemplate} 
              label="Margins" 
          />
-         <MenuPortal id={menuId} activeMenu={activeMenu} menuPos={menuPos} closeMenu={closeMenu} width={260}>
-             <div className="p-1 space-y-0.5">
+         <MenuPortal id={menuId} activeMenu={activeMenu} menuPos={menuPos} closeMenu={closeMenu} width={280}>
+             <div className="p-1 space-y-0.5 max-h-[60vh] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-200">
+                 {marginOptions.map((option) => (
+                     <button 
+                        key={option.id}
+                        onClick={() => handleMarginChange(option.id as MarginPreset)}
+                        onMouseDown={(e) => e.preventDefault()}
+                        className={`w-full text-left px-3 py-2 hover:bg-slate-100 rounded-md flex items-center gap-3 group transition-colors ${pageConfig.marginPreset === option.id ? 'bg-blue-50 text-blue-700 ring-1 ring-blue-200' : 'text-slate-700'}`}
+                     >
+                         <option.icon size={18} className={`flex-shrink-0 ${pageConfig.marginPreset === option.id ? 'text-blue-500' : 'text-slate-400 group-hover:text-slate-600'}`} strokeWidth={1.5} />
+                         <div className="flex-1 min-w-0">
+                            <div className="text-xs font-medium truncate">{option.label}</div>
+                            <div className={`text-[10px] truncate ${pageConfig.marginPreset === option.id ? 'text-blue-400' : 'text-slate-400'}`}>{option.desc}</div>
+                         </div>
+                         {pageConfig.marginPreset === option.id && (
+                             <div className="w-1.5 h-1.5 rounded-full bg-blue-600 ml-2 shrink-0" />
+                         )}
+                     </button>
+                 ))}
+                 
+                 <div className="border-t border-slate-100 my-1"></div>
+                 
                  <button 
-                    onClick={() => handleMarginChange('normal')} 
-                    className={`w-full text-left px-3 py-2 hover:bg-slate-100 rounded-md flex items-center gap-3 group ${isPresetActive('normal') ? 'bg-blue-50 text-blue-700 ring-1 ring-blue-200' : ''}`}
-                 >
-                     <div className={`p-1 border rounded bg-white ${isPresetActive('normal') ? 'border-blue-400' : 'border-slate-300'}`}>
-                        <LayoutTemplate size={16} className="text-slate-400"/>
-                     </div>
-                     <div>
-                        <div className="text-xs font-medium text-slate-700">Normal</div>
-                        <div className="text-[10px] text-slate-500">Top 1" Bottom 1" Left 1" Right 1"</div>
-                     </div>
-                 </button>
-
-                 <button 
-                    onClick={() => handleMarginChange('narrow')} 
-                    className={`w-full text-left px-3 py-2 hover:bg-slate-100 rounded-md flex items-center gap-3 group ${isPresetActive('narrow') ? 'bg-blue-50 text-blue-700 ring-1 ring-blue-200' : ''}`}
-                 >
-                     <div className={`p-1 border rounded bg-white ${isPresetActive('narrow') ? 'border-blue-400' : 'border-slate-300'}`}>
-                        <Columns size={16} className="text-slate-400"/>
-                     </div>
-                     <div>
-                        <div className="text-xs font-medium text-slate-700">Narrow</div>
-                        <div className="text-[10px] text-slate-500">Top 0.5" Bottom 0.5" Left 0.5" Right 0.5"</div>
-                     </div>
-                 </button>
-
-                 <button 
-                    onClick={() => handleMarginChange('moderate')} 
-                    className={`w-full text-left px-3 py-2 hover:bg-slate-100 rounded-md flex items-center gap-3 group ${isPresetActive('moderate') ? 'bg-blue-50 text-blue-700 ring-1 ring-blue-200' : ''}`}
-                 >
-                     <div className={`p-1 border rounded bg-white ${isPresetActive('moderate') ? 'border-blue-400' : 'border-slate-300'}`}>
-                        <MoveVertical size={16} className="text-slate-400"/>
-                     </div>
-                     <div>
-                        <div className="text-xs font-medium text-slate-700">Moderate</div>
-                        <div className="text-[10px] text-slate-500">Top 1" Bottom 1" Left 0.75" Right 0.75"</div>
-                     </div>
-                 </button>
-
-                 <button 
-                    onClick={() => handleMarginChange('wide')} 
-                    className={`w-full text-left px-3 py-2 hover:bg-slate-100 rounded-md flex items-center gap-3 group ${isPresetActive('wide') ? 'bg-blue-50 text-blue-700 ring-1 ring-blue-200' : ''}`}
-                 >
-                     <div className={`p-1 border rounded bg-white ${isPresetActive('wide') ? 'border-blue-400' : 'border-slate-300'}`}>
-                        <ArrowLeftRight size={16} className="text-slate-400"/>
-                     </div>
-                     <div>
-                        <div className="text-xs font-medium text-slate-700">Wide</div>
-                        <div className="text-[10px] text-slate-500">Top 1" Bottom 1" Left 2" Right 2"</div>
-                     </div>
-                 </button>
-
-                 <button 
-                    onClick={() => handleMarginChange('mirrored')} 
-                    className={`w-full text-left px-3 py-2 hover:bg-slate-100 rounded-md flex items-center gap-3 group ${isPresetActive('mirrored') ? 'bg-blue-50 text-blue-700 ring-1 ring-blue-200' : ''}`}
-                 >
-                     <div className={`p-1 border rounded bg-white ${isPresetActive('mirrored') ? 'border-blue-400' : 'border-slate-300'}`}>
-                        <ArrowRightLeft size={16} className="text-slate-400"/>
-                     </div>
-                     <div>
-                        <div className="text-xs font-medium text-slate-700">Mirrored</div>
-                        <div className="text-[10px] text-slate-500">Top 1" Bottom 1" Inside 1.25" Outside 1"</div>
-                     </div>
-                 </button>
-
-                 <button 
-                    onClick={() => handleMarginChange('office2003')} 
-                    className={`w-full text-left px-3 py-2 hover:bg-slate-100 rounded-md flex items-center gap-3 group ${isPresetActive('office2003') ? 'bg-blue-50 text-blue-700 ring-1 ring-blue-200' : ''}`}
-                 >
-                     <div className={`p-1 border rounded bg-white ${isPresetActive('office2003') ? 'border-blue-400' : 'border-slate-300'}`}>
-                        <Monitor size={16} className="text-slate-400"/>
-                     </div>
-                     <div>
-                        <div className="text-xs font-medium text-slate-700">Office 2003 Default</div>
-                        <div className="text-[10px] text-slate-500">Top 1" Bottom 1" Left 1.25" Right 1.25"</div>
-                     </div>
-                 </button>
-
-             </div>
-             <div className="border-t border-slate-100 mt-1 pt-1 p-1">
-                 <button 
-                    className="w-full text-left px-3 py-2 hover:bg-slate-100 text-xs font-medium text-slate-700 rounded-md" 
+                    className="w-full text-left px-3 py-2 hover:bg-slate-100 text-xs font-medium text-slate-700 rounded-md flex items-center gap-3 group transition-colors" 
                     onClick={openCustomDialog}
+                    onMouseDown={(e) => e.preventDefault()}
                  >
-                    Custom Margins...
+                    <Settings2 size={18} className="text-slate-400 group-hover:text-slate-600" strokeWidth={1.5} />
+                    <span>Custom Margins...</span>
                  </button>
              </div>
          </MenuPortal>

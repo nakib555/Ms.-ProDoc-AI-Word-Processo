@@ -1,6 +1,67 @@
-import React, { useState } from 'react';
-import { Settings, Check } from 'lucide-react';
+
+import React, { useState, useRef, useEffect } from 'react';
+import { Settings, Check, ChevronDown } from 'lucide-react';
 import { useEditor } from '../../../../../contexts/EditorContext';
+
+const RichSelect = ({ value, onChange, options }: { value: string, onChange: (val: string) => void, options: {value: string, label: string}[] }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const buttonRef = useRef<HTMLButtonElement>(null);
+    const [coords, setCoords] = useState({ top: 0, left: 0, width: 0 });
+
+    useEffect(() => {
+        if (isOpen && buttonRef.current) {
+            const rect = buttonRef.current.getBoundingClientRect();
+            setCoords({
+                top: rect.bottom + 4,
+                left: rect.left,
+                width: rect.width
+            });
+        }
+    }, [isOpen]);
+
+    // Close on scroll to prevent floating issues
+    useEffect(() => {
+        if(isOpen) {
+            const handleScroll = () => setIsOpen(false);
+            window.addEventListener('scroll', handleScroll, true);
+            return () => window.removeEventListener('scroll', handleScroll, true);
+        }
+    }, [isOpen]);
+
+    return (
+        <>
+            <button
+                ref={buttonRef}
+                onClick={() => setIsOpen(!isOpen)}
+                className={`w-full border rounded-md px-3 py-2 text-sm flex items-center justify-between outline-none transition-all bg-white ${isOpen ? 'border-blue-500 ring-2 ring-blue-100' : 'border-slate-300 hover:border-slate-400'}`}
+            >
+                <span className="truncate text-slate-700">{options.find(o => o.value === value)?.label}</span>
+                <ChevronDown size={14} className="text-slate-400" />
+            </button>
+            
+            {isOpen && (
+                <div className="fixed inset-0 z-[70]" onClick={() => setIsOpen(false)}>
+                    <div 
+                        className="fixed bg-white border border-slate-200 rounded-md shadow-xl max-h-60 overflow-y-auto py-1 z-[71] animate-in fade-in zoom-in-95 duration-100 scrollbar-thin scrollbar-thumb-slate-200"
+                        style={{ top: coords.top, left: coords.left, width: coords.width }}
+                        onClick={e => e.stopPropagation()}
+                    >
+                        {options.map(opt => (
+                            <button
+                                key={opt.value}
+                                onClick={() => { onChange(opt.value); setIsOpen(false); }}
+                                className={`w-full text-left px-3 py-2 text-sm hover:bg-blue-50 flex items-center justify-between transition-colors ${value === opt.value ? 'text-blue-600 font-medium bg-blue-50/50' : 'text-slate-700'}`}
+                            >
+                                {opt.label}
+                                {value === opt.value && <Check size={14} className="shrink-0" />}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            )}
+        </>
+    );
+}
 
 export const FontDialogLauncher: React.FC = () => {
   const { applyAdvancedStyle } = useEditor();
@@ -65,17 +126,17 @@ export const FontDialogLauncher: React.FC = () => {
                     {/* Underline Style */}
                     <div className="space-y-2">
                         <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider">Underline Style</label>
-                        <select 
+                        <RichSelect 
                             value={fontSettings.textDecorationStyle}
-                            onChange={(e) => setFontSettings({...fontSettings, textDecorationStyle: e.target.value})}
-                            className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                        >
-                            <option value="solid">Solid (Default)</option>
-                            <option value="double">Double</option>
-                            <option value="dotted">Dotted</option>
-                            <option value="dashed">Dashed</option>
-                            <option value="wavy">Wavy</option>
-                        </select>
+                            onChange={(val) => setFontSettings({...fontSettings, textDecorationStyle: val})}
+                            options={[
+                                { value: 'solid', label: 'Solid (Default)' },
+                                { value: 'double', label: 'Double' },
+                                { value: 'dotted', label: 'Dotted' },
+                                { value: 'dashed', label: 'Dashed' },
+                                { value: 'wavy', label: 'Wavy' }
+                            ]}
+                        />
                     </div>
 
                     {/* Checkboxes */}
