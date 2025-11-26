@@ -148,17 +148,38 @@ export const PageSetupDialog: React.FC<PageSetupDialogProps> = ({
 
   const CompactSelect = ({ label, value, onChange, options, disabled = false }: any) => {
     const [isOpen, setIsOpen] = useState(false);
-    const [coords, setCoords] = useState({ top: 0, left: 0, width: 0 });
+    const [layout, setLayout] = useState<any>({ top: 0, left: 0, width: 0, maxHeight: 240 });
     const buttonRef = useRef<HTMLButtonElement>(null);
 
-    const updateCoords = () => {
+    const updateLayout = () => {
         if (buttonRef.current) {
             const rect = buttonRef.current.getBoundingClientRect();
-            setCoords({
-                top: rect.bottom + 4,
-                left: rect.left,
-                width: rect.width
-            });
+            const viewportHeight = window.innerHeight;
+            const spaceBelow = viewportHeight - rect.bottom - 8;
+            const spaceAbove = rect.top - 8;
+            
+            // Roughly estimate height needed: 32px per item + 8px padding
+            const neededHeight = Math.min(options.length * 32 + 8, 240);
+            
+            // Prefer below if it fits, or if space below is larger than above (and neither fully fits)
+            if (spaceBelow >= neededHeight || spaceBelow > spaceAbove) {
+                setLayout({
+                    top: rect.bottom + 4,
+                    left: rect.left,
+                    width: rect.width,
+                    maxHeight: Math.min(240, spaceBelow),
+                    isUpwards: false
+                });
+            } else {
+                // Open upwards
+                setLayout({
+                    bottom: viewportHeight - rect.top + 4,
+                    left: rect.left,
+                    width: rect.width,
+                    maxHeight: Math.min(240, spaceAbove),
+                    isUpwards: true
+                });
+            }
         }
     };
 
@@ -167,7 +188,7 @@ export const PageSetupDialog: React.FC<PageSetupDialogProps> = ({
         if (disabled) return;
         
         if (!isOpen) {
-            updateCoords();
+            updateLayout();
             setIsOpen(true);
         } else {
             setIsOpen(false);
@@ -176,12 +197,12 @@ export const PageSetupDialog: React.FC<PageSetupDialogProps> = ({
 
     useEffect(() => {
         if (isOpen) {
-            window.addEventListener('resize', updateCoords);
-            window.addEventListener('scroll', updateCoords, true);
+            window.addEventListener('resize', updateLayout);
+            window.addEventListener('scroll', updateLayout, true);
         }
         return () => {
-            window.removeEventListener('resize', updateCoords);
-            window.removeEventListener('scroll', updateCoords, true);
+            window.removeEventListener('resize', updateLayout);
+            window.removeEventListener('scroll', updateLayout, true);
         };
     }, [isOpen]);
 
@@ -202,8 +223,14 @@ export const PageSetupDialog: React.FC<PageSetupDialogProps> = ({
                 <>
                     <div className="fixed inset-0 z-[9998]" onClick={() => setIsOpen(false)} />
                     <div 
-                        className="fixed z-[9999] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl max-h-60 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-600 animate-in fade-in zoom-in-95 duration-100 flex flex-col py-1"
-                        style={{ top: coords.top, left: coords.left, width: coords.width }}
+                        className={`fixed z-[9999] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl overflow-y-auto scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-600 animate-in fade-in duration-100 flex flex-col py-1 ${layout.isUpwards ? 'slide-in-from-bottom-1 origin-bottom' : 'slide-in-from-top-1 origin-top'}`}
+                        style={{ 
+                            top: layout.top, 
+                            bottom: layout.bottom,
+                            left: layout.left, 
+                            width: layout.width,
+                            maxHeight: layout.maxHeight
+                        }}
                     >
                         {options.map((opt: any) => (
                             <button
@@ -213,7 +240,7 @@ export const PageSetupDialog: React.FC<PageSetupDialogProps> = ({
                                     onChange({ target: { value: opt.value } });
                                     setIsOpen(false);
                                 }}
-                                className={`text-left px-3 py-2 text-xs flex items-center justify-between hover:bg-blue-50 dark:hover:bg-slate-700 transition-colors ${opt.value === value ? 'bg-blue-50 dark:bg-slate-700/50 text-blue-600 dark:text-blue-400 font-semibold' : 'text-slate-700 dark:text-slate-200'}`}
+                                className={`text-left px-3 py-2 text-xs flex items-center justify-between hover:bg-blue-50 dark:hover:bg-slate-700 transition-colors shrink-0 ${opt.value === value ? 'bg-blue-50 dark:bg-slate-700/50 text-blue-600 dark:text-blue-400 font-semibold' : 'text-slate-700 dark:text-slate-200'}`}
                             >
                                 <span className="truncate">{opt.label}</span>
                                 {opt.value === value && <Check size={12} className="shrink-0 ml-2" />}
