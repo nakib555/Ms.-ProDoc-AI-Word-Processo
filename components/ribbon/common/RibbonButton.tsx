@@ -1,9 +1,9 @@
 
 import React from 'react';
-import { LucideIcon, ChevronDown } from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
 
 interface RibbonButtonProps {
-  icon: LucideIcon;
+  icon: React.ElementType;
   label: string;
   onClick: () => void;
   className?: string;

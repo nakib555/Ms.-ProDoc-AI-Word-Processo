@@ -115,7 +115,9 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     const checkSelection = () => {
       const selection = window.getSelection();
       if (!selection || selection.rangeCount === 0) {
-        setActiveElementType('none');
+        // Do not blindly reset to 'none' if focus is just temporarily lost (e.g. clicking ribbon)
+        // but for now, we'll allow the previous state to persist or default to text if completely lost
+        // setActiveElementType('none'); 
         return;
       }
 
@@ -126,41 +128,56 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
       let type: ActiveElementType = 'text';
       let current = node as HTMLElement | null;
+      let depth = 0;
 
-      while (current && current !== editorRef.current && !current.classList.contains('prodoc-editor')) {
-        if (current.tagName === 'TABLE' || current.tagName === 'TD' || current.tagName === 'TH') {
-          type = 'table';
-          break;
+      // Traverse up the DOM tree to find contextual elements
+      while (current && depth < 50) {
+        // Ensure we are working with an element
+        if (current.nodeType === Node.ELEMENT_NODE) {
+            // Stop if we reached the editor container
+            if (current === editorRef.current || current.classList.contains('prodoc-editor')) {
+                break;
+            }
+
+            // Check for Equation
+            if (current.classList.contains('prodoc-equation')) {
+                type = 'equation';
+                break;
+            }
+
+            // Check for Table
+            if (['TABLE', 'TD', 'TH', 'TR', 'TBODY', 'THEAD'].includes(current.tagName)) {
+                type = 'table';
+                break;
+            }
+            
+            // Check for Image
+            if (current.tagName === 'IMG') {
+                type = 'image';
+                break;
+            }
         }
-        if (current.classList.contains('prodoc-equation')) {
-          type = 'equation';
-          break;
-        }
-        if (current.tagName === 'IMG') {
-          type = 'image';
-          break;
-        }
+        
         current = current.parentElement;
+        depth++;
       }
       
       setActiveElementType(type);
     };
 
+    // Use global document listeners to ensure we catch events even in Print Layout (where editorRef is internal)
     document.addEventListener('selectionchange', checkSelection);
-    const el = editorRef.current;
-    if (el) {
-        el.addEventListener('mouseup', checkSelection);
-        el.addEventListener('keyup', checkSelection);
-    }
+    document.addEventListener('mouseup', checkSelection);
+    document.addEventListener('keyup', checkSelection);
+    document.addEventListener('click', checkSelection);
 
     return () => {
       document.removeEventListener('selectionchange', checkSelection);
-      if (el) {
-          el.removeEventListener('mouseup', checkSelection);
-          el.removeEventListener('keyup', checkSelection);
-      }
+      document.removeEventListener('mouseup', checkSelection);
+      document.removeEventListener('keyup', checkSelection);
+      document.removeEventListener('click', checkSelection);
     };
-  }, [editorRef]);
+  }, []);
 
   const registerContainer = useCallback((node: HTMLDivElement | null) => {
     containerRef.current = node;

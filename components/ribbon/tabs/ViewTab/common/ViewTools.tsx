@@ -1,13 +1,15 @@
+
 import React from 'react';
-import { Check } from 'lucide-react';
+import { Check, ChevronDown } from 'lucide-react';
 
 export const SmallRibbonButton: React.FC<{ 
   icon: any, 
   label: string, 
   onClick: () => void, 
   disabled?: boolean,
-  className?: string
-}> = ({ icon: Icon, label, onClick, disabled, className }) => (
+  className?: string,
+  hasArrow?: boolean
+}> = ({ icon: Icon, label, onClick, disabled, className, hasArrow }) => (
   <button 
     onClick={onClick}
     onMouseDown={(e) => e.preventDefault()}
@@ -17,6 +19,7 @@ export const SmallRibbonButton: React.FC<{
   >
     <Icon size={14} className="text-slate-500 group-hover:text-blue-600 mr-2 shrink-0" />
     <span className="text-[11px] font-medium text-slate-600 group-hover:text-blue-700 truncate leading-tight flex-1">{label}</span>
+    {hasArrow && <ChevronDown size={8} className="text-slate-400 group-hover:text-blue-600 shrink-0 ml-1" />}
   </button>
 );
 
