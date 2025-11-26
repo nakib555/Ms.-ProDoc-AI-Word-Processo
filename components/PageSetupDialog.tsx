@@ -414,7 +414,7 @@ export const PageSetupDialog: React.FC<PageSetupDialogProps> = ({
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-md p-4 animate-in fade-in duration-200">
       <div 
-        className="bg-white dark:bg-slate-900 w-[95vw] md:w-[50vw] lg:w-[30vw] max-w-[450px] h-[50vh] max-h-[700px] rounded-2xl shadow-2xl border border-white/50 dark:border-slate-700 flex flex-col overflow-hidden animate-in zoom-in-95 duration-200 ring-1 ring-black/5"
+        className="bg-white dark:bg-slate-900 w-[95vw] md:w-[50vw] lg:w-[30vw] max-w-[450px] h-[70vh] max-h-[700px] rounded-2xl shadow-2xl border border-white/50 dark:border-slate-700 flex flex-col overflow-hidden animate-in zoom-in-95 duration-200 ring-1 ring-black/5"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
