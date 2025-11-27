@@ -1,12 +1,14 @@
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { RibbonSection } from '../../../../common/RibbonSection';
 import { RibbonButton } from '../../../../common/RibbonButton';
 import { SmallRibbonButton } from '../../../ViewTab/common/ViewTools';
 import { MenuPortal } from '../../../../common/MenuPortal';
 import { 
   Sigma, PenTool, Type, RefreshCw, 
-  ChevronDown, ChevronUp, Check
+  ChevronDown, Check, ArrowUp, ArrowDown,
+  Calculator, Percent, Ban, ScrollText, Triangle, ArrowRight, Activity,
+  Plus, Divide
 } from 'lucide-react';
 import { useEditor } from '../../../../../../contexts/EditorContext';
 
@@ -108,6 +110,17 @@ const SYMBOL_CATEGORIES: Record<string, string[]> = {
   'Geometry': ['⊥', '∥', '∦', '∠', '∟', '∡', '∢', '⊾', '⊿', '⋈', '▱', '◆', '◇', '○', '◎', '●', '▰', '▱', '▲', '△', '▴', '▵', '▶', '▷', '▸', '▹', '►', '▻', '▼', '▽', '▾', '▿', '◀', '◁', '◂', '◃', '◄', '◅', '◆', '◇', '◈', '◉', '◊', '○', '◌', '◍', '◎', '●']
 };
 
+const CATEGORY_ICONS: Record<string, any> = {
+  'Basic Math': Plus,
+  'Greek Letters': Sigma,
+  'Letter-Like Symbols': Type,
+  'Operators': Divide,
+  'Arrows': ArrowRight,
+  'Negated Relations': Ban,
+  'Scripts': ScrollText,
+  'Geometry': Triangle
+};
+
 // Custom Structure Button Component
 const StructureButton: React.FC<{
   icon: any;
@@ -132,70 +145,101 @@ const StructureButton: React.FC<{
   </button>
 );
 
+const SymbolCategoryDropdown: React.FC<{ category: string }> = ({ category }) => {
+    const { executeCommand } = useEditor();
+    const [isOpen, setIsOpen] = useState(false);
+    const buttonRef = useRef<HTMLButtonElement>(null);
+    const [coords, setCoords] = useState({ top: 0, left: 0 });
+    const Icon = CATEGORY_ICONS[category] || Calculator;
+    const symbols = SYMBOL_CATEGORIES[category];
+
+    const toggle = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (!isOpen && buttonRef.current) {
+            const rect = buttonRef.current.getBoundingClientRect();
+            setCoords({ top: rect.bottom + 2, left: rect.left });
+        }
+        setIsOpen(!isOpen);
+    };
+
+    return (
+        <>
+            <button
+                ref={buttonRef}
+                onClick={toggle}
+                className={`flex items-center gap-2 px-3 py-1.5 text-[11px] rounded-md hover:bg-slate-200 dark:hover:bg-slate-700 border border-transparent transition-all w-full text-left group ${isOpen ? 'bg-slate-200 dark:bg-slate-700 text-blue-600 dark:text-blue-400' : 'text-slate-600 dark:text-slate-300'}`}
+                title={category}
+                onMouseDown={(e) => e.preventDefault()}
+            >
+                <Icon size={14} className={`shrink-0 ${isOpen ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400 group-hover:text-blue-600 dark:group-hover:text-blue-400'}`}/>
+                <span className="whitespace-nowrap font-medium truncate flex-1">{category}</span>
+                <ChevronDown size={10} className={`shrink-0 transition-transform text-slate-400 ${isOpen ? 'rotate-180 text-blue-600' : ''}`} />
+            </button>
+
+            <MenuPortal 
+                id={`sym-${category}`}
+                activeMenu={isOpen ? `sym-${category}` : null}
+                menuPos={coords}
+                closeMenu={() => setIsOpen(false)}
+                width={320}
+            >
+                <div className="p-2 bg-white dark:bg-slate-800">
+                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2 px-1 flex justify-between items-center">
+                        {category}
+                        <span className="text-[9px] bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded text-slate-500">{symbols.length}</span>
+                    </div>
+                    <div className="grid grid-cols-8 gap-1 max-h-[240px] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-600 p-1 border border-slate-100 dark:border-slate-700 rounded bg-slate-50 dark:bg-slate-900/50">
+                        {symbols.map((s, i) => (
+                            <button
+                                key={i}
+                                onClick={() => { executeCommand('insertText', s); setIsOpen(false); }}
+                                onMouseDown={(e) => e.preventDefault()}
+                                className="h-8 w-8 flex items-center justify-center text-sm text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-700 hover:text-blue-600 dark:hover:text-blue-400 hover:shadow-sm rounded border border-transparent hover:border-slate-200 dark:hover:border-slate-600 transition-all font-serif select-none"
+                            >
+                                {s}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            </MenuPortal>
+        </>
+    );
+};
+
+const SymbolGallery = () => {
+    return (
+        <div className="grid grid-rows-4 md:grid-rows-2 grid-flow-col gap-x-4 gap-y-1.5 h-full px-2 min-w-[320px]">
+            {Object.keys(SYMBOL_CATEGORIES).map(cat => (
+                <SymbolCategoryDropdown key={cat} category={cat} />
+            ))}
+        </div>
+    );
+};
+
 export const EquationTab: React.FC = () => {
   const { executeCommand } = useEditor();
-  const [activeMenu, setActiveMenu] = useState<string | null>(null);
-  const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
-  const [selectedCategory, setSelectedCategory] = useState('Basic Math');
-  const triggerRef = useRef<HTMLButtonElement>(null);
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const [categoryOpen, setCategoryOpen] = useState(false);
   const [conversionType, setConversionType] = useState<'unicode' | 'latex'>('unicode');
-
-  const insertSymbol = (symbol: string) => {
-      executeCommand('insertText', symbol);
-      if (activeMenu) setActiveMenu(null);
-  };
-
+  
   const insertStructure = (html: string) => {
       executeCommand('insertHTML', html);
   };
-
-  const toggleGallery = (e: React.MouseEvent) => {
-      e.stopPropagation();
-      if (activeMenu === 'symbol_gallery') {
-          setActiveMenu(null);
-      } else {
-          if (triggerRef.current) {
-              const rect = triggerRef.current.getBoundingClientRect();
-              setMenuPos({ top: rect.bottom + 4, left: Math.max(10, rect.left - 290) }); 
-          }
-          setActiveMenu('symbol_gallery');
-      }
-  };
-
-  const closeMenu = () => setActiveMenu(null);
-
-  const scrollSymbols = (dir: 'up' | 'down') => {
-      if (scrollContainerRef.current) {
-          const amount = 24 * 3; // Height of 3 rows
-          scrollContainerRef.current.scrollBy({ top: dir === 'up' ? -amount : amount, behavior: 'smooth' });
-      }
-  };
-
-  const compactSymbols = SYMBOL_CATEGORIES[selectedCategory] || SYMBOL_CATEGORIES['Basic Math'];
 
   // CSS Helpers
   const flexColCenter = "display: inline-flex; flex-direction: column; align-items: center; vertical-align: middle; margin: 0 2px;";
   const flexRowCenter = "display: inline-flex; align-items: center; vertical-align: middle;";
   const borderBottom = "border-bottom: 1px solid currentColor;";
   
-  const fractionHTML = `<span style="${flexColCenter} vertical-align: -0.5em;"><span style="${borderBottom} padding: 0 2px;">x</span><span style="padding: 0 2px;">y</span></span>&nbsp;`;
-  const scriptHTML = `x<sup>2</sup>`;
-  const radicalHTML = `<span style="${flexRowCenter}"><span style="font-size: 1.5em; line-height: 1;">&radic;</span><span style="border-top: 1px solid currentColor; padding-top: 2px; margin-left: -2px;">x</span></span>&nbsp;`;
-  const integralHTML = `<span style="${flexRowCenter}"><span style="font-size: 1.5em;">&int;</span><span style="${flexColCenter} margin-left: -4px;"><span style="font-size: 0.7em;">b</span><span style="font-size: 0.7em;">a</span></span><span style="margin-left: 4px;">x dx</span></span>&nbsp;`;
-  const largeOpHTML = `<span style="${flexColCenter}"><span style="font-size: 0.7em;">n</span><span style="font-size: 1.4em; line-height: 1;">&sum;</span><span style="font-size: 0.7em;">i=0</span></span>&nbsp;`;
-  const limitHTML = `<span style="${flexColCenter} margin-right: 4px;"><span style="font-family: 'Times New Roman', serif;">lim</span><span style="font-size: 0.7em;">n&rarr;&infin;</span></span>&nbsp;`;
-  const matrixHTML = `<span style="${flexRowCenter}"><span style="font-size: 2.5em; font-weight: lighter;">[</span><span style="display: inline-grid; grid-template-columns: 1fr 1fr; gap: 4px 8px; margin: 0 4px; text-align: center;"><span>1</span><span>0</span><span>0</span><span>1</span></span><span style="font-size: 2.5em; font-weight: lighter;">]</span></span>&nbsp;`;
-  const accentHTML = `<span style="${flexColCenter}"><span style="font-size: 0.5em;">^</span><span style="margin-top: -0.4em;">a</span></span>&nbsp;`;
+  // Dotted box placeholder for math zones
+  const placeholder = `<span style="border: 1px dotted #94a3b8; min-width: 12px; min-height: 12px; display: inline-block; background-color: rgba(0,0,0,0.02); margin: 0 1px;">&nbsp;</span>`;
 
-  useEffect(() => {
-    if (categoryOpen) {
-        const handleClickOutside = () => setCategoryOpen(false);
-        window.addEventListener('click', handleClickOutside);
-        return () => window.removeEventListener('click', handleClickOutside);
-    }
-  }, [categoryOpen]);
+  const fractionHTML = `<span style="${flexColCenter} vertical-align: -0.5em;"><span style="${borderBottom} padding: 0 2px;">${placeholder}</span><span style="padding: 0 2px;">${placeholder}</span></span>&nbsp;`;
+  const scriptHTML = `${placeholder}<sup>${placeholder}</sup>`;
+  const radicalHTML = `<span style="${flexRowCenter}"><span style="font-size: 1.5em; line-height: 1;">&radic;</span><span style="border-top: 1px solid currentColor; padding-top: 2px; margin-left: -2px;">${placeholder}</span></span>&nbsp;`;
+  const integralHTML = `<span style="${flexRowCenter}"><span style="font-size: 1.5em;">&int;</span><span style="${flexColCenter} margin-left: -4px;"><span style="font-size: 0.7em;">${placeholder}</span><span style="font-size: 0.7em;">${placeholder}</span></span><span style="margin-left: 4px;">${placeholder}dx</span></span>&nbsp;`;
+  const largeOpHTML = `<span style="${flexColCenter}"><span style="font-size: 0.7em;">${placeholder}</span><span style="font-size: 1.4em; line-height: 1;">&sum;</span><span style="font-size: 0.7em;">${placeholder}</span></span>&nbsp;`;
+  const limitHTML = `<span style="${flexColCenter} margin-right: 4px;"><span style="font-family: 'Times New Roman', serif;">lim</span><span style="font-size: 0.7em;">n&rarr;&infin;</span></span>&nbsp;`;
+  const matrixHTML = `<span style="${flexRowCenter}"><span style="font-size: 2.5em; font-weight: lighter;">[</span><span style="display: inline-grid; grid-template-columns: 1fr 1fr; gap: 4px 8px; margin: 0 4px; text-align: center;"><span>${placeholder}</span><span>${placeholder}</span><span>${placeholder}</span><span>${placeholder}</span></span><span style="font-size: 2.5em; font-weight: lighter;">]</span></span>&nbsp;`;
+  const accentHTML = `<span style="${flexColCenter}"><span style="font-size: 0.5em;">^</span><span style="margin-top: -0.4em;">${placeholder}</span></span>&nbsp;`;
 
   return (
     <>
@@ -251,104 +295,7 @@ export const EquationTab: React.FC = () => {
       </RibbonSection>
 
       <RibbonSection title="Symbols">
-          <div className="flex h-full items-center py-1 px-1">
-              <div className="flex flex-row h-[74px] bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-sm overflow-hidden shadow-sm">
-                  <div 
-                    ref={scrollContainerRef}
-                    className="grid grid-cols-6 w-[216px] overflow-y-hidden content-start bg-white dark:bg-slate-900" 
-                  >
-                     {compactSymbols.map((sym, i) => (
-                         <button
-                            key={i}
-                            onMouseDown={(e) => e.preventDefault()}
-                            onClick={() => insertSymbol(sym)}
-                            className="w-[36px] h-[24px] flex items-center justify-center text-base text-slate-700 dark:text-slate-200 hover:bg-blue-100 dark:hover:bg-blue-900/50 hover:text-blue-700 dark:hover:text-blue-300 transition-none font-serif select-none"
-                            title={sym}
-                         >
-                            {sym}
-                         </button>
-                     ))}
-                  </div>
-
-                  <div className="flex flex-col w-[18px] border-l border-slate-200 dark:border-slate-600 bg-slate-100 dark:bg-slate-800">
-                      <button 
-                         onClick={() => scrollSymbols('up')}
-                         className="flex-1 flex items-center justify-center hover:bg-blue-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 active:bg-blue-300 transition-colors"
-                      >
-                         <ChevronUp size={8} strokeWidth={3} />
-                      </button>
-                      <button 
-                         onClick={() => scrollSymbols('down')}
-                         className="flex-1 flex items-center justify-center hover:bg-blue-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 active:bg-blue-300 transition-colors"
-                      >
-                         <ChevronDown size={8} strokeWidth={3} />
-                      </button>
-                      <button 
-                         ref={triggerRef}
-                         onClick={toggleGallery}
-                         className={`flex-1 flex items-center justify-center hover:bg-blue-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 active:bg-blue-300 transition-colors border-t border-slate-300 dark:border-slate-600 ${activeMenu ? 'bg-blue-200' : ''}`}
-                      >
-                         <div className="flex flex-col items-center -mt-0.5">
-                            <div className="w-2 h-[1px] bg-current mb-[1px]"></div>
-                            <ChevronDown size={8} strokeWidth={3} />
-                         </div>
-                      </button>
-                  </div>
-              </div>
-          </div>
-          
-          <MenuPortal 
-            id="symbol_gallery" 
-            activeMenu={activeMenu} 
-            menuPos={menuPos} 
-            closeMenu={closeMenu} 
-            width={340}
-          >
-              <div className="flex flex-col bg-white dark:bg-slate-800 rounded shadow-xl border border-slate-300 dark:border-slate-600 overflow-hidden h-[400px] animate-in fade-in duration-100">
-                  <div className="relative z-20">
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); setCategoryOpen(!categoryOpen); }}
-                        className="flex items-center justify-between w-full px-3 py-2 bg-slate-100 dark:bg-slate-700 border-b border-slate-200 dark:border-slate-600 text-xs font-semibold text-slate-800 dark:text-slate-100 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
-                      >
-                          <span>{selectedCategory}</span>
-                          <ChevronDown size={14} className={`transform transition-transform text-slate-500 ${categoryOpen ? 'rotate-180' : ''}`} />
-                      </button>
-                      
-                      {categoryOpen && (
-                          <div className="absolute top-full left-0 w-full bg-white dark:bg-slate-800 border-b border-slate-300 dark:border-slate-600 shadow-lg max-h-[250px] overflow-y-auto z-30">
-                              {Object.keys(SYMBOL_CATEGORIES).map(cat => (
-                                  <button
-                                    key={cat}
-                                    onClick={(e) => { e.stopPropagation(); setSelectedCategory(cat); setCategoryOpen(false); }}
-                                    className={`w-full text-left px-4 py-2 text-xs hover:bg-blue-50 dark:hover:bg-slate-700 flex items-center justify-between ${selectedCategory === cat ? 'bg-blue-50 dark:bg-slate-700/50 text-blue-700 font-medium' : 'text-slate-700 dark:text-slate-200'}`}
-                                  >
-                                      {cat}
-                                  </button>
-                              ))}
-                          </div>
-                      )}
-                  </div>
-
-                  <div className="flex-1 overflow-y-auto p-2 bg-white dark:bg-slate-800 scrollbar-thin scrollbar-thumb-slate-300">
-                      <div className="grid grid-cols-10 gap-0">
-                          {SYMBOL_CATEGORIES[selectedCategory].map((sym, i) => (
-                              <button 
-                                key={i}
-                                onClick={() => insertSymbol(sym)}
-                                className="w-8 h-8 flex items-center justify-center hover:bg-blue-100 dark:hover:bg-slate-700 hover:text-blue-700 dark:hover:text-blue-300 hover:border hover:border-blue-300 transition-none text-lg text-slate-700 dark:text-slate-200 font-serif border border-transparent select-none rounded-sm"
-                                title={sym}
-                              >
-                                  {sym}
-                              </button>
-                          ))}
-                      </div>
-                  </div>
-                  
-                  <div className="px-3 py-1.5 bg-slate-50 dark:bg-slate-700 border-t border-slate-200 dark:border-slate-600 text-xs text-slate-600 dark:text-slate-400">
-                      <button className="mr-4 hover:underline hover:text-blue-600">AutoCorrect...</button>
-                  </div>
-              </div>
-          </MenuPortal>
+          <SymbolGallery />
       </RibbonSection>
 
       <RibbonSection title="Structures">

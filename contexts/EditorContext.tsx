@@ -1,9 +1,9 @@
 
-
 import React, { createContext, useContext, useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { SaveStatus, ViewMode, PageConfig, CustomStyle, ReadModeConfig, ActiveElementType } from '../types';
 import { useAutoSave } from '../hooks/useAutoSave';
 import { DEFAULT_CONTENT, PAGE_SIZES, PAGE_MARGIN_PADDING, MARGIN_PRESETS } from '../constants';
+import { handleMathInput } from '../utils/mathAutoCorrect';
 
 interface PageDimensions {
   width: number;
@@ -170,6 +170,37 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       document.removeEventListener('click', checkSelection);
     };
   }, []);
+
+  // Keyboard Handler for Math AutoCorrect
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+        // Only run if we are in an equation context
+        if (activeElementType === 'equation') {
+            const handled = handleMathInput(e, window.getSelection());
+            if (handled) {
+                // If the math engine handled it, trigger a save/update
+                if (editorRef.current) {
+                    // Slight delay to ensure DOM is settled if needed, though handleMathInput is synchronous
+                    setTimeout(() => {
+                        setContent(editorRef.current?.innerHTML || '');
+                    }, 0);
+                }
+            }
+        }
+    };
+
+    const element = editorRef.current;
+    if (element) {
+        element.addEventListener('keydown', handleKeyDown);
+    }
+    // Also listen globally if focus is inside editor but we missed attaching
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+        if (element) element.removeEventListener('keydown', handleKeyDown);
+        document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [activeElementType, setContent]);
 
   const registerContainer = useCallback((node: HTMLDivElement | null) => {
     containerRef.current = node;
