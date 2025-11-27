@@ -1,5 +1,4 @@
 
-
 import React, { useRef, useEffect, useState, useMemo, Suspense } from 'react';
 import { RibbonTab } from '../types';
 import { RibbonTabBar } from './ribbon/RibbonTabBar';
@@ -100,8 +99,21 @@ const Ribbon: React.FC<RibbonProps> = ({
     );
   }, [activeTab]);
 
+  const handleMouseDown = (e: React.MouseEvent) => {
+    const target = e.target as HTMLElement;
+    // Allow interactions with inputs
+    if (['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName) || target.isContentEditable) {
+      return;
+    }
+    // Prevent focus loss
+    e.preventDefault();
+  };
+
   return (
-    <div className="flex flex-col z-20 no-print relative shadow-sm bg-slate-900 dark:bg-slate-950 transition-colors duration-300">
+    <div 
+      onMouseDown={handleMouseDown}
+      className="flex flex-col z-20 no-print relative shadow-sm bg-slate-900 dark:bg-slate-950 transition-colors duration-300"
+    >
       <RibbonTabBar activeTab={activeTab} onTabChange={onTabChange} />
 
       <div 

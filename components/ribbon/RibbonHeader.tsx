@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Menu, MoreHorizontal, Loader2, Cloud } from 'lucide-react';
 import { useEditor } from '../../contexts/EditorContext';
@@ -36,8 +37,19 @@ export const RibbonHeader: React.FC<RibbonHeaderProps> = ({ toggleSidebar }) => 
     }
   };
 
+  const handleMouseDown = (e: React.MouseEvent) => {
+    const target = e.target as HTMLElement;
+    if (['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName) || target.isContentEditable) {
+      return;
+    }
+    e.preventDefault();
+  };
+
   return (
-    <div className="h-12 bg-slate-900 dark:bg-slate-950 text-white flex items-center justify-between px-4 select-none z-30 shadow-lg border-b border-slate-800 dark:border-slate-900 shrink-0 relative transition-colors duration-300">
+    <div 
+      onMouseDown={handleMouseDown}
+      className="h-12 bg-slate-900 dark:bg-slate-950 text-white flex items-center justify-between px-4 select-none z-30 shadow-lg border-b border-slate-800 dark:border-slate-900 shrink-0 relative transition-colors duration-300"
+    >
        <div className="flex items-center gap-4">
            <button 
               onClick={toggleSidebar} 

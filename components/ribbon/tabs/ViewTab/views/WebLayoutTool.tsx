@@ -68,6 +68,16 @@ export const WebLayoutView: React.FC<WebLayoutViewProps> = ({
     <div 
         className="flex-1 w-full h-full relative"
         onClick={onPageClick}
+        onMouseDown={(e) => {
+            // Prevent focus loss if clicking background (unless clicking specific interactive elements)
+            if (e.target === e.currentTarget) {
+                e.preventDefault();
+                // If currently not focused, focus editor
+                if (document.activeElement !== editorRef.current && editorRef.current) {
+                    editorRef.current.focus();
+                }
+            }
+        }}
     >
          <style>{`
             /* Web Layout Specific Overrides for Responsiveness */

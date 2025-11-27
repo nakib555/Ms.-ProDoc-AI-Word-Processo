@@ -1,5 +1,4 @@
 
-
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { FileText } from 'lucide-react';
 import { RibbonButton } from '../../../common/RibbonButton';
@@ -145,6 +144,14 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = ({
       setCurrentPage(index + 1);
   }, [setCurrentPage]);
 
+  const handleBackgroundMouseDown = (e: React.MouseEvent) => {
+      // If clicking on the gray background (not the page itself or its contents)
+      // prevent default to avoid blurring the active editor
+      if (e.target === e.currentTarget || (e.target as HTMLElement).classList.contains('page-container-wrapper')) {
+          e.preventDefault();
+      }
+  };
+
   return (
     <div className="w-full h-full flex flex-col relative">
        {/* Sticky Ruler Container */}
@@ -153,6 +160,7 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = ({
             ref={rulerContainerRef}
             className="w-full overflow-hidden bg-[#f1f5f9] border-b border-slate-200 z-20 shrink-0 flex justify-center"
             style={{ height: '25px' }}
+            onMouseDown={(e) => e.preventDefault()} // Ruler shouldn't steal focus
          >
              <div style={{ transformOrigin: 'top left', display: 'inline-block' }}>
                 <Ruler pageConfig={pageConfig} zoom={zoom} />
@@ -167,8 +175,9 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = ({
             style={{
                 height: height - (showRuler ? 25 : 0),
             }}
+            onMouseDown={handleBackgroundMouseDown}
        >
-           <div className="flex flex-col items-center py-8 gap-8 min-h-full">
+           <div className="flex flex-col items-center py-8 gap-8 min-h-full page-container-wrapper">
                 {pages.map((pageContent, index) => (
                     <div key={index} className="flex justify-center w-full shrink-0">
                         <EditorPage
