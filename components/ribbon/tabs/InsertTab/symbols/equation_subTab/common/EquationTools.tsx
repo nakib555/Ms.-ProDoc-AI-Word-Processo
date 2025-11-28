@@ -28,7 +28,7 @@ export const StructureButton: React.FC<{
   </button>
 );
 
-const SymbolBtn = ({ symbol, onClick }: { symbol: string, onClick: () => void }) => (
+const SymbolBtn: React.FC<{ symbol: string, onClick: () => void }> = ({ symbol, onClick }) => (
     <button
         onClick={onClick}
         onMouseDown={(e) => e.preventDefault()}
@@ -39,7 +39,7 @@ const SymbolBtn = ({ symbol, onClick }: { symbol: string, onClick: () => void })
     </button>
 );
 
-const TabButton = ({ label, active, onClick, className = '' }: { label: string, active: boolean, onClick: () => void, className?: string }) => (
+const TabButton: React.FC<{ label: string, active: boolean, onClick: () => void, className?: string }> = ({ label, active, onClick, className = '' }) => (
     <button
         onClick={(e) => { e.stopPropagation(); onClick(); }}
         className={`px-3 py-2 text-[10px] font-bold uppercase tracking-wide transition-colors whitespace-nowrap rounded-t-md border-b-2 flex-shrink-0 outline-none ${

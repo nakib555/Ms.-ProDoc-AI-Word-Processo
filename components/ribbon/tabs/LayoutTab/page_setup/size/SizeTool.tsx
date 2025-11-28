@@ -1,11 +1,11 @@
 
 import React, { useState, Suspense } from 'react';
 import { FileText, Mail, StickyNote, File, Files } from 'lucide-react';
-import { useEditor } from '../../../../../../../contexts/EditorContext';
+import { useEditor } from '../../../../../../contexts/EditorContext';
 import { useLayoutTab } from '../../LayoutTabContext';
 import { DropdownButton } from '../../common/LayoutTools';
 import { MenuPortal } from '../../../../common/MenuPortal';
-import { PageSize, PageConfig } from '../../../../../../../types';
+import { PageSize, PageConfig } from '../../../../../../types';
 
 const PageSetupDialog = React.lazy(() => import('./MorePageSizes/PageSetupDialog').then(m => ({ default: m.PageSetupDialog })));
 

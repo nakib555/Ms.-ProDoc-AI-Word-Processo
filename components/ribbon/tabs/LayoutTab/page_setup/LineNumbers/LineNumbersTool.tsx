@@ -2,8 +2,8 @@
 import React, { useState, Suspense } from 'react';
 import { ListOrdered } from 'lucide-react';
 import { RibbonButton } from '../../../../common/RibbonButton';
-import { useEditor } from '../../../../../../../contexts/EditorContext';
-import { PageConfig } from '../../../../../../../types';
+import { useEditor } from '../../../../../../contexts/EditorContext';
+import { PageConfig } from '../../../../../../types';
 
 const PageSetupDialog = React.lazy(() => import('./LineNumberingOptions/PageSetupDialog').then(m => ({ default: m.PageSetupDialog })));
 
