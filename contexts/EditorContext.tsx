@@ -47,6 +47,8 @@ interface EditorContextType {
   setCurrentPage: React.Dispatch<React.SetStateAction<number>>;
   totalPages: number;
   setTotalPages: React.Dispatch<React.SetStateAction<number>>;
+  showCopilot: boolean;
+  setShowCopilot: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 const EditorContext = createContext<EditorContextType | undefined>(undefined);
@@ -66,6 +68,7 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [showCopilot, setShowCopilot] = useState(false);
   
   const [pageConfig, setPageConfig] = useState<PageConfig>({
     size: 'Letter',
@@ -456,7 +459,9 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     currentPage,
     setCurrentPage,
     totalPages,
-    setTotalPages
+    setTotalPages,
+    showCopilot,
+    setShowCopilot
   }), [
     content,
     wordCount,
@@ -483,7 +488,8 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     handlePasteSpecial,
     activeElementType,
     currentPage,
-    totalPages
+    totalPages,
+    showCopilot
   ]);
 
   return (

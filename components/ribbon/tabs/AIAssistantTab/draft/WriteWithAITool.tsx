@@ -1,16 +1,18 @@
 
 import React, { useState, useEffect } from 'react';
-import { PenLine, Sparkles, X, ArrowRight, FileText, Edit3 } from 'lucide-react';
+import { PenLine, Sparkles, X, ArrowRight, FileText, Edit3, MessageCircle } from 'lucide-react';
 import { RibbonButton } from '../../../common/RibbonButton';
 import { useAI } from '../../../../../hooks/useAI';
 
 type GenMode = 'insert' | 'replace' | 'edit';
+type ToneType = 'Professional' | 'Casual' | 'Confident' | 'Friendly' | 'Creative' | 'Concise';
 
 export const WriteWithAITool: React.FC = () => {
   const { performAIAction } = useAI();
   const [isOpen, setIsOpen] = useState(false);
   const [prompt, setPrompt] = useState('');
   const [mode, setMode] = useState<GenMode>('insert');
+  const [tone, setTone] = useState<ToneType>('Professional');
   const [hasSelection, setHasSelection] = useState(false);
 
   useEffect(() => {
@@ -25,7 +27,8 @@ export const WriteWithAITool: React.FC = () => {
 
   const handleGenerate = () => {
     if (prompt.trim()) {
-        performAIAction('generate_content', prompt, { 
+        const enhancedPrompt = `[Tone: ${tone}] ${prompt}`;
+        performAIAction('generate_content', enhancedPrompt, { 
             mode: mode === 'replace' ? 'replace' : 'insert',
             useSelection: mode === 'edit'
         });
@@ -72,7 +75,24 @@ export const WriteWithAITool: React.FC = () => {
                     
                     <div className="p-6">
                         <div className="mb-4">
-                            <label htmlFor="ai-prompt-textarea" className="block text-sm font-semibold text-slate-700 mb-2">Prompt</label>
+                            <div className="flex justify-between items-center mb-2">
+                                <label htmlFor="ai-prompt-textarea" className="block text-sm font-semibold text-slate-700">Prompt</label>
+                                <div className="flex items-center gap-2">
+                                    <MessageCircle size={14} className="text-slate-400"/>
+                                    <select 
+                                        value={tone}
+                                        onChange={(e) => setTone(e.target.value as ToneType)}
+                                        className="text-xs border-none bg-slate-100 hover:bg-slate-200 rounded-md px-2 py-1 outline-none text-slate-700 font-medium cursor-pointer transition-colors"
+                                    >
+                                        <option value="Professional">Professional</option>
+                                        <option value="Casual">Casual</option>
+                                        <option value="Confident">Confident</option>
+                                        <option value="Friendly">Friendly</option>
+                                        <option value="Creative">Creative</option>
+                                        <option value="Concise">Concise</option>
+                                    </select>
+                                </div>
+                            </div>
                             <textarea 
                                 id="ai-prompt-textarea"
                                 value={prompt}

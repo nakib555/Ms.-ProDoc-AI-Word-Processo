@@ -4,6 +4,7 @@ import Ribbon from './components/Ribbon';
 import Editor from './components/Editor';
 import StatusBar from './components/StatusBar';
 import { ReadModeToolbar } from './components/ribbon/tabs/ViewTab/views/ReadMode/ReadModeToolbar';
+import { CopilotSidebar } from './components/CopilotSidebar';
 import { RibbonTab } from './types';
 import { Loader2 } from 'lucide-react';
 import { EditorProvider, useEditor } from './contexts/EditorContext';
@@ -64,6 +65,8 @@ const AppContent: React.FC = () => {
               </div>
             )}
           </div>
+          
+          <CopilotSidebar />
         </div>
       </div>
 

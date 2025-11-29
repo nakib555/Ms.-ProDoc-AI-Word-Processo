@@ -39,10 +39,10 @@ const getSystemPrompt = (operation: AIOperation, userPrompt?: string): string =>
   let systemPrompt = "";
   switch (operation) {
     case 'summarize':
-      systemPrompt = "You are a helpful editor. Summarize the following text concisely in a single paragraph.";
+      systemPrompt = "You are a helpful editor. Summarize the following text concisely in a single paragraph. Retain the core message.";
       break;
     case 'fix_grammar':
-      systemPrompt = "You are a professional editor. Fix any grammar, spelling, or punctuation errors in the following text. Do not change the meaning. Output only the corrected text.";
+      systemPrompt = "You are a professional editor. Fix any grammar, spelling, or punctuation errors in the following text. Do not change the meaning or style. Output only the corrected text.";
       break;
     case 'make_professional':
       systemPrompt = "You are a corporate communication expert. Rewrite the following text to sound more professional, formal, and polished. Output only the rewritten text.";
@@ -57,16 +57,16 @@ const getSystemPrompt = (operation: AIOperation, userPrompt?: string): string =>
       systemPrompt = "Rewrite the following text to sound casual, relaxed, and conversational. Output only the rewritten text.";
       break;
     case 'expand':
-      systemPrompt = "You are a creative writer. Expand on the following text, adding more detail, context, and descriptive language. Keep the tone consistent.";
+      systemPrompt = "You are a creative writer. Expand on the following text, adding more detail, context, and descriptive language. Ensure the expanded version flows naturally. Use HTML tags (<p>, <strong>, etc.) for formatting.";
       break;
     case 'shorten':
-      systemPrompt = "You are a concise editor. Shorten the following text to be more direct and to the point, removing unnecessary fluff. Output only the shortened text.";
+      systemPrompt = "You are a concise editor. Shorten the following text to be more direct and to the point, removing unnecessary fluff and redundancy. Keep the key information.";
       break;
     case 'simplify':
       systemPrompt = "Rewrite the following text using simple language that is easy to understand for a general audience (EL5 style). Output only the simplified text.";
       break;
     case 'continue_writing':
-      systemPrompt = "You are a skilled co-author. Continue writing logically from the provided text context. Add about one or two paragraphs that flow naturally. Use simple HTML tags (e.g. <p>, <strong>, <em>) if formatting is needed. Do NOT use markdown code blocks.";
+      systemPrompt = "You are a skilled co-author. Read the provided text context and write the NEXT logical 1-2 paragraphs. \n\nIMPORTANT Rules:\n1. Do NOT repeat the provided text.\n2. Maintain the same tone, style, and formatting.\n3. Output strictly valid HTML tags (e.g., <p>, <strong>) for the new content.";
       break;
     case 'generate_content':
       systemPrompt = `You are an elite professional document writer. Generate high-quality content based on the user's request.
@@ -93,13 +93,13 @@ const getSystemPrompt = (operation: AIOperation, userPrompt?: string): string =>
       systemPrompt = "Generate a structured outline based on the topic or content of the following text. Use HTML lists (<ul>, <ol>).";
       break;
     case 'translate_es':
-      systemPrompt = "Translate the following text to Spanish.";
+      systemPrompt = "Translate the following text to Spanish. Preserve HTML formatting.";
       break;
     case 'translate_fr':
-      systemPrompt = "Translate the following text to French.";
+      systemPrompt = "Translate the following text to French. Preserve HTML formatting.";
       break;
     case 'translate_de':
-      systemPrompt = "Translate the following text to German.";
+      systemPrompt = "Translate the following text to German. Preserve HTML formatting.";
       break;
     default:
       systemPrompt = "You are a helpful AI writing assistant.";
@@ -108,9 +108,10 @@ const getSystemPrompt = (operation: AIOperation, userPrompt?: string): string =>
   if (userPrompt) {
     // Append prompt to instructions if it's a generation task to ensure clarity
     if (operation === 'generate_content') {
-        systemPrompt = `${systemPrompt}\n\nUser Prompt: ${userPrompt}`;
+        systemPrompt = `${systemPrompt}\n\nUser Request: ${userPrompt}`;
     } else {
-        systemPrompt = userPrompt;
+        // For editing operations, the prompt acts as a specific instruction override or addition
+        systemPrompt = `${systemPrompt}\n\nSpecific Instruction: ${userPrompt}`;
     }
   }
   return systemPrompt;
@@ -132,7 +133,7 @@ export const generateAIContent = async (
     const call = client.models.generateContent({
       model: "gemini-2.5-flash",
       contents: [
-        { role: "user", parts: [{ text: `Instruction: ${systemPrompt}\n\nInput:\n${text}` }] }
+        { role: "user", parts: [{ text: `System Instruction: ${systemPrompt}\n\nInput Context:\n${text}` }] }
       ],
     });
 
@@ -164,7 +165,7 @@ export const streamAIContent = async function* (
     const responseStream = await client.models.generateContentStream({
       model: "gemini-2.5-flash",
       contents: [
-        { role: "user", parts: [{ text: `Instruction: ${systemPrompt}\n\nInput:\n${text}` }] }
+        { role: "user", parts: [{ text: `System Instruction: ${systemPrompt}\n\nInput Context:\n${text}` }] }
       ],
     });
 
@@ -180,6 +181,57 @@ export const streamAIContent = async function* (
   }
 };
 
+export const chatWithDocumentStream = async function* (
+  history: { role: 'user' | 'model', text: string }[],
+  lastMessage: string,
+  documentContent: string
+): AsyncGenerator<string, void, unknown> {
+  const client = getClient();
+  if (!client) throw new Error("API Key not configured.");
+
+  // Simplify document content if too large (naive approach, typically context window is large enough)
+  const context = documentContent.replace(/<[^>]*>/g, ' ').slice(0, 100000); // Strip HTML tags for cleaner context or keep them if structural understanding is needed
+
+  const systemInstruction = `You are Copilot, an intelligent document assistant. 
+  You have access to the current document content. 
+  Answer the user's questions based on the document content or help them write/edit.
+  
+  Current Document Context:
+  ${context}
+  
+  Guidelines:
+  - Be concise and professional.
+  - If asked to write content, provide just the text.
+  - If asked about the document, reference the content provided above.
+  `;
+
+  // Construct history
+  const historyContent = history.map(msg => ({
+    role: msg.role,
+    parts: [{ text: msg.text }]
+  }));
+
+  try {
+    const chat = client.chats.create({
+      model: "gemini-2.5-flash",
+      config: { systemInstruction },
+      history: historyContent
+    });
+
+    const responseStream = await chat.sendMessageStream({ message: lastMessage });
+
+    for await (const chunk of responseStream) {
+        const c = chunk as GenerateContentResponse;
+        if (c.text) {
+            yield c.text;
+        }
+    }
+  } catch (error) {
+    console.error("Gemini Chat Error:", error);
+    throw error;
+  }
+};
+
 export const generateAIImage = async (prompt: string): Promise<string | null> => {
   const client = getClient();
   if (!client) {
@@ -187,8 +239,6 @@ export const generateAIImage = async (prompt: string): Promise<string | null> =>
   }
 
   try {
-    // According to guidelines: Use gemini-2.5-flash-image for general tasks.
-    // We do NOT set responseMimeType for nano banana models.
     const response = await client.models.generateContent({
       model: 'gemini-2.5-flash-image',
       contents: {
@@ -196,7 +246,6 @@ export const generateAIImage = async (prompt: string): Promise<string | null> =>
       },
     });
 
-    // Iterate through parts to find the image
     if (response.candidates && response.candidates.length > 0) {
       for (const part of response.candidates[0].content.parts) {
         if (part.inlineData && part.inlineData.mimeType.startsWith('image/')) {
