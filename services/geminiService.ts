@@ -1,7 +1,7 @@
 
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 import { AIOperation } from '../types';
-import { getSystemPrompt } from './prompts';
+import { getSystemPrompt, getChatSystemPrompt } from './prompts';
 
 const getClient = () => {
   // Check localStorage first for user-provided key
@@ -58,7 +58,7 @@ export const generateAIContent = async (
 
     const response = await withTimeout<GenerateContentResponse>(call, 30000);
     let resultText = response.text || "No response generated.";
-    // Cleanup any markdown code blocks just in case
+    // Cleanup any markdown code blocks just in case, though prompt instructs against them
     resultText = resultText.replace(/^```html\s*/i, '').replace(/\s*```$/, '');
     return resultText;
   } catch (error: any) {
@@ -108,29 +108,8 @@ export const chatWithDocumentStream = async function* (
   const client = getClient();
   if (!client) throw new Error("API Key not configured.");
 
-  // Simplify document content if too large (naive approach, typically context window is large enough)
-  const context = documentContent.replace(/<[^>]*>/g, ' ').slice(0, 100000); 
-
-  // Import the HATF logic manually here for the chat context or use a simplified version
-  // We'll use a specific chat-optimized version of the HATF persona
-  const systemInstruction = `
-  You are an elite HATF Communications Officer and Document Copilot.
-  
-  MISSION: Answer questions based on the document content or help write/edit with absolute precision.
-  
-  THE 3 LAWS OF EXCELLENCE:
-  1. INVISIBLE MACHINERY: Do not mention internal tools or 'searching the document'. Just answer.
-  2. SYNTHESIZED INTELLIGENCE: Synthesize facts from the document. Don't just quote. Provide insight.
-  3. RELENTLESS POLISH: Be concise, professional, and precise. Use the 'Clarity Scalpel'.
-  
-  Current Document Context:
-  ${context}
-  
-  Output Requirements:
-  - If asked to write, output valid HTML.
-  - Do NOT use Markdown code blocks.
-  - Use active voice and strong verbs.
-  `;
+  // Use the specific chat prompt from prompts.ts which includes the HATF manual
+  const systemInstruction = getChatSystemPrompt(documentContent);
 
   // Construct history
   const historyContent = history.map(msg => ({
