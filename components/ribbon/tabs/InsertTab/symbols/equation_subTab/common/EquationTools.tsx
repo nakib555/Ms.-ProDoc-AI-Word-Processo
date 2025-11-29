@@ -6,6 +6,17 @@ import { MenuPortal } from '../../../../../common/MenuPortal';
 import { useEditor } from '../../../../../../../contexts/EditorContext';
 import { insertMathStructure } from './mathUtils';
 
+declare global {
+  namespace JSX {
+    interface IntrinsicElements {
+      'math-field': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
+        'read-only'?: boolean;
+        placeholder?: string;
+      };
+    }
+  }
+}
+
 export const StructureButton: React.FC<{
   icon: any;
   label: string;
@@ -295,25 +306,25 @@ export const StructureDropdown: React.FC<{
                                                     hover:shadow-md
                                                     focus:outline-none focus:ring-2 focus:ring-blue-500
                                                     overflow-hidden
+                                                    text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white
                                                 "
                                                 title={item.label}
                                             >
-                                                <div className="w-full h-full flex items-center justify-center p-2 text-slate-700 dark:text-slate-200 group-hover:text-slate-900 dark:group-hover:text-white">
-                                                    <math-field 
-                                                        read-only
-                                                        style={{
-                                                            border:'none', 
-                                                            background:'transparent', 
-                                                            pointerEvents:'none', 
-                                                            fontSize:'1.2em', 
-                                                            width: '100%', 
-                                                            textAlign: 'center',
-                                                            color: 'currentColor'
-                                                        }}
-                                                    >
-                                                        {item.latex}
-                                                    </math-field>
-                                                </div>
+                                                <math-field 
+                                                    read-only
+                                                    style={{
+                                                        border:'none', 
+                                                        background:'transparent', 
+                                                        pointerEvents:'none', 
+                                                        fontSize:'1.2em', 
+                                                        width: '100%', 
+                                                        textAlign: 'center',
+                                                        color: 'currentColor',
+                                                        padding: '8px'
+                                                    }}
+                                                >
+                                                    {item.latex}
+                                                </math-field>
                                                 
                                                 {item.label && (
                                                     <div className="absolute bottom-0 left-0 right-0 py-1 bg-gradient-to-t from-white via-white/90 to-transparent dark:from-slate-800 dark:via-slate-800/90 flex justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
