@@ -1,4 +1,3 @@
-
 import React, { useRef, useState, useEffect } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { useEquationTab } from '../EquationTabContext';
@@ -63,7 +62,6 @@ const HorizontalScrollContainer: React.FC<{ children: React.ReactNode, className
         if (el) {
             const onWheel = (e: WheelEvent) => {
                 if (e.deltaY === 0) return;
-                // If the element has overflow, translate vertical scroll to horizontal
                 if (el.scrollWidth > el.clientWidth) {
                     e.preventDefault();
                     el.scrollLeft += e.deltaY;
@@ -85,7 +83,6 @@ export const SymbolCategoryDropdown: React.FC<{ category: string, icon: any, sym
     const { executeCommand } = useEditor();
     const { activeMenu, toggleMenu, registerTrigger, closeMenu, menuPos } = useEquationTab();
     
-    // Tab States
     const [greekTab, setGreekTab] = useState<'Lowercase' | 'Uppercase'>('Lowercase');
     const [scriptTab, setScriptTab] = useState<'Scripts' | 'Frakturs' | 'Double-Struck'>('Scripts');
     const [opTab, setOpTab] = useState<'Binary' | 'Relational' | 'N-ary' | 'Adv. Binary' | 'Adv. Relational'>('Binary');
@@ -96,7 +93,6 @@ export const SymbolCategoryDropdown: React.FC<{ category: string, icon: any, sym
     const isScripts = category === 'Scripts';
     const isOperators = category === 'Operators';
 
-    // Helper to determine menu width based on complexity
     const getMenuWidth = () => {
         if (isOperators || isScripts || isGreek) return 'min(460px, 95vw)';
         return 'min(320px, 95vw)';
@@ -211,10 +207,9 @@ export interface StructureOption {
 export interface StructureSection {
     title?: string;
     items: StructureOption[];
-    cols?: number; // Optional override for grid columns
+    cols?: number; 
 }
 
-// Reusable Dropdown for Equation Structures (Fraction, Script, etc.)
 export const StructureDropdown: React.FC<{
     id: string;
     icon: any;
@@ -313,20 +308,22 @@ export const StructureDropdown: React.FC<{
                                                     group-hover:scale-110 transition-transform duration-300
                                                     p-2
                                                 ">
-                                                    <MathField read-only style={{
-                                                        border:'none', 
-                                                        background:'transparent', 
-                                                        pointerEvents:'none', 
-                                                        fontSize:'auto', 
-                                                        width: '100%', 
-                                                        textAlign: 'center',
-                                                        color: 'currentColor'
-                                                    }}>
+                                                    <MathField 
+                                                        read-only
+                                                        style={{
+                                                            border:'none', 
+                                                            background:'transparent', 
+                                                            pointerEvents:'none', 
+                                                            fontSize:'auto', 
+                                                            width: '100%', 
+                                                            textAlign: 'center',
+                                                            color: 'currentColor'
+                                                        }}
+                                                    >
                                                         {item.latex}
                                                     </MathField>
                                                 </div>
                                                 
-                                                {/* Label Overlay on Hover */}
                                                 {item.label && (
                                                     <div className="absolute bottom-0 left-0 right-0 py-1 bg-gradient-to-t from-white via-white/90 to-transparent dark:from-slate-800 dark:via-slate-800/90 flex justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
                                                         <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400 truncate max-w-[90%] px-1">{item.label}</span>
@@ -344,4 +341,3 @@ export const StructureDropdown: React.FC<{
         </>
     );
 };
-    
