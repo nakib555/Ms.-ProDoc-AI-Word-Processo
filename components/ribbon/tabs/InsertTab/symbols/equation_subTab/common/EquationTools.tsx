@@ -316,7 +316,7 @@ export const StructureDropdown: React.FC<{
                                                         border:'none', 
                                                         background:'transparent', 
                                                         pointerEvents:'none', 
-                                                        fontSize:'1.2em', 
+                                                        fontSize:'1em', 
                                                         width: '100%', 
                                                         textAlign: 'center',
                                                         color: 'currentColor',
