@@ -1,4 +1,3 @@
-
 import React, { useRef, useState, useEffect } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { useEquationTab } from '../EquationTabContext';
@@ -6,16 +5,8 @@ import { MenuPortal } from '../../../../../common/MenuPortal';
 import { useEditor } from '../../../../../../../contexts/EditorContext';
 import { insertMathStructure } from './mathUtils';
 
-declare global {
-  namespace JSX {
-    interface IntrinsicElements {
-      'math-field': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
-        'read-only'?: boolean;
-        placeholder?: string;
-      };
-    }
-  }
-}
+// Use 'as any' to bypass IntrinsicElements check for custom element
+const MathField = 'math-field' as any;
 
 export const StructureButton: React.FC<{
   icon: any;
@@ -310,8 +301,8 @@ export const StructureDropdown: React.FC<{
                                                 "
                                                 title={item.label}
                                             >
-                                                <math-field 
-                                                    read-only
+                                                <MathField 
+                                                    read-only={true}
                                                     style={{
                                                         border:'none', 
                                                         background:'transparent', 
@@ -324,7 +315,7 @@ export const StructureDropdown: React.FC<{
                                                     }}
                                                 >
                                                     {item.latex}
-                                                </math-field>
+                                                </MathField>
                                                 
                                                 {item.label && (
                                                     <div className="absolute bottom-0 left-0 right-0 py-1 bg-gradient-to-t from-white via-white/90 to-transparent dark:from-slate-800 dark:via-slate-800/90 flex justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">

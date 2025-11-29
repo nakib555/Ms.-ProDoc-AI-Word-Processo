@@ -167,7 +167,7 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
         }}
     >
         <div 
-            className="absolute inset-0 bg-white shadow-[rgba(0,0,0,0.06)_0px_4px_12px,rgba(0,0,0,0.04)_0px_0px_0px_1px] transition-shadow group-hover:shadow-[rgba(0,0,0,0.1)_0px_10px_20px,rgba(0,0,0,0.04)_0px_0px_0px_1px]"
+            className="absolute inset-0 bg-white shadow-[rgba(0,0,0,0.06)_0px_4px_12px,rgba(0,0,0,0.04)_0px_0px_0px_1px] transition-shadow group-hover:shadow-[rgba(0,0,0,0.1)_0px_10px_20px,rgba(0,0,0,0.04)_0px_0px_0px_1px] overflow-hidden"
             style={{
                 transform: `scale(${scale})`,
                 transformOrigin: 'top left',

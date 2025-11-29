@@ -93,6 +93,27 @@
         outline: none;
       }
 
+      /* Content Constraints to Margins */
+      .prodoc-editor {
+        overflow-wrap: break-word;
+        word-wrap: break-word;
+        white-space: pre-wrap; /* Preserve whitespace but wrap lines */
+      }
+      
+      .prodoc-editor img, 
+      .prodoc-editor video, 
+      .prodoc-editor canvas,
+      .prodoc-editor svg {
+        max-width: 100%;
+        height: auto;
+        display: inline-block;
+      }
+      
+      .prodoc-editor table {
+        max-width: 100% !important;
+        box-sizing: border-box;
+      }
+
       /* --- MathLive / Equation Box Styles --- */
       
       /* The Wrapper Container */
@@ -106,6 +127,8 @@
         border-radius: 2px;
         transition: background-color 0.1s ease, border-color 0.1s ease;
         cursor: text; /* Allow clicking to feel like editing text */
+        max-width: 100%; /* Constraint */
+        overflow-x: auto;
       }
 
       /* Hover State */
@@ -169,6 +192,7 @@
         min-width: 100px;
         color: #1e293b; /* slate-800 */
         cursor: text;
+        max-width: 100%;
       }
 
       .equation-wrapper math-field:focus,
@@ -193,6 +217,7 @@
         vertical-align: middle;
         box-shadow: 0 1px 2px rgba(0,0,0,0.05);
         transition: all 0.2s ease;
+        max-width: 100%;
       }
       
       math-field:not(.equation-wrapper math-field):focus, 
