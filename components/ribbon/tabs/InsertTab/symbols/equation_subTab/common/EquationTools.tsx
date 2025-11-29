@@ -6,17 +6,6 @@ import { MenuPortal } from '../../../../../common/MenuPortal';
 import { useEditor } from '../../../../../../../contexts/EditorContext';
 import { insertMathStructure } from './mathUtils';
 
-declare global {
-  namespace JSX {
-    interface IntrinsicElements {
-      'math-field': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
-        'read-only'?: boolean;
-        placeholder?: string;
-      };
-    }
-  }
-}
-
 export const StructureButton: React.FC<{
   icon: any;
   label: string;
@@ -230,7 +219,7 @@ export const StructureDropdown: React.FC<{
     label: string;
     sections: StructureSection[];
     width?: string | number;
-}> = ({ id, icon: Icon, label, sections, width = 380 }) => {
+}> = ({ id, icon: Icon, label, sections, width = 'min(420px, 94vw)' }) => {
     const { activeMenu, toggleMenu, closeMenu, registerTrigger, menuPos } = useEquationTab();
     const isOpen = activeMenu === id;
     const [activeSectionIndex, setActiveSectionIndex] = useState(0);
@@ -277,20 +266,20 @@ export const StructureDropdown: React.FC<{
                         </div>
                     )}
 
-                    <div className="overflow-y-auto p-3 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700 flex-1 bg-white dark:bg-slate-900">
+                    <div className="overflow-y-auto p-2 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700 flex-1 bg-white dark:bg-slate-900">
                         {(() => {
                             const section = sections[activeSectionIndex];
                             return (
                                 <div>
                                     {sections.length === 1 && section.title && (
-                                        <div className="px-1 mb-3 pb-1 border-b border-slate-100 dark:border-slate-800">
+                                        <div className="px-1 mb-2 pb-1 border-b border-slate-100 dark:border-slate-800">
                                             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{section.title}</span>
                                         </div>
                                     )}
                                     <div 
-                                        className="grid gap-3 p-1" 
+                                        className="grid gap-2 p-2" 
                                         style={{ 
-                                            gridTemplateColumns: `repeat(${section.cols || 2}, 1fr)` 
+                                            gridTemplateColumns: 'repeat(auto-fill, minmax(64px, 1fr))' 
                                         }}
                                     >
                                         {section.items.map((item, j) => (
@@ -326,7 +315,7 @@ export const StructureDropdown: React.FC<{
                                                         border:'none', 
                                                         background:'transparent', 
                                                         pointerEvents:'none', 
-                                                        fontSize:'1.5em', 
+                                                        fontSize:'1.15rem', 
                                                         width: '100%', 
                                                         textAlign: 'center',
                                                         color: 'currentColor'
