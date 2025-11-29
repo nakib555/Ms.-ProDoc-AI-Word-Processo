@@ -6,17 +6,6 @@ import { MenuPortal } from '../../../../../common/MenuPortal';
 import { useEditor } from '../../../../../../../contexts/EditorContext';
 import { insertMathStructure } from './mathUtils';
 
-declare global {
-  namespace JSX {
-    interface IntrinsicElements {
-      'math-field': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
-        'read-only'?: boolean;
-        placeholder?: string;
-      };
-    }
-  }
-}
-
 export const StructureButton: React.FC<{
   icon: any;
   label: string;
@@ -299,32 +288,24 @@ export const StructureDropdown: React.FC<{
                                                 }}
                                                 className="
                                                     group relative flex flex-col items-center justify-center 
-                                                    aspect-[1.4/1] rounded-xl transition-all duration-300 ease-out
+                                                    aspect-[1.4/1] rounded-xl transition-all duration-200 ease-out
                                                     bg-white dark:bg-slate-800 
                                                     border border-slate-200 dark:border-slate-700
-                                                    hover:border-blue-500/50 dark:hover:border-blue-400/50
-                                                    hover:shadow-[0_4px_12px_-2px_rgba(0,0,0,0.08)] dark:hover:shadow-[0_4px_12px_-2px_rgba(0,0,0,0.3)]
-                                                    hover:-translate-y-0.5
-                                                    hover:bg-slate-50/50 dark:hover:bg-slate-700/30
-                                                    focus:outline-none focus:ring-2 focus:ring-blue-500/20
+                                                    hover:border-blue-500 hover:ring-1 hover:ring-blue-500
+                                                    hover:shadow-md
+                                                    focus:outline-none focus:ring-2 focus:ring-blue-500
                                                     overflow-hidden
                                                 "
                                                 title={item.label}
                                             >
-                                                <div className="
-                                                    w-full h-full flex items-center justify-center 
-                                                    text-slate-700 dark:text-slate-200
-                                                    group-hover:text-slate-900 dark:group-hover:text-white
-                                                    group-hover:scale-110 transition-transform duration-300
-                                                    p-2
-                                                ">
+                                                <div className="w-full h-full flex items-center justify-center p-2 text-slate-700 dark:text-slate-200 group-hover:text-slate-900 dark:group-hover:text-white">
                                                     <math-field 
                                                         read-only
                                                         style={{
                                                             border:'none', 
                                                             background:'transparent', 
                                                             pointerEvents:'none', 
-                                                            fontSize:'auto', 
+                                                            fontSize:'1.2em', 
                                                             width: '100%', 
                                                             textAlign: 'center',
                                                             color: 'currentColor'
