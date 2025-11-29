@@ -1,12 +1,11 @@
 
-
 import React from 'react';
 import { RibbonSection } from '../../../common/RibbonSection';
 import { ContinueWritingTool } from './ContinueWritingTool';
 import { ExpandTool } from './ExpandTool';
 import { ShortenTool } from './ShortenTool';
 import { QuickPromptTool } from './QuickPromptTool';
-import { WriteWithAITool } from './WriteWithAITool'; // Import the new tool
+import { WriteWithAITool } from './WriteWithAITool';
 
 export const DraftGroup: React.FC = () => {
   return (

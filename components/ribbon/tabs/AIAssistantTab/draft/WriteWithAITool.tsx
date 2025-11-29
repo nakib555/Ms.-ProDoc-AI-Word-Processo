@@ -7,17 +7,17 @@ import { useAI } from '../../../../../hooks/useAI';
 type GenMode = 'insert' | 'replace' | 'edit';
 type ToneType = 'Professional' | 'Casual' | 'Confident' | 'Friendly' | 'Creative' | 'Concise';
 
-const TONES: { id: ToneType; label: string; color: string }[] = [
-    { id: 'Professional', label: 'Professional', color: 'bg-blue-100 text-blue-700 border-blue-200' },
-    { id: 'Casual', label: 'Casual', color: 'bg-orange-100 text-orange-700 border-orange-200' },
-    { id: 'Confident', label: 'Confident', color: 'bg-purple-100 text-purple-700 border-purple-200' },
-    { id: 'Friendly', label: 'Friendly', color: 'bg-green-100 text-green-700 border-green-200' },
-    { id: 'Creative', label: 'Creative', color: 'bg-pink-100 text-pink-700 border-pink-200' },
-    { id: 'Concise', label: 'Concise', color: 'bg-slate-100 text-slate-700 border-slate-200' },
+const TONES: { id: ToneType; label: string; color: string; desc: string }[] = [
+    { id: 'Professional', label: 'Professional', color: 'bg-blue-100 text-blue-700 border-blue-200', desc: 'Authoritative & polished' },
+    { id: 'Casual', label: 'Casual', color: 'bg-orange-100 text-orange-700 border-orange-200', desc: 'Relaxed & conversational' },
+    { id: 'Confident', label: 'Confident', color: 'bg-purple-100 text-purple-700 border-purple-200', desc: 'Bold & decisive' },
+    { id: 'Friendly', label: 'Friendly', color: 'bg-green-100 text-green-700 border-green-200', desc: 'Warm & approachable' },
+    { id: 'Creative', label: 'Creative', color: 'bg-pink-100 text-pink-700 border-pink-200', desc: 'Imaginative & vivid' },
+    { id: 'Concise', label: 'Concise', color: 'bg-slate-100 text-slate-700 border-slate-200', desc: 'Direct & to the point' },
 ];
 
 export const WriteWithAITool: React.FC = () => {
-  const { performAIAction, isProcessing } = useAI();
+  const { performAIAction } = useAI();
   const [isOpen, setIsOpen] = useState(false);
   const [prompt, setPrompt] = useState('');
   const [mode, setMode] = useState<GenMode>('insert');
@@ -44,7 +44,7 @@ export const WriteWithAITool: React.FC = () => {
 
   const handleGenerate = () => {
     if (prompt.trim()) {
-        // Construct a directive for the model that embeds the tone instruction
+        // Construct a directive for the model that embeds the tone instruction and manual persona
         const enhancedPrompt = `[Tone: ${tone}] ${prompt}`;
         performAIAction('generate_content', enhancedPrompt, { 
             mode: mode === 'replace' ? 'replace' : 'insert',
@@ -61,7 +61,7 @@ export const WriteWithAITool: React.FC = () => {
             label="Write with AI" 
             onClick={() => setIsOpen(true)} 
             title="Generate content, create tables, or edit text with AI"
-            className="text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700 bg-indigo-50/50"
+            className="text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700 bg-indigo-50/50 border border-indigo-100"
         />
 
         {isOpen && (
@@ -82,7 +82,7 @@ export const WriteWithAITool: React.FC = () => {
                                 <Wand2 size={24} className="text-yellow-300"/> 
                                 Magic Editor
                             </h3>
-                            <p className="text-indigo-100 text-xs mt-1 font-medium opacity-90">Powered by Gemini 2.5 Flash</p>
+                            <p className="text-indigo-100 text-xs mt-1 font-medium opacity-90 tracking-wide">HATF-Class Intelligence • Powered by Gemini 2.5</p>
                         </div>
                         <button 
                             onClick={() => setIsOpen(false)} 
@@ -96,7 +96,7 @@ export const WriteWithAITool: React.FC = () => {
                         {/* Prompt Input */}
                         <div className="mb-6 relative">
                             <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2 flex justify-between">
-                                <span>What should I write?</span>
+                                <span>Your Directive</span>
                                 <span className="font-normal text-indigo-600 dark:text-indigo-400 cursor-help" title="Try: 'Draft an email to client', 'Create a comparison table for X and Y'">Examples</span>
                             </label>
                             <div className="relative group">
@@ -124,19 +124,22 @@ export const WriteWithAITool: React.FC = () => {
                         {/* Tone Selector */}
                         <div className="mb-8">
                             <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-3">Tone & Style</label>
-                            <div className="flex flex-wrap gap-2">
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                                 {TONES.map((t) => (
                                     <button
                                         key={t.id}
                                         onClick={() => setTone(t.id)}
-                                        className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all duration-200 flex items-center gap-1.5 ${
+                                        className={`px-3 py-2 rounded-lg text-left border transition-all duration-200 group ${
                                             tone === t.id 
-                                            ? `${t.color} ring-2 ring-offset-1 ring-indigo-500/30 shadow-sm transform scale-105` 
+                                            ? `${t.color} ring-2 ring-offset-1 ring-indigo-500/30 shadow-sm` 
                                             : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-700 hover:bg-slate-50 dark:hover:bg-slate-750'
                                         }`}
                                     >
-                                        {tone === t.id && <Check size={12} strokeWidth={3} />}
-                                        {t.label}
+                                        <div className="flex items-center gap-1.5">
+                                            {tone === t.id && <Check size={12} strokeWidth={3} className="shrink-0"/>}
+                                            <span className="text-xs font-bold">{t.label}</span>
+                                        </div>
+                                        <div className="text-[10px] opacity-70 mt-0.5 truncate">{t.desc}</div>
                                     </button>
                                 ))}
                             </div>

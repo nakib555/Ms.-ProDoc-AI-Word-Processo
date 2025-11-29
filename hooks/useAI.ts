@@ -140,12 +140,17 @@ export const useAI = () => {
                 } else {
                     // Buffer content if element is temporarily missing during render cycles
                     accumulatedContent += chunk;
+                    
+                    // Fallback: If we genuinely lost the span (layout switch killed it), 
+                    // we keep accumulating. When layout stabilizes or stream ends, we might need to recover.
+                    // For now, we rely on the re-acquisition logic above which checks every chunk.
                 }
             }
             
             // Cleanup: Unwrap the span to merge content naturally into the document
             // Attempt to find the span one last time in case it reappeared
             if (spanId) {
+                // Re-acquire one last time
                 streamSpan = document.getElementById(spanId);
                 
                 if (streamSpan) {
