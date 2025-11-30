@@ -34,7 +34,15 @@ interface PrintLayoutViewProps {
 
 // --- Robust Global Cursor Tracking Helpers ---
 
+const BLOCK_TAGS = ['P', 'DIV', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'LI', 'TR', 'BLOCKQUOTE', 'UL', 'OL', 'TABLE'];
+
+const isBlock = (el: HTMLElement) => {
+    return BLOCK_TAGS.includes(el.tagName);
+};
+
 // 1. Get Text Length of a Node (Normalized for our Cursor Logic)
+// We treat block boundaries as a "virtual character" (length 1) to distinguish 
+// between "End of Para 1" and "Start of Para 2".
 const getNodeTextLength = (node: Node): number => {
     if (node.nodeType === Node.TEXT_NODE) {
         return (node.nodeValue || "").length;
@@ -50,14 +58,20 @@ const getNodeTextLength = (node: Node): number => {
         if (el.tagName === 'BR') {
             return 1;
         }
+        
+        let len = 0;
+        const childNodes = node.childNodes;
+        for (let i = 0; i < childNodes.length; i++) {
+            len += getNodeTextLength(childNodes[i]);
+        }
+        
+        // Add 1 for block boundary to disambiguate positions between blocks
+        if (isBlock(el)) len += 1;
+        
+        return len;
     }
     
-    let len = 0;
-    const childNodes = node.childNodes;
-    for (let i = 0; i < childNodes.length; i++) {
-        len += getNodeTextLength(childNodes[i]);
-    }
-    return len;
+    return 0;
 };
 
 // 2. Get Global Offset
@@ -134,6 +148,7 @@ const getOffsetInNode = (root: Node, target: Node, targetOffset: number): number
                     walk(node.childNodes[i]);
                     if (found) return;
                  }
+                 if (isBlock(el)) offset += 1;
              }
         }
     };
@@ -168,9 +183,8 @@ const restoreGlobalCursor = (globalOffset: number) => {
         const pageLen = getNodeTextLength(el);
         
         // Logic: If offset falls in this page.
-        // We use < instead of <= to prefer the START of the next page if we are exactly on the boundary.
-        // This handles cases where text flows to the next page or a page break is inserted.
-        // If globalOffset == currentTotal + pageLen, we skip this page and put it at 0 offset of next page.
+        // We use < instead of <= to prefer the START of the next page if we are exactly on the boundary
+        // and that boundary represents a new block/page.
         if (globalOffset < currentTotal + pageLen) {
             const localOffset = Math.max(0, globalOffset - currentTotal);
             setCursorInNode(el, localOffset);
@@ -220,6 +234,13 @@ const setCursorInNode = (root: HTMLElement, offset: number) => {
                     walk(node.childNodes[i]);
                     if (found) return;
                 }
+                
+                // Account for block boundary
+                if (isBlock(el)) {
+                    // If offset targets exactly this virtual boundary, it usually means 
+                    // start of next node, so we let the loop continue or next sibling pick it up.
+                    currentCount += 1;
+                }
             }
         }
     };
@@ -255,6 +276,14 @@ const setCursorInNode = (root: HTMLElement, offset: number) => {
                  el?.scrollIntoView({ behavior: 'auto', block: 'center' });
             }
         }
+    } else {
+        // Fallback: If not found (e.g. due to weird mismatch), set to end
+        const range = document.createRange();
+        range.selectNodeContents(root);
+        range.collapse(false);
+        const sel = window.getSelection();
+        sel?.removeAllRanges();
+        sel?.addRange(range);
     }
 };
 

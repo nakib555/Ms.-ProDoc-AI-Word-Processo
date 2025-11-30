@@ -149,9 +149,6 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
         if (isFocused) {
             // Check if the saved offset is within bounds of the NEW content
             // If content moved to next page, this page's content is shorter.
-            // We should NOT restore cursor here if it's out of bounds, 
-            // as that would force scroll back to this page end.
-            // The global cursor restoration in PrintLayoutView will handle focusing the next page.
             const newContentLength = getTextLength(editorRef.current);
             
             if (savedOffset <= newContentLength) {
@@ -279,7 +276,6 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
     }
 
     if (e.key === 'ArrowRight') {
-        // Check if cursor is at the very end of the content
         const preCaretRange = range.cloneRange();
         preCaretRange.selectNodeContents(editorRef.current);
         preCaretRange.setEnd(range.endContainer, range.endOffset);
@@ -292,7 +288,7 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
                     nextPage.focus();
                     const r = document.createRange();
                     r.selectNodeContents(nextPage);
-                    r.collapse(true); // Start of next page
+                    r.collapse(true);
                     selection.removeAllRanges();
                     selection.addRange(r);
                     nextPage.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -302,7 +298,6 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
     }
 
     if (e.key === 'ArrowLeft') {
-        // Check if cursor is at start
         const preCaretRange = range.cloneRange();
         preCaretRange.selectNodeContents(editorRef.current);
         preCaretRange.setEnd(range.endContainer, range.endOffset);
@@ -315,7 +310,7 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
                     prevPage.focus();
                     const r = document.createRange();
                     r.selectNodeContents(prevPage);
-                    r.collapse(false); // End of prev page
+                    r.collapse(false);
                     selection.removeAllRanges();
                     selection.addRange(r);
                 }
@@ -324,23 +319,72 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
     }
   };
 
+  const handlePageClick = (e: React.MouseEvent) => {
+      // Improve margin clicking experience
+      if (editorRef.current && !editorRef.current.contains(e.target as Node) && !isHeaderFooterMode) {
+          editorRef.current.focus();
+          
+          const editorRect = editorRef.current.getBoundingClientRect();
+          const clickY = e.clientY;
+          
+          // Clicked below content
+          if (clickY > editorRect.bottom) {
+              const range = document.createRange();
+              range.selectNodeContents(editorRef.current);
+              range.collapse(false);
+              const sel = window.getSelection();
+              sel?.removeAllRanges();
+              sel?.addRange(range);
+          } 
+          // Clicked above content
+          else if (clickY < editorRect.top) {
+              const range = document.createRange();
+              range.selectNodeContents(editorRef.current);
+              range.collapse(true);
+              const sel = window.getSelection();
+              sel?.removeAllRanges();
+              sel?.addRange(range);
+          }
+          // Clicked side margins - try to find nearest line
+          else {
+              let range: Range | null = null;
+              // @ts-ignore
+              if (document.caretPositionFromPoint) {
+                  // Firefox
+                  // @ts-ignore
+                  const pos = document.caretPositionFromPoint(e.clientX, e.clientY);
+                  if (pos) {
+                      range = document.createRange();
+                      range.setStart(pos.offsetNode, pos.offset);
+                      range.collapse(true);
+                  }
+              } else if (document.caretRangeFromPoint) {
+                  // WebKit / Standard
+                  range = document.caretRangeFromPoint(e.clientX, e.clientY);
+              }
+              
+              if (range && editorRef.current.contains(range.startContainer)) {
+                  const sel = window.getSelection();
+                  sel?.removeAllRanges();
+                  sel?.addRange(range);
+              }
+          }
+      }
+  };
+
   const getMargins = () => {
     const m = config.margins;
-    // Enforce absolute header/footer margin boundaries
     let top = Math.max(m.top, config.headerDistance || 0) * 96;
     let bottom = Math.max(m.bottom, config.footerDistance || 0) * 96;
-    
     let left = m.left * 96;
     let right = m.right * 96;
     const gutterPx = (m.gutter || 0) * 96;
     
     const isMirroredOrBookFold = ['mirrorMargins', 'bookFold'].includes(config.multiplePages || '');
-    
     if (isMirroredOrBookFold) {
        const inside = m.left * 96;
        const outside = m.right * 96;
        const isOdd = pageNumber % 2 !== 0; 
-
        if (isOdd) {
            left = inside + (config.gutterPosition === 'left' ? gutterPx : 0);
            right = outside;
@@ -355,7 +399,6 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
             left += gutterPx;
         }
     }
-
     return { top, right, bottom, left, gutterPx };
   };
 
@@ -404,7 +447,6 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
       return { ...style, justifyContent };
   };
 
-  // --- Interaction Handlers for Header/Footer ---
   const onHeaderDoubleClick = (e: React.MouseEvent) => {
       e.stopPropagation();
       if (setActiveEditingArea) {
@@ -458,7 +500,6 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
   const safeMaxHeaderHeight = (height - MIN_BODY_GAP) / 2;
   const safeMaxFooterHeight = (height - MIN_BODY_GAP) / 2;
 
-  // Calculate strict body dimensions
   const bodyWidth = width - margins.left - margins.right;
   const bodyHeight = height - margins.top - margins.bottom - gutterTop;
 
@@ -471,7 +512,7 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
         }}
     >
         <div 
-            className="absolute inset-0 bg-white overflow-hidden transition-transform duration-300 ease-[cubic-bezier(0.2,0,0,1)]"
+            className="absolute inset-0 bg-white overflow-hidden transition-transform duration-300 ease-[cubic-bezier(0.2,0,0,1)] cursor-text"
             style={{
                 transform: `scale(${scale})`,
                 transformOrigin: 'top left',
@@ -480,6 +521,7 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
                 boxShadow: '0 0 0 1px #d1d5db, 0 10px 20px -5px rgba(0,0,0,0.15)',
                 ...getBackgroundStyle()
             }}
+            onMouseDown={handlePageClick}
         >
             {/* Header Area */}
             <div 
@@ -493,6 +535,7 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
                     paddingRight: `${margins.right}px`,
                 }}
                 onDoubleClick={onHeaderDoubleClick}
+                onMouseDown={(e) => e.stopPropagation()} 
             >
                 <div className={`w-full h-full relative ${isHeaderFooterMode ? 'border-b-2 border-dashed border-blue-500' : 'hover:bg-slate-50/50'}`}>
                     {isHeaderFooterMode && (
@@ -530,6 +573,7 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
                     ...getVerticalAlignStyle()
                 }}
                 onDoubleClick={onBodyDoubleClick}
+                onMouseDown={(e) => e.stopPropagation()} 
             >
                 <div
                     id={`prodoc-editor-${pageNumber}`}
@@ -544,7 +588,6 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
                         fontFamily: 'Calibri, Inter, sans-serif',
                         color: '#000000',
                         flex: config.verticalAlign === 'justify' ? '1 1 auto' : undefined,
-                        // Ensure content has minimum height but allows flow
                         minHeight: '100%' 
                     }}
                 />
@@ -562,6 +605,7 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
                     paddingRight: `${margins.right}px`,
                 }}
                 onDoubleClick={onFooterDoubleClick}
+                onMouseDown={(e) => e.stopPropagation()} 
             >
                  <div className={`w-full h-full relative flex flex-col justify-end ${isHeaderFooterMode ? 'border-t-2 border-dashed border-blue-500' : 'hover:bg-slate-50/50'}`}>
                     {isHeaderFooterMode && (
@@ -583,7 +627,6 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
   );
 };
 
-// Custom comparison function for performance
 const arePropsEqual = (prev: EditorPageProps, next: EditorPageProps) => {
     return (
         prev.content === next.content &&
@@ -595,7 +638,6 @@ const arePropsEqual = (prev: EditorPageProps, next: EditorPageProps) => {
         prev.activeEditingArea === next.activeEditingArea &&
         prev.headerContent === next.headerContent &&
         prev.footerContent === next.footerContent &&
-        // Shallow compare config object keys relevant to rendering
         prev.config.size === next.config.size &&
         prev.config.orientation === next.config.orientation &&
         prev.config.margins.top === next.config.margins.top &&
