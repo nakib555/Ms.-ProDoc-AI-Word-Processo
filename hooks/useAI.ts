@@ -10,7 +10,7 @@ export interface AIOptions {
 }
 
 export const useAI = () => {
-  const { executeCommand, editorRef, setContent, isAIProcessing, setIsAIProcessing } = useEditor();
+  const { executeCommand, editorRef, setContent, isAIProcessing, setIsAIProcessing, setAiState } = useEditor();
 
   const performAIAction = async (
     operation: string, 
@@ -72,7 +72,7 @@ export const useAI = () => {
         operation === 'generate_outline' ||
         operation.startsWith('tone_');
 
-    setIsAIProcessing(true);
+    setAiState('thinking');
 
     try {
         // If we expect JSON, we don't stream visualization because we need the full valid JSON to parse
@@ -80,6 +80,9 @@ export const useAI = () => {
         if (expectsJson) {
             let jsonString = await generateAIContent(operation as AIOperation, textToProcess, customInput);
             
+            // Brief "writing" state before insertion to update UI
+            setAiState('writing');
+
             // Clean Markdown code blocks if present (common issue with LLM output)
             // Use regex to find the first JSON object structure
             jsonString = jsonString.trim();
@@ -103,11 +106,13 @@ export const useAI = () => {
                 } else {
                      alert("The AI response was not in the expected format. Please try again.");
                 }
+                setAiState('idle');
                 return;
             }
 
             if (parsedData.error) {
                 alert("AI Error: " + parsedData.error);
+                setAiState('idle');
                 return;
             }
 
@@ -137,7 +142,7 @@ export const useAI = () => {
             
             for await (const chunk of stream) {
                 if (isFirstChunk) {
-                    setIsAIProcessing(false); // Hide loader once we start streaming text to screen
+                    setAiState('writing');
                     // Simple text insertion logic for non-JSON stream
                     document.execCommand('insertText', false, chunk);
                     isFirstChunk = false;
@@ -152,7 +157,7 @@ export const useAI = () => {
         console.error(e);
         alert("AI processing failed. Please check your API key and network connection.");
     } finally {
-        setIsAIProcessing(false);
+        setAiState('idle');
     }
   };
 

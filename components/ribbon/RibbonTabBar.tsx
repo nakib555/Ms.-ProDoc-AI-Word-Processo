@@ -1,3 +1,4 @@
+
 import React, { useRef, useEffect, useState, memo, useCallback } from 'react';
 import { RibbonTab } from '../../types';
 import { useEditor } from '../../contexts/EditorContext';
@@ -79,7 +80,7 @@ export const RibbonTabBar: React.FC<RibbonTabBarProps> = React.memo(({ activeTab
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [showLeftArrow, setShowLeftArrow] = useState(false);
   const [showRightArrow, setShowRightArrow] = useState(false);
-  const { activeElementType } = useEditor();
+  const { activeElementType, viewMode } = useEditor();
   const prevElementTypeRef = useRef(activeElementType);
 
   const checkScroll = useCallback(() => {
@@ -192,6 +193,9 @@ export const RibbonTabBar: React.FC<RibbonTabBarProps> = React.memo(({ activeTab
       >
         {Object.keys(TAB_CONFIG).map((key) => {
           const tab = key as RibbonTab;
+          
+          if (tab === RibbonTab.AI_ASSISTANT && viewMode === 'web') return null;
+
           const config = TAB_CONFIG[tab];
           return (
             <TabButton 

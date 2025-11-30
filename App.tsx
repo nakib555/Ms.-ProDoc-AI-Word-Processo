@@ -13,7 +13,7 @@ import { useResponsive } from './hooks/useResponsive';
 
 const AppContent: React.FC = () => {
   const [activeTab, setActiveTab] = useState<RibbonTab | null>(RibbonTab.HOME);
-  const { isAIProcessing, setViewMode, viewMode } = useEditor();
+  const { aiState, setViewMode, viewMode } = useEditor();
   
   const { isMobile } = useResponsive('print');
 
@@ -24,7 +24,14 @@ const AppContent: React.FC = () => {
         if (viewMode !== 'read') setViewMode('web');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isMobile, setViewMode]); // Removed viewMode to allow manual override
+  }, [isMobile, setViewMode]); 
+
+  // Automatically switch away from AI Assistant tab if in Web Layout
+  useEffect(() => {
+    if (viewMode === 'web' && activeTab === RibbonTab.AI_ASSISTANT) {
+        setActiveTab(RibbonTab.HOME);
+    }
+  }, [viewMode, activeTab]);
 
   const handleTabChange = useCallback((tab: RibbonTab) => {
     setActiveTab(prev => prev === tab ? null : tab);
@@ -49,8 +56,8 @@ const AppContent: React.FC = () => {
           <div className="flex-1 flex flex-col overflow-hidden relative bg-[#F8F9FA] dark:bg-slate-950 transition-colors duration-300">
             <Editor />
             
-            {/* AI Overlay Loading State */}
-            {isAIProcessing && (
+            {/* AI Overlay Loading State - Only show when thinking, not when writing/streaming */}
+            {aiState === 'thinking' && (
               <div className="absolute inset-0 bg-slate-900/20 dark:bg-black/40 z-50 flex items-center justify-center backdrop-blur-sm transition-all duration-500">
                  <div className="bg-white/90 dark:bg-slate-800/90 backdrop-blur-md p-8 rounded-2xl shadow-2xl flex flex-col items-center animate-zoom-in mx-4 max-w-sm w-full border border-white/40 dark:border-slate-700 ring-1 ring-black/5">
                     <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center mb-6 shadow-lg shadow-blue-500/20 ring-4 ring-blue-50 dark:ring-blue-900/30 relative">

@@ -10,6 +10,8 @@ interface PageDimensions {
   height: number;
 }
 
+export type AIState = 'idle' | 'thinking' | 'writing';
+
 interface EditorContextType {
   content: string;
   setContent: (content: string) => void;
@@ -51,8 +53,12 @@ interface EditorContextType {
   setTotalPages: React.Dispatch<React.SetStateAction<number>>;
   showCopilot: boolean;
   setShowCopilot: React.Dispatch<React.SetStateAction<boolean>>;
+  
+  // AI State
+  aiState: AIState;
+  setAiState: React.Dispatch<React.SetStateAction<AIState>>;
   isAIProcessing: boolean;
-  setIsAIProcessing: React.Dispatch<React.SetStateAction<boolean>>;
+  setIsAIProcessing: (isProcessing: boolean) => void; // Kept for backward compatibility
   
   // Header/Footer & Editing Area
   activeEditingArea: EditingArea;
@@ -82,7 +88,12 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [showCopilot, setShowCopilot] = useState(false);
-  const [isAIProcessing, setIsAIProcessing] = useState(false);
+  
+  const [aiState, setAiState] = useState<AIState>('idle');
+  const isAIProcessing = aiState !== 'idle';
+  const setIsAIProcessing = useCallback((isProcessing: boolean) => {
+      setAiState(isProcessing ? 'thinking' : 'idle');
+  }, []);
   
   // Header & Footer State
   const [activeEditingArea, setActiveEditingArea] = useState<EditingArea>('body');
@@ -493,6 +504,8 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setTotalPages,
     showCopilot,
     setShowCopilot,
+    aiState,
+    setAiState,
     isAIProcessing,
     setIsAIProcessing,
     activeEditingArea,
@@ -530,7 +543,9 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     currentPage,
     totalPages,
     showCopilot,
+    aiState,
     isAIProcessing,
+    setIsAIProcessing,
     activeEditingArea,
     headerContent,
     footerContent

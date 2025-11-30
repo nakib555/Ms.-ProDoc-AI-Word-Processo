@@ -1,8 +1,9 @@
 
 import React, { useState, useEffect } from 'react';
-import { PenLine, Sparkles, X, ArrowRight, FileText, Edit3, MessageCircle, Wand2, Check } from 'lucide-react';
+import { PenLine, Sparkles, X, ArrowRight, FileText, Edit3, MessageCircle, Wand2, Check, Loader2 } from 'lucide-react';
 import { RibbonButton } from '../../../common/RibbonButton';
 import { useAI } from '../../../../../hooks/useAI';
+import { useEditor } from '../../../../../contexts/EditorContext';
 
 type GenMode = 'insert' | 'replace' | 'edit';
 type ToneType = 'Professional' | 'Casual' | 'Confident' | 'Friendly' | 'Creative' | 'Concise';
@@ -18,6 +19,7 @@ const TONES: { id: ToneType; label: string; color: string; desc: string }[] = [
 
 export const WriteWithAITool: React.FC = () => {
   const { performAIAction } = useAI();
+  const { aiState } = useEditor();
   const [isOpen, setIsOpen] = useState(false);
   const [prompt, setPrompt] = useState('');
   const [mode, setMode] = useState<GenMode>('insert');
@@ -54,14 +56,29 @@ export const WriteWithAITool: React.FC = () => {
     }
   };
 
+  // Dynamic UI based on AI State
+  let Icon = Sparkles;
+  let label = "Write with AI";
+  let className = "text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700 bg-indigo-50/50 border border-indigo-100";
+
+  if (aiState === 'thinking') {
+      Icon = Loader2;
+      label = "Thinking...";
+      className = "text-amber-600 bg-amber-50 border border-amber-200 animate-pulse";
+  } else if (aiState === 'writing') {
+      Icon = PenLine;
+      label = "Generating...";
+      className = "text-green-600 bg-green-50 border border-green-200 animate-pulse";
+  }
+
   return (
     <>
         <RibbonButton 
-            icon={Sparkles} 
-            label="Write with AI" 
+            icon={Icon} 
+            label={label} 
             onClick={() => setIsOpen(true)} 
             title="Generate content, create tables, or edit text with AI"
-            className="text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700 bg-indigo-50/50 border border-indigo-100"
+            className={`${className} ${aiState === 'thinking' ? 'animate-[spin_3s_linear_infinite_reverse]' : ''}`}
         />
 
         {isOpen && (
