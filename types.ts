@@ -1,15 +1,5 @@
-import React from 'react';
 
-declare module 'react' {
-  namespace JSX {
-    interface IntrinsicElements {
-      'math-field': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
-        'read-only'?: boolean;
-        placeholder?: string;
-      };
-    }
-  }
-}
+import React from 'react';
 
 export interface DocumentState {
   content: string;
@@ -70,6 +60,7 @@ export type AIOperation =
   | 'generate_outline';
 
 export type ViewMode = 'print' | 'web' | 'read';
+export type PageMovement = 'vertical' | 'side-to-side';
 
 export type SaveStatus = 'saved' | 'saving' | 'unsaved';
 

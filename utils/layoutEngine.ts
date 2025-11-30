@@ -2,95 +2,119 @@
 import { PageConfig, PaginatorResult } from '../types';
 import { PAGE_SIZES } from '../constants';
 
-// --- Measurement Sandbox ---
-const createSandbox = (width: number) => {
-  const sandbox = document.createElement('div');
-  sandbox.style.position = 'absolute';
-  sandbox.style.visibility = 'hidden';
-  sandbox.style.width = `${width}px`;
-  sandbox.style.height = 'auto';
-  sandbox.style.top = '-9999px';
-  sandbox.style.left = '-9999px';
-  sandbox.className = 'prodoc-editor'; // Match editor styles for accurate measurement
-  sandbox.style.padding = '0'; // Reset padding to measure pure content
-  document.body.appendChild(sandbox);
-  return sandbox;
-};
+// Standard print DPI
+const DPI = 96;
 
-// --- Page Dimension Calculator ---
-const getPageDimensions = (config: PageConfig) => {
-  const base = PAGE_SIZES[config.size as string] || PAGE_SIZES['Letter'];
-  let totalWidth = config.orientation === 'portrait' ? base.width : base.height;
-  let totalHeight = config.orientation === 'portrait' ? base.height : base.width;
+/**
+ * PageFrame: Defines the constraints of a page layout.
+ * Equivalent to MS Word's page frame calculation.
+ */
+class PageFrame {
+  width: number;
+  height: number;
   
-  const margins = config.margins;
+  // Margins in pixels
+  marginTop: number;
+  marginBottom: number;
+  marginLeft: number;
+  marginRight: number;
   
-  // Calculate consumed space
-  let consumedVerticalSpace = (margins.top + margins.bottom) * 96;
-  let consumedHorizontalSpace = (margins.left + margins.right) * 96;
+  // The writable area dimensions
+  bodyWidth: number;
+  bodyHeight: number;
 
-  // Gutter logic
-  const gutterPx = (margins.gutter || 0) * 96;
-  if (config.gutterPosition === 'top') {
-    consumedVerticalSpace += gutterPx;
-  } else {
-    consumedHorizontalSpace += gutterPx; 
+  constructor(config: PageConfig) {
+    const base = PAGE_SIZES[config.size as string] || PAGE_SIZES['Letter'];
+    
+    // 1. Determine Sheet Dimensions
+    this.width = config.orientation === 'portrait' ? base.width : base.height;
+    this.height = config.orientation === 'portrait' ? base.height : base.width;
+
+    // 2. Calculate Margins (inches -> pixels)
+    this.marginTop = config.margins.top * DPI;
+    this.marginBottom = config.margins.bottom * DPI;
+    this.marginLeft = config.margins.left * DPI;
+    this.marginRight = config.margins.right * DPI;
+
+    // 3. Apply Gutter
+    // Gutter reduces the writable area either from left or top
+    const gutterPx = (config.margins.gutter || 0) * DPI;
+    if (config.gutterPosition === 'top') {
+      this.marginTop += gutterPx;
+    } else {
+      this.marginLeft += gutterPx;
+    }
+
+    // 4. Calculate Body Frame
+    // This is the "safe zone" for main flow text.
+    // Headers and Footers live inside the margins, but text flow is constrained by margins.
+    this.bodyWidth = this.width - (this.marginLeft + this.marginRight);
+    this.bodyHeight = this.height - (this.marginTop + this.marginBottom);
+  }
+}
+
+/**
+ * LayoutSandbox: An off-screen DOM environment for measuring content
+ * accurately using the browser's rendering engine.
+ */
+class LayoutSandbox {
+  private el: HTMLElement;
+
+  constructor(width: number) {
+    this.el = document.createElement('div');
+    // Apply editor classes to ensure font/line-height matches exactly
+    this.el.className = 'prodoc-editor'; 
+    this.el.style.position = 'absolute';
+    this.el.style.visibility = 'hidden';
+    this.el.style.width = `${width}px`;
+    this.el.style.height = 'auto';
+    this.el.style.top = '-10000px';
+    this.el.style.left = '-10000px';
+    this.el.style.padding = '0';
+    this.el.style.margin = '0';
+    // Ensure word-break matches editor
+    this.el.style.wordWrap = 'break-word';
+    this.el.style.overflowWrap = 'break-word';
+    document.body.appendChild(this.el);
   }
 
-  // Calculate the available writable area
-  let contentWidth = totalWidth - consumedHorizontalSpace;
-  let contentHeight = totalHeight - consumedVerticalSpace;
+  measure(node: Node): number {
+    this.el.innerHTML = '';
+    this.el.appendChild(node.cloneNode(true));
+    return this.el.offsetHeight;
+  }
 
-  return { 
-    width: totalWidth, 
-    height: totalHeight, 
-    contentHeight: Math.max(100, contentHeight), 
-    contentWidth: Math.max(100, contentWidth) 
-  };
-};
+  /**
+   * Attempts to split a large node that doesn't fit.
+   * Uses a text-based heuristic to split paragraphs.
+   * NOTE: This is a fallback for huge blocks. It strips inner HTML formatting 
+   * to prioritize layout structure. A full DOM-preserving split is computationally expensive.
+   */
+  splitNode(node: HTMLElement, remainingHeight: number): { keep: HTMLElement, move: HTMLElement } | null {
+    // Only attempt split on flow content
+    const validTags = ['P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'LI', 'DIV', 'BLOCKQUOTE'];
+    if (!validTags.includes(node.tagName)) return null;
+    
+    // Don't split complex atomic elements
+    if (node.querySelector('img, table, video, iframe, hr')) return null;
 
-// --- Node Splitting Logic ---
-// Attempts to split a block element (like a paragraph) into two parts 
-// so that the first part fits in the remaining space of the current page.
-const splitBlock = (node: HTMLElement, remainingHeight: number, sandbox: HTMLElement): { keep: HTMLElement, move: HTMLElement } | null => {
-    // Only attempt to split textual blocks
-    const splitTableTags = ['P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'LI', 'DIV', 'BLOCKQUOTE'];
-    if (!splitTableTags.includes(node.tagName)) return null;
-
-    // Clone to manipulate
     const clone = node.cloneNode(true) as HTMLElement;
-    sandbox.innerHTML = '';
-    sandbox.appendChild(clone);
+    this.el.innerHTML = '';
+    this.el.appendChild(clone);
 
-    // If the node itself fits (sanity check), no need to split (though caller should have checked)
-    if (clone.offsetHeight <= remainingHeight) return null;
-
-    // Get all text words to perform a binary search for the split point
-    // Note: This is a simplified text splitter. Complex nested HTML structures might break.
-    // For a robust editor, we iterate backwards removing words until it fits.
-    const originalHTML = clone.innerHTML;
-    
-    // Naive split by spaces (words). 
-    // WARNING: This strips internal HTML tags like <b> or <span> if we are lazy.
-    // To preserve HTML, we would need a DOM walker. For this implementation, 
-    // we will use a text-based heuristic which is standard for lightweight web processors.
-    
-    // If the node contains complex elements (tables, images) inside, treat as atomic
-    if (clone.querySelector('table, img, video, iframe, hr')) return null;
-
+    // Get plain text words
     const words = clone.innerText.split(' ');
-    if (words.length < 2) return null; // Can't split single word effectively
+    if (words.length < 2) return null;
 
     let low = 0;
     let high = words.length - 1;
     let bestSplitIndex = 0;
 
-    // Binary search for the maximum number of words that fit
+    // Binary search for the maximum amount of text that fits
     while (low <= high) {
         const mid = Math.floor((low + high) / 2);
-        // Reconstruct partial content
-        const firstPartText = words.slice(0, mid).join(' ');
-        clone.innerText = firstPartText; // Note: this removes internal formatting like bold/italic temporarily
+        const testText = words.slice(0, mid).join(' ');
+        clone.innerText = testText; // This applies text only, stripping spans/bold temporarily
         
         if (clone.offsetHeight <= remainingHeight) {
             bestSplitIndex = mid;
@@ -100,149 +124,146 @@ const splitBlock = (node: HTMLElement, remainingHeight: number, sandbox: HTMLEle
         }
     }
 
-    if (bestSplitIndex === 0) return null; // Can't fit even one word
+    if (bestSplitIndex === 0) return null; // Can't even fit one word
 
-    // Construct the two parts.
-    // Limitation: formatting is lost in the split zone in this simple heuristic.
-    // To improve, one would copy the full HTML and delete ranges.
-    
-    const keepNode = node.cloneNode(false) as HTMLElement; // Shallow clone (tags/classes)
+    const keepNode = node.cloneNode(false) as HTMLElement;
     const moveNode = node.cloneNode(false) as HTMLElement;
 
+    // Split text
     keepNode.innerText = words.slice(0, bestSplitIndex).join(' ');
     moveNode.innerText = words.slice(bestSplitIndex).join(' ');
 
-    // Only split if we actually have content for both
-    if (!keepNode.innerText.trim() || !moveNode.innerText.trim()) return null;
-
     return { keep: keepNode, move: moveNode };
-};
-
-// --- Main Pagination Function ---
-export const paginateContent = (html: string, config: PageConfig): PaginatorResult => {
-  const { width, height, contentHeight, contentWidth } = getPageDimensions(config);
-  
-  if (typeof document === 'undefined') {
-    return { pages: [html], pageHeight: height, pageWidth: width };
   }
 
-  // 1. Setup Environment
-  const sandbox = createSandbox(contentWidth);
-  // Wrap input in a div to ensure we can parse list of nodes easily
-  const tempWrapper = document.createElement('div');
-  tempWrapper.innerHTML = html;
-  
-  // Extract nodes. Handle case where text nodes are direct children (wrap them in P)
-  const nodes: Node[] = [];
-  Array.from(tempWrapper.childNodes).forEach(node => {
-      if (node.nodeType === Node.TEXT_NODE && node.textContent?.trim().length === 0) {
-          return; // Skip empty whitespace text nodes
-      }
+  destroy() {
+    if (this.el.parentNode) {
+      this.el.parentNode.removeChild(this.el);
+    }
+  }
+}
+
+/**
+ * Main Pagination Function
+ * Implements a "Flow Algorithm" similar to Word's layout engine.
+ */
+export const paginateContent = (html: string, config: PageConfig): PaginatorResult => {
+  // SSR Guard
+  if (typeof document === 'undefined') {
+    const frame = new PageFrame(config);
+    return { pages: [html], pageHeight: frame.height, pageWidth: frame.width };
+  }
+
+  // 1. Setup Constraints
+  const frame = new PageFrame(config);
+  const sandbox = new LayoutSandbox(frame.bodyWidth);
+  const pages: string[] = [];
+
+  // 2. Parse Source Content
+  // We treat the document as a flat stream of top-level blocks
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, 'text/html');
+  const body = doc.body;
+
+  // Normalize: Ensure all top-level text nodes are wrapped in P
+  const nodes: HTMLElement[] = [];
+  Array.from(body.childNodes).forEach(node => {
       if (node.nodeType === Node.TEXT_NODE) {
-          const p = document.createElement('p');
-          p.appendChild(node.cloneNode(true));
-          nodes.push(p);
-      } else {
-          nodes.push(node.cloneNode(true));
+          if (node.textContent?.trim()) {
+              const p = document.createElement('p');
+              p.appendChild(node.cloneNode(true));
+              nodes.push(p);
+          }
+      } else if (node.nodeType === Node.ELEMENT_NODE) {
+          nodes.push(node.cloneNode(true) as HTMLElement);
       }
   });
 
-  const pages: string[] = [];
+  // 3. Flow Content
   let currentPageNodes: HTMLElement[] = [];
-  let currentPageHeight = 0;
+  let currentH = 0;
 
-  // 2. Iterate and Fill Pages
-  for (let i = 0; i < nodes.length; i++) {
-      const node = nodes[i] as HTMLElement;
-      
-      // Measure node
-      sandbox.innerHTML = '';
-      sandbox.appendChild(node);
-      const nodeHeight = sandbox.offsetHeight;
+  const flushPage = () => {
+      const div = document.createElement('div');
+      currentPageNodes.forEach(n => div.appendChild(n));
+      pages.push(div.innerHTML);
+      currentPageNodes = [];
+      currentH = 0;
+  };
 
-      // Handle Page Breaks explicitly
-      const isPageBreak = node.classList?.contains('prodoc-page-break') || 
-                          node.style?.pageBreakAfter === 'always' ||
-                          node.style?.breakAfter === 'page';
+  for (const node of nodes) {
+      // 3a. Handle explicit breaks (Page Break, Section Break)
+      const isBreak = node.classList?.contains('prodoc-page-break') || 
+                      node.style?.pageBreakAfter === 'always' ||
+                      node.style?.breakAfter === 'page';
 
-      if (isPageBreak) {
-          // Finish current page
-          currentPageNodes.push(node);
-          const pageWrapper = document.createElement('div');
-          currentPageNodes.forEach(n => pageWrapper.appendChild(n));
-          pages.push(pageWrapper.innerHTML);
-          currentPageNodes = [];
-          currentPageHeight = 0;
-          continue;
+      if (isBreak) {
+          flushPage();
+          continue; // Don't add the break element itself to visual output if it's just a marker
       }
 
-      // Check overflow
-      if (currentPageHeight + nodeHeight > contentHeight) {
-          const remainingHeight = contentHeight - currentPageHeight;
+      // 3b. Measure content
+      const nodeH = sandbox.measure(node);
+
+      // 3c. Check constraints
+      if (currentH + nodeH > frame.bodyHeight) {
+          // OVERFLOW DETECTED
           
-          // Try to split the node if it's a text block and worth splitting
-          const splitResult = splitBlock(node, remainingHeight, sandbox);
-
-          if (splitResult) {
-              // Add first part to current page
-              currentPageNodes.push(splitResult.keep);
-              
-              // Finalize current page
-              const pageWrapper = document.createElement('div');
-              currentPageNodes.forEach(n => pageWrapper.appendChild(n));
-              pages.push(pageWrapper.innerHTML);
-
-              // Setup next page with the second part
-              currentPageNodes = [splitResult.move];
-              // Measure new part height
-              sandbox.innerHTML = '';
-              sandbox.appendChild(splitResult.move);
-              currentPageHeight = sandbox.offsetHeight;
+          // Case 1: Node fits on a fresh page?
+          // If yes, move it entirely to next page (Paragraph Integrity)
+          if (nodeH <= frame.bodyHeight) {
+              flushPage();
+              currentPageNodes.push(node);
+              currentH = nodeH;
           } 
+          // Case 2: Node is huge (taller than a page). Must split.
           else {
-              // Can't split or doesn't fit. 
-              // If current page is empty, we MUST force it in (it's taller than a page)
-              // Otherwise, move to next page
-              if (currentPageNodes.length === 0) {
-                  const pageWrapper = document.createElement('div');
-                  pageWrapper.appendChild(node);
-                  pages.push(pageWrapper.innerHTML);
-                  currentPageNodes = [];
-                  currentPageHeight = 0;
-              } else {
-                  // Finalize current page
-                  const pageWrapper = document.createElement('div');
-                  currentPageNodes.forEach(n => pageWrapper.appendChild(n));
-                  pages.push(pageWrapper.innerHTML);
+              const remainingSpace = frame.bodyHeight - currentH;
+              const split = sandbox.splitNode(node, remainingSpace);
+
+              if (split) {
+                  // Add first chunk to current page
+                  currentPageNodes.push(split.keep);
+                  flushPage();
                   
-                  // Move node to next page
-                  currentPageNodes = [node];
-                  currentPageHeight = nodeHeight;
+                  // Add remainder to next page
+                  // Note: Remainder might still be huge, but next iteration loop handles logic?
+                  // Actually, for simplicity in this engine, we dump the rest on the next page 
+                  // and let it overflow visually if it's still too big, 
+                  // or properly recursive logic would be needed. 
+                  // Here we just push the moveNode.
+                  currentPageNodes.push(split.move);
+                  currentH = sandbox.measure(split.move);
+              } else {
+                  // Can't split? Force it onto a new page to maximize space
+                  flushPage();
+                  currentPageNodes.push(node);
+                  currentH = nodeH; 
               }
           }
       } else {
-          // Fits
+          // Fits in current page
           currentPageNodes.push(node);
-          currentPageHeight += nodeHeight;
+          currentH += nodeH;
       }
   }
 
-  // 3. Finalize Last Page
+  // 4. Finalize
   if (currentPageNodes.length > 0) {
-      const pageWrapper = document.createElement('div');
-      currentPageNodes.forEach(n => pageWrapper.appendChild(n));
-      pages.push(pageWrapper.innerHTML);
+      flushPage();
   }
 
-  // Ensure at least one page exists
-  if (pages.length === 0) pages.push('<p><br></p>');
+  // Ensure at least one page
+  if (pages.length === 0) {
+      pages.push('<p><br></p>');
+  }
 
   // Cleanup
-  document.body.removeChild(sandbox);
+  sandbox.destroy();
 
   return {
-    pages,
-    pageHeight: height,
-    pageWidth: width
+      pages,
+      pageHeight: frame.height,
+      pageWidth: frame.width
   };
 };

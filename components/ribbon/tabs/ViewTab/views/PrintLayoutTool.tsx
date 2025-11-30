@@ -44,7 +44,7 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
   showFormattingMarks,
   containerRef
 }) => {
-  const { setTotalPages, setCurrentPage } = useEditor();
+  const { setTotalPages, setCurrentPage, pageMovement } = useEditor();
   const [pages, setPages] = useState<string[]>(() => paginateContent(content, pageConfig).pages);
   const rulerContainerRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
@@ -65,24 +65,6 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
     };
   }, [content, pageConfig, setTotalPages]);
 
-  const pageDimensions = useMemo(() => {
-      let w, h;
-      if (pageConfig.size === 'Custom' && pageConfig.customWidth && pageConfig.customHeight) {
-          w = pageConfig.orientation === 'portrait' ? pageConfig.customWidth : pageConfig.customHeight;
-          h = pageConfig.orientation === 'portrait' ? pageConfig.customHeight : pageConfig.customWidth;
-      } else {
-          const base = PAGE_SIZES[pageConfig.size as string] || PAGE_SIZES['Letter'];
-          w = pageConfig.orientation === 'portrait' ? base.width : base.height;
-          h = pageConfig.orientation === 'portrait' ? base.height : base.width;
-      }
-      return { width: w, height: h };
-  }, [pageConfig]);
-
-  const itemSize = useMemo(() => {
-      const scale = zoom / 100;
-      return (pageDimensions.height * scale) + 32; // + vertical padding
-  }, [pageDimensions.height, zoom]);
-
   const handlePageUpdate = useCallback((newHtml: string, pageIndex: number) => {
     setPages(currentPages => {
         const updatedPages = [...currentPages];
@@ -100,29 +82,72 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
       setCurrentPage(index + 1);
   }, [setCurrentPage]);
 
-  const onScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
-      const target = e.currentTarget;
-      const scrollOffset = target.scrollTop;
-      const pageIndex = Math.floor((scrollOffset + (height / 3)) / itemSize);
-      const newPage = Math.min(pages.length, Math.max(1, pageIndex + 1));
-      setCurrentPage(newPage);
-
+  // Unified scroll handler for both vertical and side-to-side modes
+  const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
+      const container = e.currentTarget;
+      
+      // Sync Ruler
       if (rulerContainerRef.current) {
-          rulerContainerRef.current.scrollLeft = target.scrollLeft;
+          rulerContainerRef.current.scrollLeft = container.scrollLeft;
       }
-  }, [height, itemSize, pages.length, setCurrentPage]);
+
+      // Determine active page by finding closest page to viewport center
+      const containerRect = container.getBoundingClientRect();
+      const centerY = containerRect.top + containerRect.height / 2;
+      const centerX = containerRect.left + containerRect.width / 2;
+
+      const pageWrappers = Array.from(container.getElementsByClassName('prodoc-page-wrapper')) as HTMLElement[];
+      
+      let closestPage = 1;
+      let minDistance = Infinity;
+
+      for (const wrapper of pageWrappers) {
+          const rect = wrapper.getBoundingClientRect();
+          const wrapperCenterX = rect.left + rect.width / 2;
+          const wrapperCenterY = rect.top + rect.height / 2;
+          
+          const dist = Math.hypot(wrapperCenterX - centerX, wrapperCenterY - centerY);
+          
+          if (dist < minDistance) {
+              minDistance = dist;
+              const pageIndex = Number(wrapper.getAttribute('data-page-index'));
+              if (!isNaN(pageIndex)) closestPage = pageIndex + 1;
+          }
+      }
+      
+      setCurrentPage(closestPage);
+  }, [setCurrentPage]);
 
   const setRefs = useCallback((node: HTMLDivElement | null) => {
       scrollContainerRef.current = node;
       containerRef(node);
   }, [containerRef]);
 
+  // Click on background focuses last page
+  const handleBackgroundClick = (e: React.MouseEvent) => {
+      if (e.target === e.currentTarget) {
+          const lastPageId = `prodoc-editor-${pages.length}`;
+          const lastPage = document.getElementById(lastPageId);
+          if (lastPage) {
+              lastPage.focus();
+              const range = document.createRange();
+              range.selectNodeContents(lastPage);
+              range.collapse(false);
+              const sel = window.getSelection();
+              sel?.removeAllRanges();
+              sel?.addRange(range);
+          }
+      }
+  };
+
+  const isVertical = pageMovement === 'vertical';
+
   return (
-    <div className="w-full h-full flex flex-col relative bg-[#F8F9FA] dark:bg-slate-950">
+    <div className="w-full h-full flex flex-col relative bg-[#E3E5E8] dark:bg-slate-900">
        {showRuler && (
          <div 
             ref={rulerContainerRef}
-            className="w-full overflow-hidden bg-[#f1f5f9] border-b border-slate-200 z-20 shrink-0 flex justify-center"
+            className="w-full overflow-hidden bg-[#F0F0F0] border-b border-slate-300 z-20 shrink-0 flex justify-center"
             style={{ height: '25px' }}
             onMouseDown={(e) => e.preventDefault()}
          >
@@ -134,24 +159,33 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
 
        <div 
           ref={setRefs}
-          className="flex-1 relative overflow-auto scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-600 scrollbar-track-transparent flex flex-col items-center"
-          onScroll={onScroll}
+          className="flex-1 relative overflow-auto scrollbar-thin scrollbar-thumb-slate-400 dark:scrollbar-thumb-slate-600 scrollbar-track-transparent"
+          onScroll={handleScroll}
        >
-           {pages.map((pageContent, index) => (
-                <div key={index} className="py-4 box-border">
-                    <EditorPage
-                        pageNumber={index + 1}
-                        totalPages={pages.length}
-                        content={pageContent}
-                        config={pageConfig}
-                        zoom={zoom}
-                        showFormattingMarks={showFormattingMarks}
-                        onContentChange={handlePageUpdate}
-                        onFocus={() => handlePageFocus(index)}
-                    />
-                </div>
-           ))}
-           <div className="h-16 shrink-0" />
+           {/* Container for pages - standardized p-4 (1rem) padding for equal spacing on all sides */}
+           <div 
+                className={`min-w-full min-h-full w-fit flex ${isVertical ? 'flex-col items-center gap-8 p-4' : 'flex-row flex-wrap justify-center content-start gap-8 p-4'}`}
+                onClick={handleBackgroundClick}
+           >
+                {pages.map((pageContent, index) => (
+                    <div 
+                        key={index} 
+                        className="prodoc-page-wrapper box-border shrink-0 transition-all duration-300"
+                        data-page-index={index}
+                    >
+                        <EditorPage
+                            pageNumber={index + 1}
+                            totalPages={pages.length}
+                            content={pageContent}
+                            config={pageConfig}
+                            zoom={zoom}
+                            showFormattingMarks={showFormattingMarks}
+                            onContentChange={handlePageUpdate}
+                            onFocus={() => handlePageFocus(index)}
+                        />
+                    </div>
+                ))}
+           </div>
        </div>
     </div>
   );

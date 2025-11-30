@@ -53,11 +53,11 @@ export const Ruler: React.FC<RulerProps> = React.memo(({ pageConfig, zoom }) => 
       return (
         <div 
           key={i} 
-          className={`absolute top-0 border-l border-slate-400 ${height}`} 
+          className={`absolute top-0 border-l border-slate-500 ${height}`} 
           style={{ left: `${pos}px` }}
         >
           {isInch && i > 0 && (
-            <span className="absolute top-2.5 -left-1 text-[8px] font-semibold text-slate-500 select-none">
+            <span className="absolute top-2.5 -left-1 text-[8px] font-semibold text-slate-600 select-none">
               {i / 8}
             </span>
           )}
@@ -71,7 +71,7 @@ export const Ruler: React.FC<RulerProps> = React.memo(({ pageConfig, zoom }) => 
 
   return (
     <div 
-      className="h-6 bg-[#f1f5f9] border-b border-slate-200 flex items-end relative select-none no-print z-10 shadow-sm transition-transform duration-100 ease-out origin-top-left"
+      className="h-6 bg-[#D1D5DB] border-b border-slate-300 flex items-end relative select-none no-print z-10 shadow-sm transition-transform duration-100 ease-out origin-top-left"
       style={{ 
         width: `${width}px`,
         transform: `scale(${scale})`,
@@ -98,11 +98,11 @@ export const Ruler: React.FC<RulerProps> = React.memo(({ pageConfig, zoom }) => 
           style={{ left: `${margins.left - 6}px` }}
         >
             {/* Hanging Indent (Top Triangle) */}
-            <div className="w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-t-[6px] border-t-blue-600 absolute top-0 left-0 drop-shadow-sm" title="First Line Indent"></div>
+            <div className="w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-t-[6px] border-t-[#4b5563] absolute top-0 left-0 drop-shadow-sm" title="First Line Indent"></div>
             {/* Left Indent (Bottom Triangle) */}
-            <div className="w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-b-[6px] border-b-blue-600 absolute top-[8px] left-0 drop-shadow-sm" title="Hanging Indent"></div>
+            <div className="w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-b-[6px] border-b-[#4b5563] absolute top-[8px] left-0 drop-shadow-sm" title="Hanging Indent"></div>
             {/* Left Indent (Square) */}
-            <div className="w-[10px] h-[5px] bg-blue-600 absolute top-[14px] left-0 drop-shadow-sm" title="Left Indent"></div>
+            <div className="w-[10px] h-[5px] bg-[#4b5563] absolute top-[14px] left-0 drop-shadow-sm" title="Left Indent"></div>
         </div>
         
         {/* Right Indent Marker */}
@@ -110,7 +110,7 @@ export const Ruler: React.FC<RulerProps> = React.memo(({ pageConfig, zoom }) => 
            className="absolute top-0 h-full w-3 cursor-ew-resize group z-20 hover:brightness-110 transition-all"
            style={{ left: `${width - margins.right - 5}px` }}
         >
-             <div className="w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-b-[8px] border-b-blue-600 absolute top-[11px] left-0 drop-shadow-sm" title="Right Indent"></div>
+             <div className="w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-b-[8px] border-b-[#4b5563] absolute top-[11px] left-0 drop-shadow-sm" title="Right Indent"></div>
         </div>
       </div>
     </div>

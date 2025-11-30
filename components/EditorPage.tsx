@@ -77,6 +77,65 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
     }
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (readOnly) return;
+
+    if (e.key === 'ArrowDown') {
+        const selection = window.getSelection();
+        if (selection && selection.rangeCount > 0 && editorRef.current) {
+            const range = selection.getRangeAt(0);
+            const rect = range.getBoundingClientRect();
+            const editorRect = editorRef.current.getBoundingClientRect();
+            
+            // Check if we are visually at the bottom line (within margin of error ~30px)
+            if (editorRect.bottom - rect.bottom < 30) {
+                // We are at the bottom. 
+                if (pageNumber < totalPages) {
+                    e.preventDefault();
+                    const nextPage = document.getElementById(`prodoc-editor-${pageNumber + 1}`);
+                    if (nextPage) {
+                        nextPage.focus();
+                        // Move cursor to start
+                        const r = document.createRange();
+                        r.selectNodeContents(nextPage);
+                        r.collapse(true);
+                        selection.removeAllRanges();
+                        selection.addRange(r);
+                        nextPage.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                }
+            }
+        }
+    }
+    
+    if (e.key === 'ArrowUp') {
+        const selection = window.getSelection();
+        if (selection && selection.rangeCount > 0 && editorRef.current) {
+            const range = selection.getRangeAt(0);
+            const rect = range.getBoundingClientRect();
+            const editorRect = editorRef.current.getBoundingClientRect();
+            
+            // Check if we are visually at the top line
+            if (rect.top - editorRect.top < 30) {
+                if (pageNumber > 1) {
+                    e.preventDefault();
+                    const prevPage = document.getElementById(`prodoc-editor-${pageNumber - 1}`);
+                    if (prevPage) {
+                        prevPage.focus();
+                        // Move cursor to end
+                        const r = document.createRange();
+                        r.selectNodeContents(prevPage);
+                        r.collapse(false);
+                        selection.removeAllRanges();
+                        selection.addRange(r);
+                        // Optional: prevPage.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                    }
+                }
+            }
+        }
+    }
+  };
+
   const getMargins = () => {
     const m = config.margins;
     let top = m.top * 96;
@@ -157,19 +216,20 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
 
   return (
     <div 
-        className="relative group transition-all duration-300 ease-out page-shadow mx-auto"
+        className="relative group transition-transform duration-200 ease-out mx-auto"
         style={{
             width: `${width * scale}px`,
             height: `${height * scale}px`,
         }}
     >
         <div 
-            className="absolute inset-0 bg-white shadow-[rgba(0,0,0,0.06)_0px_4px_12px,rgba(0,0,0,0.04)_0px_0px_0px_1px] transition-shadow group-hover:shadow-[rgba(0,0,0,0.1)_0px_10px_20px,rgba(0,0,0,0.04)_0px_0px_0px_1px] overflow-hidden"
+            className="absolute inset-0 bg-white overflow-hidden"
             style={{
                 transform: `scale(${scale})`,
                 transformOrigin: 'top left',
                 width: `${width}px`,
                 height: `${height}px`,
+                boxShadow: 'rgba(0, 0, 0, 0.1) 0px 4px 6px -1px, rgba(0, 0, 0, 0.06) 0px 2px 4px -1px, rgba(0, 0, 0, 0.1) 0px 0px 0px 1px',
                 ...getBackgroundStyle()
             }}
         >
@@ -210,10 +270,12 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
                 }}
             >
                 <div
+                    id={`prodoc-editor-${pageNumber}`}
                     ref={editorRef}
                     className={`prodoc-editor w-full h-full outline-none text-lg leading-loose break-words z-10 ${showFormattingMarks ? 'show-formatting-marks' : ''}`}
                     contentEditable={!readOnly}
                     onInput={handleInput}
+                    onKeyDown={handleKeyDown}
                     onFocus={onFocus}
                     suppressContentEditableWarning={true}
                     style={{

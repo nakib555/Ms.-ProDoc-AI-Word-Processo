@@ -1,6 +1,6 @@
 
 import React, { createContext, useContext, useState, useCallback, useRef, useEffect, useMemo } from 'react';
-import { SaveStatus, ViewMode, PageConfig, CustomStyle, ReadModeConfig, ActiveElementType } from '../types';
+import { SaveStatus, ViewMode, PageConfig, CustomStyle, ReadModeConfig, ActiveElementType, PageMovement } from '../types';
 import { useAutoSave } from '../hooks/useAutoSave';
 import { DEFAULT_CONTENT, PAGE_SIZES, PAGE_MARGIN_PADDING, MARGIN_PRESETS } from '../constants';
 import { handleMathInput } from '../utils/mathAutoCorrect';
@@ -18,6 +18,8 @@ interface EditorContextType {
   setZoom: React.Dispatch<React.SetStateAction<number>>;
   viewMode: ViewMode;
   setViewMode: React.Dispatch<React.SetStateAction<ViewMode>>;
+  pageMovement: PageMovement;
+  setPageMovement: React.Dispatch<React.SetStateAction<PageMovement>>;
   readConfig: ReadModeConfig;
   setReadConfig: React.Dispatch<React.SetStateAction<ReadModeConfig>>;
   saveStatus: SaveStatus;
@@ -62,6 +64,7 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [wordCount, setWordCount] = useState(0);
   const [zoom, setZoom] = useState(35); // Default zoom reduced to show full page on start
   const [viewMode, setViewMode] = useState<ViewMode>('print');
+  const [pageMovement, setPageMovement] = useState<PageMovement>('vertical');
   const [showRuler, setShowRuler] = useState(false);
   const [showFormattingMarks, setShowFormattingMarks] = useState(false);
   const [activeElementType, setActiveElementType] = useState<ActiveElementType>('text');
@@ -431,6 +434,8 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setZoom,
     viewMode,
     setViewMode,
+    pageMovement,
+    setPageMovement,
     readConfig,
     setReadConfig,
     saveStatus,
@@ -467,6 +472,7 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     wordCount,
     zoom,
     viewMode,
+    pageMovement,
     readConfig,
     saveStatus,
     pageConfig,
