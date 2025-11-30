@@ -104,7 +104,10 @@ export const getSystemPrompt = (operation: AIOperation, userPrompt?: string): st
       specificDirective = `TASK: Rewrite text to be professional and concise. Return as "paragraph" blocks.`;
       break;
     case 'generate_content':
-      specificDirective = `TASK: Generate rich content based on the prompt. Use headings, paragraphs, and lists to structure the response effectively. Use Tables where appropriate for data.`;
+      specificDirective = `TASK: Generate rich content based on the USER PROMPT. Use headings, paragraphs, and lists to structure the response effectively. Use Tables where appropriate for data. Ignore INPUT CONTEXT unless specifically referenced in the prompt.`;
+      break;
+    case 'edit_content':
+      specificDirective = `TASK: Edit, Refine, or Transform the INPUT CONTEXT based on the instructions in USER PROMPT. Maintain the original semantic structure unless asked to change. Output the result as structured JSON blocks.`;
       break;
     case 'generate_outline':
       specificDirective = `TASK: Generate a detailed outline. Use nested "list" blocks.`;

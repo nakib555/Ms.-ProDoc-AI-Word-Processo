@@ -48,7 +48,12 @@ export const WriteWithAITool: React.FC = () => {
     if (prompt.trim()) {
         // Construct a directive for the model that embeds the tone instruction and manual persona
         const enhancedPrompt = `[Tone: ${tone}] ${prompt}`;
-        performAIAction('generate_content', enhancedPrompt, { 
+        
+        // If mode is 'edit', use 'edit_content' operation which strictly uses context
+        // If mode is 'insert' or 'replace', use 'generate_content' which focuses on generation
+        const operation = mode === 'edit' ? 'edit_content' : 'generate_content';
+        
+        performAIAction(operation, enhancedPrompt, { 
             mode: mode === 'replace' ? 'replace' : 'insert',
             useSelection: mode === 'edit'
         }, savedRange); // Pass saved range to restore focus

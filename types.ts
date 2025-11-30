@@ -55,6 +55,7 @@ export type AIOperation =
   | 'tone_casual'
   | 'continue_writing'
   | 'generate_content'
+  | 'edit_content'
   | 'translate_es'
   | 'translate_fr'
   | 'translate_de'

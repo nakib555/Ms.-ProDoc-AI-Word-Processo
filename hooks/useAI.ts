@@ -46,15 +46,31 @@ export const useAI = () => {
         }
     }
 
+    // Special logic for generation vs editing
     if (operation === 'generate_content') {
         if (!customInput) {
             alert("Please provide a prompt.");
             return;
         }
+        // If we are generating content (Inserting/Replacing Document), we generally ignore selection
+        // unless specific 'useSelection' was passed (which usually implies Edit mode, but we use edit_content for that now)
         if (options.useSelection && !hasSelection) {
              textToProcess = ""; 
+        } else if (!options.useSelection) {
+             textToProcess = "";
         }
-    } else if (!textToProcess && operation !== 'generate_content') {
+    } 
+    else if (operation === 'edit_content') {
+        if (!textToProcess) {
+            alert("Please select text to refine or edit.");
+            return;
+        }
+        if (!customInput) {
+            alert("Please provide instructions for editing.");
+            return;
+        }
+    }
+    else if (!textToProcess && operation !== 'generate_content') {
         alert("Please select some text to use the AI Assistant.");
         return;
     }
@@ -63,6 +79,7 @@ export const useAI = () => {
     // Most generation tasks now use the JSON format defined in prompts.ts
     const expectsJson = 
         operation === 'generate_content' || 
+        operation === 'edit_content' ||
         operation === 'continue_writing' || 
         operation === 'expand' || 
         operation === 'shorten' ||
