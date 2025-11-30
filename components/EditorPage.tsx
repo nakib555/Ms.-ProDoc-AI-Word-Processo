@@ -37,8 +37,6 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
   useLayoutEffect(() => {
     if (editorRef.current) {
       // Protection: If focus is inside a math-field, do not enforce content sync from props.
-      // This prevents the React render cycle (triggered by the math-field's own mutation)
-      // from overwriting the DOM with a slightly stale value, which would kill the math-field focus/state.
       const activeEl = document.activeElement;
       const isMathFieldFocused = activeEl && activeEl.tagName.toLowerCase() === 'math-field' && editorRef.current.contains(activeEl);
       
@@ -163,7 +161,6 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
         style={{
             width: `${width * scale}px`,
             height: `${height * scale}px`,
-            // Note: Virtualization handles outer spacing usually, but we keep this for structure
         }}
     >
         <div 
@@ -201,9 +198,9 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
                  </div>
             )}
 
-            {/* Body */}
+            {/* Body Container - Strict Overflow Hidden */}
             <div 
-                className="relative w-full h-full"
+                className="relative w-full h-full overflow-hidden"
                 style={{ 
                     paddingTop: `${margins.top + gutterTop}px`, 
                     paddingRight: `${margins.right}px`, 
@@ -222,7 +219,8 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
                     style={{
                         fontFamily: 'Calibri, Inter, sans-serif',
                         color: '#000000',
-                        flex: config.verticalAlign === 'justify' ? '1 1 auto' : undefined 
+                        flex: config.verticalAlign === 'justify' ? '1 1 auto' : undefined,
+                        minHeight: '100%' // Ensure full height for cursor
                     }}
                 />
             </div>
