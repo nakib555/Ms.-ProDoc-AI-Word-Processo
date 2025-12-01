@@ -1,0 +1,307 @@
+/* Custom scrollbar for a cleaner look */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent; 
+}
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1; 
+  border-radius: 5px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background-color: #a8a8a8; 
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background-color: #475569;
+}
+.dark ::-webkit-scrollbar-thumb:hover {
+  background-color: #64748b;
+}
+
+/* Hide scrollbar for chrome/safari/opera */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+/* Hide scrollbar for IE, Edge and Firefox */
+.no-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+/* Editor specific styles */
+.prodoc-editor:focus {
+  outline: none;
+}
+
+/* Content Constraints to Margins */
+.prodoc-editor {
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  white-space: pre-wrap; /* Preserve whitespace but wrap lines */
+}
+
+.prodoc-editor img, 
+.prodoc-editor video, 
+.prodoc-editor canvas,
+.prodoc-editor svg {
+  max-width: 100%;
+  height: auto;
+  display: inline-block;
+}
+
+.prodoc-editor table {
+  max-width: 100% !important;
+  box-sizing: border-box;
+}
+
+/* --- Page Break Visuals --- */
+.prodoc-page-break {
+  height: 0;
+  width: 100%;
+  display: block;
+}
+
+.show-formatting-marks .prodoc-page-break {
+  height: auto;
+  border-bottom: 1px dotted #94a3b8;
+  margin: 10px 0;
+  position: relative;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 10px;
+  font-family: sans-serif;
+  user-select: none;
+}
+
+.show-formatting-marks .prodoc-page-break::after {
+  content: "Page Break";
+  background: #fff;
+  padding: 0 8px;
+  position: relative;
+  top: 6px;
+}
+
+/* --- MathLive / Equation Box Styles --- */
+
+/* The Wrapper Container */
+.equation-wrapper {
+  display: inline-flex;
+  align-items: stretch;
+  vertical-align: middle;
+  margin: 4px 2px;
+  border: 1px solid transparent;
+  position: relative;
+  border-radius: 2px;
+  transition: background-color 0.1s ease, border-color 0.1s ease;
+  cursor: text; /* Allow clicking to feel like editing text */
+  max-width: 100%; /* Constraint */
+  overflow-x: auto;
+}
+
+/* Hover State */
+.equation-wrapper:hover {
+  background-color: #f8fafc;
+  border-color: #e2e8f0;
+}
+
+/* Active State (Focus Within) */
+.equation-wrapper:focus-within {
+  border-color: #cbd5e1; /* slate-300 */
+  background-color: #f1f5f9; /* slate-100 */
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+/* Handle (Left Grip) */
+.equation-handle {
+  display: none; /* Hidden by default */
+  width: 14px;
+  background-color: #cbd5e1; /* Match border */
+  color: #475569; /* slate-600 */
+  font-size: 12px;
+  line-height: 1;
+  align-items: center;
+  justify-content: center;
+  cursor: default;
+  user-select: none;
+  flex-shrink: 0;
+  font-family: sans-serif;
+}
+
+.equation-wrapper:focus-within .equation-handle {
+  display: flex;
+}
+
+/* Dropdown Arrow (Right) */
+.equation-dropdown {
+  display: none; /* Hidden by default */
+  width: 14px;
+  color: #475569;
+  font-size: 8px;
+  align-items: flex-end;
+  justify-content: center;
+  cursor: pointer;
+  user-select: none;
+  padding-bottom: 4px;
+  flex-shrink: 0;
+}
+
+.equation-wrapper:focus-within .equation-dropdown {
+  display: flex;
+}
+
+/* Math Field Overrides inside Wrapper */
+.equation-wrapper math-field {
+  margin: 0 !important;
+  padding: 4px 8px !important;
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  min-width: 100px;
+  color: #1e293b; /* slate-800 */
+  cursor: text;
+  max-width: 100%;
+}
+
+.equation-wrapper math-field:focus,
+.equation-wrapper math-field:focus-within {
+  outline: none !important;
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* Standalone MathLive Integration Styles (fallback) */
+math-field:not(.equation-wrapper math-field) {
+  display: inline-block;
+  font-size: 1.15em;
+  margin: 0 2px;
+  padding: 4px 8px;
+  background-color: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  color: #1e293b;
+  min-width: 100px;
+  vertical-align: middle;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  transition: all 0.2s ease;
+  max-width: 100%;
+}
+
+math-field:not(.equation-wrapper math-field):focus, 
+math-field:not(.equation-wrapper math-field):focus-within {
+  outline: none;
+  border-color: #3b82f6;
+  background-color: #ffffff;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+/* Dark mode support */
+.dark .equation-wrapper:focus-within {
+  background-color: #1e293b;
+  border-color: #475569;
+}
+.dark .equation-wrapper:hover {
+  background-color: #1e293b;
+  border-color: #334155;
+}
+.dark .equation-handle {
+  background-color: #475569;
+  color: #94a3b8;
+}
+.dark .equation-dropdown {
+  color: #94a3b8;
+}
+.dark .equation-wrapper math-field {
+  color: #e2e8f0;
+}
+
+/* Formatting Marks */
+.show-formatting-marks p::after, 
+.show-formatting-marks div:not(.prodoc-page-break)::after,
+.show-formatting-marks h1::after,
+.show-formatting-marks h2::after,
+.show-formatting-marks h3::after,
+.show-formatting-marks h4::after,
+.show-formatting-marks h5::after,
+.show-formatting-marks h6::after,
+.show-formatting-marks li::after {
+  content: '¶';
+  color: #94a3b8;
+  font-size: 0.8em;
+  margin-left: 4px;
+  user-select: none;
+}
+
+/* Header & Footer Editing Styles */
+.header-footer-label {
+  position: absolute;
+  background-color: #2563eb; /* blue-600 */
+  color: white;
+  padding: 2px 8px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  user-select: none;
+  z-index: 50;
+  white-space: nowrap;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  font-family: 'Inter', sans-serif;
+  border-radius: 0 0 4px 4px; /* Bottom rounded for header tag */
+}
+
+.header-footer-label.footer-tag {
+  border-radius: 4px 4px 0 0; /* Top rounded for footer tag */
+}
+
+/* Print styles */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  .print-only {
+    display: block !important;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+  }
+  body, html, #root {
+    height: auto;
+    background: white;
+  }
+  .prodoc-page {
+    box-shadow: none !important;
+    margin: 0 !important;
+    page-break-after: always;
+  }
+  math-field {
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+  }
+  .equation-wrapper {
+    border: none !important;
+    background: transparent !important;
+  }
+  .equation-handle, .equation-dropdown {
+    display: none !important;
+  }
+  .prodoc-page-break {
+    display: block;
+    page-break-after: always;
+    height: 0;
+    border: none !important;
+    margin: 0;
+  }
+  .prodoc-page-break::after {
+    display: none;
+  }
+  .header-footer-label {
+    display: none !important;
+  }
+}
