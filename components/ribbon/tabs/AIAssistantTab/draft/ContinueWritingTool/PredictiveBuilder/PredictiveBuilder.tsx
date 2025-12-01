@@ -8,7 +8,8 @@ import {
   User, Projector, Scroll, Stethoscope, Pill, Gavel, FileSignature, Landmark,
   Receipt, Building2, ShieldAlert, Hammer, Map, Plane, Leaf, Recycle, Wind, 
   TreeDeciduous, Factory, Wrench, Mountain, Camera, Utensils, Trophy, Dumbbell,
-  Brain, Tv, Radio, HeartHandshake, Film
+  Brain, Tv, Radio, HeartHandshake, Film, Gamepad2, Scissors, Lightbulb, GitBranch,
+  History, Palette, Globe, Library
 } from 'lucide-react';
 
 import { RESEARCH_ACADEMIC } from './Research & Academic';
@@ -27,8 +28,14 @@ import { FOOD_RECIPE } from './Food & Recipe';
 import { SPORTS_FITNESS } from './Sports & Fitness';
 import { ENTERTAINMENT_MEDIA } from './Entertainment & Media';
 import { PSYCHOLOGY_MENTAL_HEALTH } from './Psychology & Mental Health';
+import { DIY_HOW_TO } from './DIY & How-To';
+import { GAMING_ESPORTS } from './Gaming & eSports';
+import { TECHNOLOGY_INNOVATION } from './Technology & Innovation';
+import { CULTURAL_HUMANITIES } from './Cultural Studies & Humanities';
 
 const PREDICTIVE_CATEGORIES = {
+  "Technology & Innovation": TECHNOLOGY_INNOVATION,
+  "Cultural Studies & Humanities": CULTURAL_HUMANITIES,
   "Research & Academic": RESEARCH_ACADEMIC,
   "Technical & Engineering": TECHNICAL_ENGINEERING,
   "Business & Management": BUSINESS_MANAGEMENT,
@@ -44,11 +51,33 @@ const PREDICTIVE_CATEGORIES = {
   "Food & Recipe": FOOD_RECIPE,
   "Sports & Fitness": SPORTS_FITNESS,
   "Entertainment & Media": ENTERTAINMENT_MEDIA,
-  "Psychology & Mental Health": PSYCHOLOGY_MENTAL_HEALTH
+  "Psychology & Mental Health": PSYCHOLOGY_MENTAL_HEALTH,
+  "DIY & How-To": DIY_HOW_TO,
+  "Gaming & eSports": GAMING_ESPORTS
 };
 
 const getIconForOption = (label: string) => {
   const l = label.toLowerCase();
+  
+  // Technology & Innovation
+  if (l.includes('roadmap') || l.includes('timeline') || l.includes('milestone')) return GitBranch;
+  if (l.includes('innovation') || l.includes('pitch') || l.includes('strategy') || l.includes('idea')) return Lightbulb;
+  if (l.includes('prototype') || l.includes('demo')) return Box;
+  if (l.includes('specification') || l.includes('spec') || l.includes('requirement')) return ClipboardList;
+  if (l.includes('architecture') || l.includes('system') || l.includes('design')) return Settings;
+  
+  // Cultural Studies & Humanities
+  if (l.includes('history') || l.includes('historical') || l.includes('archive') || l.includes('past')) return History;
+  if (l.includes('culture') || l.includes('society') || l.includes('ethnography') || l.includes('anthropology')) return Globe;
+  if (l.includes('art') || l.includes('museum') || l.includes('exhibit') || l.includes('gallery')) return Palette;
+  if (l.includes('literature') || l.includes('book') || l.includes('novel') || l.includes('poem')) return BookOpen;
+  if (l.includes('research') || l.includes('study') || l.includes('paper') || l.includes('thesis')) return Library;
+
+  // Gaming & eSports
+  if (l.includes('game') || l.includes('level') || l.includes('player') || l.includes('match') || l.includes('tournament') || l.includes('esport') || l.includes('patch') || l.includes('bug') || l.includes('quest') || l.includes('streaming') || l.includes('leaderboard')) return Gamepad2;
+
+  // DIY & How-To
+  if (l.includes('diy') || l.includes('repair') || l.includes('craft') || l.includes('paint') || l.includes('home improvement') || l.includes('assembly') || l.includes('project plan') || l.includes('renovation') || l.includes('woodworking')) return Hammer;
   
   // Entertainment & Media
   if (l.includes('tv') || l.includes('broadcast') || l.includes('show')) return Tv;
@@ -144,9 +173,30 @@ const getIconForOption = (label: string) => {
   if (l.includes('email') || l.includes('letter')) return Mail;
   if (l.includes('presentation') || l.includes('slide')) return Projector;
   if (l.includes('scroll') || l.includes('certificate')) return Scroll;
+  if (l.includes('scissor') || l.includes('cut')) return Scissors;
   
   return FileText;
 };
+
+// Helper component for dynamic icons, e.g. Box
+const Box = (props: any) => (
+    <svg 
+      xmlns="http://www.w3.org/2000/svg" 
+      width={props.size || 24} 
+      height={props.size || 24} 
+      viewBox="0 0 24 24" 
+      fill="none" 
+      stroke="currentColor" 
+      strokeWidth="2" 
+      strokeLinecap="round" 
+      strokeLinejoin="round" 
+      className={props.className}
+    >
+      <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+      <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+      <line x1="12" y1="22.08" x2="12" y2="12" />
+    </svg>
+);
 
 interface PredictiveBuilderProps {
     onSelect: (item: { l: string, f: string }) => void;
