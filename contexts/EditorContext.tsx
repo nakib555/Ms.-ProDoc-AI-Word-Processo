@@ -95,10 +95,10 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       setAiState(isProcessing ? 'thinking' : 'idle');
   }, []);
   
-  // Header & Footer State
+  // Header & Footer State - Default to left aligned (no text-align style)
   const [activeEditingArea, setActiveEditingArea] = useState<EditingArea>('body');
-  const [headerContent, setHeaderContent] = useState('<div style="text-align: right; color: #94a3b8;">[Header]</div>');
-  const [footerContent, setFooterContent] = useState('<div style="text-align: center; color: #94a3b8;">[Page <span class="page-number-placeholder">1</span>]</div>');
+  const [headerContent, setHeaderContent] = useState('<div style="color: #94a3b8;">[Header]</div>');
+  const [footerContent, setFooterContent] = useState('<div style="color: #94a3b8;">[Page <span class="page-number-placeholder">1</span>]</div>');
   
   const [pageConfig, setPageConfig] = useState<PageConfig>({
     size: 'Letter',

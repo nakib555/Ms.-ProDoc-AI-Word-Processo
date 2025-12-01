@@ -454,8 +454,14 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
           setTimeout(() => {
               if (headerRef.current) {
                   headerRef.current.focus();
+                  // Ensure cursor is at start (left)
                   const range = document.createRange();
-                  range.selectNodeContents(headerRef.current);
+                  const firstChild = headerRef.current.firstChild;
+                  if (firstChild) {
+                      range.setStart(firstChild, 0);
+                  } else {
+                      range.setStart(headerRef.current, 0);
+                  }
                   range.collapse(true);
                   const sel = window.getSelection();
                   sel?.removeAllRanges();
@@ -473,7 +479,12 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
               if (footerRef.current) {
                   footerRef.current.focus();
                   const range = document.createRange();
-                  range.selectNodeContents(footerRef.current);
+                  const firstChild = footerRef.current.firstChild;
+                  if (firstChild) {
+                      range.setStart(firstChild, 0);
+                  } else {
+                      range.setStart(footerRef.current, 0);
+                  }
                   range.collapse(true);
                   const sel = window.getSelection();
                   sel?.removeAllRanges();
