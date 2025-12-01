@@ -285,7 +285,6 @@ export const PredictiveBuilder: React.FC<PredictiveBuilderProps> = ({ onSelect }
                     className="w-full pl-7 pr-2 py-1.5 text-xs border border-slate-200 rounded-md focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition-all bg-white"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    autoFocus
                  />
              </div>
          </div>

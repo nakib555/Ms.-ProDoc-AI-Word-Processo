@@ -33,7 +33,10 @@ export const ContinueWritingTool: React.FC = () => {
         />
 
         <MenuPortal id={menuId} activeMenu={activeMenu} menuPos={menuPos} closeMenu={closeMenu} width={340}>
-             <div className="flex flex-col max-h-[70vh] md:max-h-[80vh] h-full overflow-hidden">
+             <div 
+                className="flex flex-col max-h-[70vh] md:max-h-[80vh] h-full overflow-hidden"
+                onMouseDown={(e) => e.stopPropagation()}
+             >
                  {/* Fixed Header Options */}
                  <div className="p-2 space-y-2 border-b border-slate-100 bg-white z-10 shrink-0">
                      <button 

@@ -3,7 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { 
   X, Check, Activity, Wand2, RefreshCw, ArrowRight, 
   Sparkles, Type, AlignLeft, AlertCircle, Quote, Languages,
-  ThumbsUp, BookOpen, PenTool, History, Settings2, Clock, ChevronRight, RotateCcw
+  ThumbsUp, BookOpen, PenTool, History, Settings2, Clock, ChevronRight, RotateCcw,
+  Menu, ArrowLeft
 } from 'lucide-react';
 import { generateAIContent } from '../../../../../services/geminiService';
 
@@ -95,6 +96,7 @@ export const AdvancedGrammarDialog: React.FC<AdvancedGrammarDialogProps> = ({
   // Sidebar State
   const [sidebarView, setSidebarView] = useState<'settings' | 'history'>('settings');
   const [history, setHistory] = useState<HistoryItem[]>([]);
+  const [mobileView, setMobileView] = useState<'editor' | 'sidebar'>('editor');
 
   // Settings
   const [settings, setSettings] = useState({
@@ -113,6 +115,7 @@ export const AdvancedGrammarDialog: React.FC<AdvancedGrammarDialogProps> = ({
         setActiveTab('input');
         // Reset to settings view on open
         setSidebarView('settings');
+        setMobileView('editor');
     }
   }, [isOpen, initialText]);
 
@@ -121,6 +124,11 @@ export const AdvancedGrammarDialog: React.FC<AdvancedGrammarDialogProps> = ({
     setIsAnalyzing(true);
     setResult(null);
     setActiveTab('preview'); 
+    
+    // On mobile, switch back to editor view to see results
+    if (window.innerWidth < 768) {
+        setMobileView('editor');
+    }
 
     const prompt = `
       Act as an expert editor. Analyze and improve the following text based on these settings:
@@ -179,27 +187,48 @@ export const AdvancedGrammarDialog: React.FC<AdvancedGrammarDialogProps> = ({
       setResult(item.result);
       setSettings(item.settingsSnapshot);
       setActiveTab('preview');
+      // On mobile, if restoring from history (sidebar), go to editor
+      if (window.innerWidth < 768) {
+          setMobileView('editor');
+      }
   };
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300 p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300 p-2 md:p-4" onClick={onClose}>
       <div 
-        className="bg-white dark:bg-slate-900 w-full max-w-6xl h-[85vh] rounded-2xl shadow-2xl border border-white/20 dark:border-slate-700 flex overflow-hidden animate-in zoom-in-95 duration-300 ring-1 ring-black/10"
+        className="bg-white dark:bg-slate-900 w-full h-[90vh] md:w-[95vw] md:h-[85vh] md:max-w-6xl rounded-2xl shadow-2xl border border-white/20 dark:border-slate-700 flex flex-col md:flex-row overflow-hidden animate-in zoom-in-95 duration-300 ring-1 ring-black/10"
         onClick={e => e.stopPropagation()}
       >
         {/* Sidebar Configuration */}
-        <div className="w-80 bg-slate-50/80 dark:bg-slate-950/80 border-r border-slate-200 dark:border-slate-800 flex flex-col shrink-0 backdrop-blur-xl">
+        <div className={`
+            flex-col bg-slate-50/80 dark:bg-slate-950/80 border-r border-slate-200 dark:border-slate-800 backdrop-blur-xl shrink-0 transition-all duration-300
+            md:w-80 md:flex
+            ${mobileView === 'sidebar' ? 'flex w-full h-full' : 'hidden'}
+        `}>
             {/* Header */}
-            <div className="p-5 border-b border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50">
+            <div className="p-5 border-b border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 shrink-0">
                 <div className="flex items-center justify-between mb-4">
                     <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                        {/* Mobile Back Button */}
+                        <button 
+                            onClick={() => setMobileView('editor')}
+                            className="md:hidden p-1 -ml-2 mr-1 text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-full"
+                        >
+                            <ArrowLeft size={20} />
+                        </button>
+
                         <div className="p-1.5 bg-gradient-to-br from-indigo-600 to-violet-600 rounded-lg shadow-md shadow-indigo-200/50 dark:shadow-none">
                             <Wand2 className="text-white" size={16} />
                         </div>
                         Editor Pro
                     </h2>
+
+                    {/* Mobile Close Button */}
+                    <button onClick={onClose} className="md:hidden text-slate-400">
+                        <X size={20} />
+                    </button>
                 </div>
                 
                 {/* Sidebar Mode Toggle */}
@@ -333,7 +362,7 @@ export const AdvancedGrammarDialog: React.FC<AdvancedGrammarDialogProps> = ({
                 )}
             </div>
 
-            <div className="p-5 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+            <div className="p-5 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0">
                 <button 
                     onClick={handleAnalyze}
                     disabled={isAnalyzing || !text}
@@ -350,20 +379,33 @@ export const AdvancedGrammarDialog: React.FC<AdvancedGrammarDialogProps> = ({
         </div>
 
         {/* Main Content Area */}
-        <div className="flex-1 flex flex-col min-w-0 bg-[#f8fafc] dark:bg-slate-950 relative">
+        <div className={`
+            flex-col min-w-0 bg-[#f8fafc] dark:bg-slate-950 relative
+            md:flex flex-1
+            ${mobileView === 'editor' ? 'flex w-full h-full' : 'hidden'}
+        `}>
             {/* Header Tabs */}
-            <div className="h-16 flex items-center justify-between px-8 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0">
+            <div className="h-16 flex items-center justify-between px-4 md:px-8 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0">
+                {/* Mobile Sidebar Toggle */}
+                <button 
+                    onClick={() => setMobileView('sidebar')}
+                    className="md:hidden p-2 -ml-2 mr-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg flex items-center gap-1.5 transition-colors"
+                >
+                    <Settings2 size={20} />
+                    <span className="text-xs font-bold">Settings</span>
+                </button>
+
                 <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
                     <button 
                         onClick={() => setActiveTab('input')}
-                        className={`px-6 py-1.5 text-xs font-bold uppercase tracking-wide rounded-md transition-all ${activeTab === 'input' ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-white shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
+                        className={`px-4 md:px-6 py-1.5 text-xs font-bold uppercase tracking-wide rounded-md transition-all ${activeTab === 'input' ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-white shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
                     >
                         Original
                     </button>
                     <button 
                         onClick={() => { if(result || isAnalyzing) setActiveTab('preview'); }}
                         disabled={!result && !isAnalyzing}
-                        className={`px-6 py-1.5 text-xs font-bold uppercase tracking-wide rounded-md transition-all flex items-center gap-2 ${activeTab === 'preview' ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 disabled:opacity-50 disabled:cursor-not-allowed'}`}
+                        className={`px-4 md:px-6 py-1.5 text-xs font-bold uppercase tracking-wide rounded-md transition-all flex items-center gap-2 ${activeTab === 'preview' ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 disabled:opacity-50 disabled:cursor-not-allowed'}`}
                     >
                         Improved {result && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>}
                     </button>
@@ -381,10 +423,10 @@ export const AdvancedGrammarDialog: React.FC<AdvancedGrammarDialogProps> = ({
                     <textarea 
                         value={text}
                         onChange={(e) => setText(e.target.value)}
-                        className="flex-1 w-full p-8 resize-none outline-none text-lg leading-relaxed text-slate-700 dark:text-slate-300 bg-transparent placeholder:text-slate-400 font-serif"
+                        className="flex-1 w-full p-6 md:p-8 resize-none outline-none text-base md:text-lg leading-relaxed text-slate-700 dark:text-slate-300 bg-transparent placeholder:text-slate-400 font-serif"
                         placeholder="Paste or type your text here to let the AI refine it..."
                     />
-                    <div className="px-8 py-4 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 text-xs text-slate-400 flex justify-between font-medium">
+                    <div className="px-6 md:px-8 py-4 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 text-xs text-slate-400 flex justify-between font-medium shrink-0">
                         <span>{text.split(/\s+/).filter(w => w.length > 0).length} words</span>
                         <span>{text.length} characters</span>
                     </div>
@@ -410,7 +452,7 @@ export const AdvancedGrammarDialog: React.FC<AdvancedGrammarDialogProps> = ({
                             {/* Scrollable Container */}
                             <div className="flex-1 overflow-y-auto custom-scrollbar">
                                 {/* Dashboard Stats */}
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-8 pb-4">
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 p-6 md:p-8 pb-4">
                                     <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 flex items-center gap-5 hover:border-indigo-200 transition-colors">
                                         <ScoreGauge score={result.readabilityScore} />
                                         <div>
@@ -436,10 +478,10 @@ export const AdvancedGrammarDialog: React.FC<AdvancedGrammarDialogProps> = ({
                                 </div>
 
                                 {/* Result Text */}
-                                <div className="px-8 pb-8">
-                                    <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-8">
+                                <div className="px-6 md:px-8 pb-8">
+                                    <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-6 md:p-8">
                                         <div className="max-w-3xl mx-auto prose dark:prose-invert">
-                                            <p className="text-lg leading-loose text-slate-800 dark:text-slate-200 whitespace-pre-wrap font-serif">
+                                            <p className="text-base md:text-lg leading-loose text-slate-800 dark:text-slate-200 whitespace-pre-wrap font-serif">
                                                 {result.correctedText}
                                             </p>
                                         </div>
@@ -448,23 +490,23 @@ export const AdvancedGrammarDialog: React.FC<AdvancedGrammarDialogProps> = ({
                             </div>
 
                             {/* Action Bar */}
-                            <div className="px-8 py-5 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 flex justify-between items-center shrink-0 z-10">
+                            <div className="px-6 md:px-8 py-5 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row justify-between items-center shrink-0 z-10 gap-4 sm:gap-0">
                                 <div className="text-xs text-slate-400 font-medium flex items-center gap-2">
                                     <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
                                     AI processing complete
                                 </div>
-                                <div className="flex gap-4">
+                                <div className="flex gap-4 w-full sm:w-auto">
                                     <button 
                                         onClick={() => setActiveTab('input')}
-                                        className="px-6 py-2.5 text-sm font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors"
+                                        className="flex-1 sm:flex-none px-6 py-2.5 text-sm font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors"
                                     >
-                                        Back to Edit
+                                        Edit
                                     </button>
                                     <button 
                                         onClick={() => { onApply(result.correctedText); onClose(); }}
-                                        className="px-8 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-xl shadow-lg shadow-indigo-200/50 dark:shadow-none transition-all active:scale-95 flex items-center gap-2"
+                                        className="flex-1 sm:flex-none px-8 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-xl shadow-lg shadow-indigo-200/50 dark:shadow-none transition-all active:scale-95 flex items-center justify-center gap-2"
                                     >
-                                        <Check size={18} /> Apply Changes
+                                        <Check size={18} /> Apply
                                     </button>
                                 </div>
                             </div>
