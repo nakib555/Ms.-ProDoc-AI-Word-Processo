@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { generateAIContent } from '../../../../../services/geminiService';
 import { useEditor } from '../../../../../contexts/EditorContext';
+import { jsonToHtml } from '../../../../../utils/documentConverter';
 
 interface AdvancedSummarizeDialogProps {
   isOpen: boolean;
@@ -53,7 +54,6 @@ export const AdvancedSummarizeDialog: React.FC<AdvancedSummarizeDialogProps> = (
   const [isGenerating, setIsGenerating] = useState(false);
   const [result, setResult] = useState('');
   
-  // Use editor context for theming if needed, though Tailwind handles dark mode via class
   const { } = useEditor();
 
   const handleGenerate = async () => {
@@ -75,33 +75,42 @@ export const AdvancedSummarizeDialog: React.FC<AdvancedSummarizeDialogProps> = (
       - Output Language: ${config.language}
       
       SPECIAL INSTRUCTIONS:
-      ${config.extractData ? '- EXTRACT DATA: Separately list key dates, numbers, names, and entities found.' : ''}
-      ${config.highlightInsights ? '- KEY INSIGHTS: Identify the top 3 critical takeaways.' : ''}
+      ${config.extractData ? '- EXTRACT DATA: Separately list key dates, numbers, names, and entities found in a list block.' : ''}
+      ${config.highlightInsights ? '- KEY INSIGHTS: Identify the top 3 critical takeaways in a separate section.' : ''}
       
       INPUT TEXT:
       "${initialText}"
       
       OUTPUT FORMAT:
-      Return formatted HTML. Use <ul>/<li> for lists, <p> for paragraphs, <strong> for emphasis. 
-      If data extraction is requested, append a <div class="data-extraction"> section.
+      Return a structured JSON object matching the ProDoc schema.
+      - The root object must contain "document" -> "blocks".
+      - Use "heading" blocks for titles/sections.
+      - Use "paragraph" blocks for text.
+      - Use "list" blocks for bullet points or data extraction.
     `;
 
     try {
-      // We use 'generate_content' as a generic key to bypass specific system prompt templates 
-      // since we built a custom one here.
+      // Use generic generation operation which returns JSON schema
       const response = await generateAIContent('generate_content', '', prompt);
       
-      // Clean up markdown block syntax if the model returns it
-      let cleanHtml = response.trim();
-      if (cleanHtml.startsWith('```html')) {
-          cleanHtml = cleanHtml.replace(/^```html/, '').replace(/```$/, '');
-      } else if (cleanHtml.startsWith('```')) {
-          cleanHtml = cleanHtml.replace(/^```/, '').replace(/```$/, '');
+      // Clean up markdown block syntax if present
+      let cleanJson = response.trim();
+      if (cleanJson.startsWith('```')) {
+          cleanJson = cleanJson.replace(/^```(?:json)?/, '').replace(/```$/, '');
       }
       
-      setResult(cleanHtml);
+      try {
+          const parsed = JSON.parse(cleanJson);
+          // Convert the structured JSON response to HTML for display
+          const html = jsonToHtml(parsed);
+          setResult(html);
+      } catch (parseError) {
+          console.error("JSON Parse Error", parseError);
+          setResult('<p style="color:red">Error parsing summary. Please try again.</p>');
+      }
     } catch (e) {
-      setResult('<p style="color:red">Error generating summary. Please try again.</p>');
+      console.error(e);
+      setResult('<p style="color:red">Error generating summary. Please check your API key.</p>');
     } finally {
       setIsGenerating(false);
     }
