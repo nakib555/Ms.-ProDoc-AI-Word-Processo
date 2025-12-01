@@ -9,7 +9,7 @@ import {
   Receipt, Building2, ShieldAlert, Hammer, Map, Plane, Leaf, Recycle, Wind, 
   TreeDeciduous, Factory, Wrench, Mountain, Camera, Utensils, Trophy, Dumbbell,
   Brain, Tv, Radio, HeartHandshake, Film, Gamepad2, Scissors, Lightbulb, GitBranch,
-  History, Palette, Globe, Library
+  History, Palette, Globe, Library, Microscope
 } from 'lucide-react';
 
 import { RESEARCH_ACADEMIC } from './Research & Academic';
@@ -32,24 +32,40 @@ import { DIY_HOW_TO } from './DIY & How-To';
 import { GAMING_ESPORTS } from './Gaming & eSports';
 import { TECHNOLOGY_INNOVATION } from './Technology & Innovation';
 import { CULTURAL_HUMANITIES } from './Cultural Studies & Humanities';
+import { TRAVEL_TOURISM_INNOVATIONS } from './Travel & Tourism Innovations';
+import { SCIENCE_RESEARCH_DOCUMENTATION } from './Science & Research Documentation';
+import { ARTS_PERFORMING_ARTS } from './Arts & Performing Arts';
+import { HEALTH_WELLNESS } from './Health & Wellness';
+import { BUSINESS_ENTREPRENEURSHIP } from './Business & Entrepreneurship';
+import { LEGAL_COMPLIANCE } from './Legal & Compliance';
+import { MEDIA_JOURNALISM } from './Media & Journalism';
+import { SPORTS_RECREATION } from './Sports & Recreation';
 
 const PREDICTIVE_CATEGORIES = {
   "Technology & Innovation": TECHNOLOGY_INNOVATION,
   "Cultural Studies & Humanities": CULTURAL_HUMANITIES,
   "Research & Academic": RESEARCH_ACADEMIC,
+  "Science & Research Documentation": SCIENCE_RESEARCH_DOCUMENTATION,
   "Technical & Engineering": TECHNICAL_ENGINEERING,
   "Business & Management": BUSINESS_MANAGEMENT,
+  "Business & Entrepreneurship": BUSINESS_ENTREPRENEURSHIP,
   "Creative & Media": CREATIVE_MEDIA,
+  "Media & Journalism": MEDIA_JOURNALISM,
+  "Arts & Performing Arts": ARTS_PERFORMING_ARTS,
   "Education & Teaching": EDUCATION_TEACHING,
   "Legal & Regulatory": LEGAL_REGULATORY,
+  "Legal & Compliance": LEGAL_COMPLIANCE,
   "Healthcare & Medical": HEALTHCARE_MEDICAL,
+  "Health & Wellness": HEALTH_WELLNESS,
   "Finance & Accounting": FINANCE_ACCOUNTING,
   "Government & Policy": GOVERNMENT_POLICY,
   "Architecture & Construction": ARCHITECTURE_CONSTRUCTION,
   "Travel & Tourism": TRAVEL_TOURISM,
+  "Travel & Tourism Innovations": TRAVEL_TOURISM_INNOVATIONS,
   "Environmental Science & Sustainability": ENVIRONMENTAL_SUSTAINABILITY,
   "Food & Recipe": FOOD_RECIPE,
   "Sports & Fitness": SPORTS_FITNESS,
+  "Sports & Recreation": SPORTS_RECREATION,
   "Entertainment & Media": ENTERTAINMENT_MEDIA,
   "Psychology & Mental Health": PSYCHOLOGY_MENTAL_HEALTH,
   "DIY & How-To": DIY_HOW_TO,
@@ -132,7 +148,8 @@ const getIconForOption = (label: string) => {
   if (l.includes('technical') || l.includes('spec') || l.includes('system')) return Settings;
   
   // Science & Math
-  if (l.includes('lab') || l.includes('experiment') || l.includes('science') || l.includes('chemical')) return FlaskConical;
+  if (l.includes('lab') || l.includes('experiment') || l.includes('microscope')) return Microscope;
+  if (l.includes('science') || l.includes('chemical')) return FlaskConical;
   if (l.includes('research') || l.includes('study') || l.includes('analysis') || l.includes('thesis')) return FileSearch;
   if (l.includes('math') || l.includes('equation') || l.includes('formula')) return Sigma;
   
