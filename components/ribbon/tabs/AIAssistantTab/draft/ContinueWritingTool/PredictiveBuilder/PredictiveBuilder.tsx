@@ -6,7 +6,8 @@ import {
   FlaskConical, FileSearch, Sigma, DollarSign, TrendingUp, Calendar, Briefcase, 
   ClipboardList, Scale, Clapperboard, Music, Mic, GraduationCap, CheckSquare, 
   User, Projector, Scroll, Stethoscope, Pill, Gavel, FileSignature, Landmark,
-  Receipt, Building2, ShieldAlert
+  Receipt, Building2, ShieldAlert, Hammer, Map, Plane, Leaf, Recycle, Wind, 
+  Construction, Tent, TreeDeciduous, Factory, Wrench, Mountain, Camera
 } from 'lucide-react';
 
 import { RESEARCH_ACADEMIC } from './Research & Academic';
@@ -18,6 +19,9 @@ import { LEGAL_REGULATORY } from './Legal & Regulatory';
 import { HEALTHCARE_MEDICAL } from './Healthcare & Medical';
 import { FINANCE_ACCOUNTING } from './Finance & Accounting';
 import { GOVERNMENT_POLICY } from './Government & Policy';
+import { ARCHITECTURE_CONSTRUCTION } from './Architecture & Construction';
+import { TRAVEL_TOURISM } from './Travel & Tourism';
+import { ENVIRONMENTAL_SUSTAINABILITY } from './Environmental Science & Sustainability';
 
 const PREDICTIVE_CATEGORIES = {
   "Research & Academic": RESEARCH_ACADEMIC,
@@ -28,12 +32,39 @@ const PREDICTIVE_CATEGORIES = {
   "Legal & Regulatory": LEGAL_REGULATORY,
   "Healthcare & Medical": HEALTHCARE_MEDICAL,
   "Finance & Accounting": FINANCE_ACCOUNTING,
-  "Government & Policy": GOVERNMENT_POLICY
+  "Government & Policy": GOVERNMENT_POLICY,
+  "Architecture & Construction": ARCHITECTURE_CONSTRUCTION,
+  "Travel & Tourism": TRAVEL_TOURISM,
+  "Environmental Science & Sustainability": ENVIRONMENTAL_SUSTAINABILITY
 };
 
 const getIconForOption = (label: string) => {
   const l = label.toLowerCase();
   
+  // Architecture & Construction
+  if (l.includes('blueprint') || l.includes('plan') || l.includes('architect') || l.includes('layout')) return Building2;
+  if (l.includes('construction') || l.includes('build') || l.includes('contractor') || l.includes('site')) return Hammer;
+  if (l.includes('design') || l.includes('interior') || l.includes('landscape')) return LayoutTemplate;
+  if (l.includes('inspection') || l.includes('audit') || l.includes('checklist') || l.includes('safety')) return ClipboardList;
+  if (l.includes('material') || l.includes('procurement') || l.includes('inventory')) return Factory;
+  if (l.includes('maintenance') || l.includes('repair') || l.includes('work order')) return Wrench;
+
+  // Travel & Tourism
+  if (l.includes('travel') || l.includes('tour') || l.includes('trip') || l.includes('itinerary')) return Map;
+  if (l.includes('flight') || l.includes('airline') || l.includes('airport')) return Plane;
+  if (l.includes('hotel') || l.includes('booking') || l.includes('accommodation')) return Briefcase;
+  if (l.includes('guide') || l.includes('brochure') || l.includes('culture')) return BookOpen;
+  if (l.includes('hiking') || l.includes('camping') || l.includes('adventure') || l.includes('backpack')) return Mountain;
+  if (l.includes('photo') || l.includes('sightseeing')) return Camera;
+  if (l.includes('cruise') || l.includes('sea')) return Video; // Fallback or Ship if available
+
+  // Environmental
+  if (l.includes('environment') || l.includes('ecology') || l.includes('nature') || l.includes('habitat')) return Leaf;
+  if (l.includes('climate') || l.includes('weather') || l.includes('energy') || l.includes('carbon')) return Wind;
+  if (l.includes('recycle') || l.includes('waste') || l.includes('sustainab')) return Recycle;
+  if (l.includes('forest') || l.includes('wildlife') || l.includes('conservation') || l.includes('bio')) return TreeDeciduous;
+  if (l.includes('pollution') || l.includes('air') || l.includes('water')) return FlaskConical;
+
   // Tech
   if (l.includes('code') || l.includes('sdk') || l.includes('api') || l.includes('snippet')) return Code;
   if (l.includes('database') || l.includes('sql') || l.includes('schema')) return Database;
@@ -118,7 +149,7 @@ export const PredictiveBuilder: React.FC<PredictiveBuilderProps> = ({ onSelect }
                  <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
                      <LayoutTemplate size={10}/> Predictive Builder
                  </div>
-                 <span className="text-[9px] bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded-full font-mono">500+</span>
+                 <span className="text-[9px] bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded-full font-mono">700+</span>
              </div>
              <div className="relative group">
                  <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500"/>
