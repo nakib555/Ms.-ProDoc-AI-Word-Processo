@@ -1,10 +1,12 @@
+
 import React, { useState, useMemo } from 'react';
 import { 
   FileText, Feather, Activity, BookOpen, Mail, Video, LayoutTemplate, 
   Search, ChevronRight, ChevronDown, Code, Database, Server, Cpu, Settings, 
   FlaskConical, FileSearch, Sigma, DollarSign, TrendingUp, Calendar, Briefcase, 
   ClipboardList, Scale, Clapperboard, Music, Mic, GraduationCap, CheckSquare, 
-  User, Projector, Scroll, Stethoscope, Pill, Gavel, FileSignature
+  User, Projector, Scroll, Stethoscope, Pill, Gavel, FileSignature, Landmark,
+  Receipt, Building2, ShieldAlert
 } from 'lucide-react';
 
 import { RESEARCH_ACADEMIC } from './Research & Academic';
@@ -14,6 +16,8 @@ import { CREATIVE_MEDIA } from './Creative & Media';
 import { EDUCATION_TEACHING } from './Education & Teaching';
 import { LEGAL_REGULATORY } from './Legal & Regulatory';
 import { HEALTHCARE_MEDICAL } from './Healthcare & Medical';
+import { FINANCE_ACCOUNTING } from './Finance & Accounting';
+import { GOVERNMENT_POLICY } from './Government & Policy';
 
 const PREDICTIVE_CATEGORIES = {
   "Research & Academic": RESEARCH_ACADEMIC,
@@ -22,7 +26,9 @@ const PREDICTIVE_CATEGORIES = {
   "Creative & Media": CREATIVE_MEDIA,
   "Education & Teaching": EDUCATION_TEACHING,
   "Legal & Regulatory": LEGAL_REGULATORY,
-  "Healthcare & Medical": HEALTHCARE_MEDICAL
+  "Healthcare & Medical": HEALTHCARE_MEDICAL,
+  "Finance & Accounting": FINANCE_ACCOUNTING,
+  "Government & Policy": GOVERNMENT_POLICY
 };
 
 const getIconForOption = (label: string) => {
@@ -40,17 +46,21 @@ const getIconForOption = (label: string) => {
   if (l.includes('research') || l.includes('study') || l.includes('analysis') || l.includes('thesis')) return FileSearch;
   if (l.includes('math') || l.includes('equation') || l.includes('formula')) return Sigma;
   
-  // Business
-  if (l.includes('financial') || l.includes('budget') || l.includes('profit')) return DollarSign;
+  // Business & Finance
+  if (l.includes('financial') || l.includes('budget') || l.includes('profit') || l.includes('revenue') || l.includes('cash') || l.includes('payroll')) return DollarSign;
   if (l.includes('market') || l.includes('sales') || l.includes('growth') || l.includes('trend')) return TrendingUp;
   if (l.includes('meeting') || l.includes('agenda') || l.includes('schedule')) return Calendar;
-  if (l.includes('business') || l.includes('company') || l.includes('startup')) return Briefcase;
-  if (l.includes('report') || l.includes('audit') || l.includes('log') || l.includes('review')) return ClipboardList;
+  if (l.includes('business') || l.includes('company') || l.includes('startup') || l.includes('corporate')) return Briefcase;
+  if (l.includes('report') || l.includes('audit') || l.includes('log') || l.includes('review') || l.includes('summary')) return ClipboardList;
+  if (l.includes('invoice') || l.includes('receipt') || l.includes('bill')) return Receipt;
   
-  // Legal
+  // Legal & Government
   if (l.includes('legal') || l.includes('court') || l.includes('litigation') || l.includes('judgment')) return Gavel;
   if (l.includes('contract') || l.includes('agreement') || l.includes('policy') || l.includes('terms')) return FileSignature;
   if (l.includes('regulation') || l.includes('compliance') || l.includes('law')) return Scale;
+  if (l.includes('government') || l.includes('public') || l.includes('municipal') || l.includes('civic') || l.includes('census')) return Landmark;
+  if (l.includes('infrastructure') || l.includes('urban') || l.includes('housing')) return Building2;
+  if (l.includes('safety') || l.includes('security') || l.includes('risk') || l.includes('disaster')) return ShieldAlert;
 
   // Medical
   if (l.includes('medical') || l.includes('patient') || l.includes('doctor') || l.includes('clinical') || l.includes('surgery') || l.includes('diagnosis')) return Stethoscope;
@@ -108,7 +118,7 @@ export const PredictiveBuilder: React.FC<PredictiveBuilderProps> = ({ onSelect }
                  <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
                      <LayoutTemplate size={10}/> Predictive Builder
                  </div>
-                 <span className="text-[9px] bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded-full font-mono">400+</span>
+                 <span className="text-[9px] bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded-full font-mono">500+</span>
              </div>
              <div className="relative group">
                  <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500"/>
