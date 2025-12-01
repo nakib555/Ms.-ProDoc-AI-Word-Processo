@@ -116,6 +116,19 @@ export const getSystemPrompt = (operation: AIOperation, userPrompt?: string): st
     case 'generate_outline':
       specificDirective = `TASK: Generate a detailed outline. Use nested "list" blocks.`;
       break;
+    case 'continue_writing':
+      specificDirective = `TASK: Continue the writing seamlessly from the INPUT CONTEXT.
+      
+      GOAL: Generate the next logical segment (paragraphs, lists, or new section) that follows naturally.
+      
+      INSTRUCTIONS:
+      1. Analyze the INPUT CONTEXT for tone, style, and DOCUMENT STRUCTURE (headings, patterns).
+      2. If USER PROMPT contains specific instructions (e.g. "Formal", "Story"), prioritize those.
+      3. **Predictive Building**: If the context implies a structured document (or if explicitly asked to "Predict next section"), infer the document type (e.g., Report, Paper, Letter) and generate the NEXT LOGICAL SECTION.
+         - If the previous section feels complete, START A NEW HEADING (e.g., "Conclusion", "Analysis", "Next Steps") matching the document's hierarchy.
+      4. Maintain specific formatting (e.g. if previous text uses bullets, continue if appropriate).
+      5. Return the new content as valid JSON blocks to be appended.`;
+      break;
     default:
       specificDirective = "Enhance the text and return it as structured JSON blocks.";
   }
