@@ -17,25 +17,6 @@ const getClient = () => {
   return null;
 };
 
-// Robustness: Timeout wrapper to prevent hanging requests
-const withTimeout = <T>(promise: Promise<T>, ms: number): Promise<T> => {
-  return new Promise((resolve, reject) => {
-    const timer = setTimeout(() => {
-      reject(new Error("Request timed out. Please try again."));
-    }, ms);
-
-    promise
-      .then(value => {
-        clearTimeout(timer);
-        resolve(value);
-      })
-      .catch(reason => {
-        clearTimeout(timer);
-        reject(reason);
-      });
-  });
-};
-
 export const generateAIContent = async (
   operation: AIOperation,
   text: string,
@@ -50,7 +31,7 @@ export const generateAIContent = async (
   const systemPrompt = getSystemPrompt(operation, userPrompt);
 
   try {
-    const call = client.models.generateContent({
+    const response = await client.models.generateContent({
       model: model,
       contents: [
         { role: "user", parts: [{ text: `SYSTEM DIRECTIVE: ${systemPrompt}\n\nINPUT CONTEXT:\n${text}` }] }
@@ -59,8 +40,6 @@ export const generateAIContent = async (
         responseMimeType: "application/json", 
       }
     });
-
-    const response = await withTimeout<GenerateContentResponse>(call, 30000);
     
     // Safety check for empty responses
     if (!response.text) {
@@ -70,9 +49,6 @@ export const generateAIContent = async (
     return response.text;
   } catch (error: any) {
     console.error("Gemini API Error:", error);
-    if (error.message?.includes('timed out')) {
-      return JSON.stringify({ error: "The request took too long to process." });
-    }
     return JSON.stringify({ error: error.message || "Unknown API Error" });
   }
 };
@@ -153,7 +129,7 @@ export const generateAIImage = async (prompt: string): Promise<string | null> =>
 
   try {
     const response = await client.models.generateContent({
-      model: 'gemini-3-pro-image-preview',
+      model: 'gemini-2.5-flash-image',
       contents: {
         parts: [{ text: prompt }],
       },
