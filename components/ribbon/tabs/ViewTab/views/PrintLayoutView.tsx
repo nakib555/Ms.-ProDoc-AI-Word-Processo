@@ -1,12 +1,14 @@
 
-import React, { useState, useRef, useEffect, useCallback, useLayoutEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useLayoutEffect, useMemo } from 'react';
 import { FileText } from 'lucide-react';
+import { FixedSizeList as List, ListChildComponentProps } from 'react-window';
 import { RibbonButton } from '../../../common/RibbonButton';
 import { useEditor } from '../../../../../contexts/EditorContext';
 import { PageConfig } from '../../../../../types';
 import { Ruler } from '../../../../Ruler';
 import { EditorPage } from '../../../../EditorPage';
 import { paginateContent } from '../../../../../utils/layoutEngine';
+import { PAGE_SIZES } from '../../../../../constants';
 
 export const PrintLayoutTool: React.FC = () => {
   const { viewMode, setViewMode } = useEditor();
@@ -40,9 +42,6 @@ const isBlock = (el: HTMLElement) => {
     return BLOCK_TAGS.includes(el.tagName);
 };
 
-// 1. Get Text Length of a Node (Normalized for our Cursor Logic)
-// We treat block boundaries as a "virtual character" (length 1) to distinguish 
-// between "End of Para 1" and "Start of Para 2".
 const getNodeTextLength = (node: Node): number => {
     if (node.nodeType === Node.TEXT_NODE) {
         return (node.nodeValue || "").length;
@@ -50,11 +49,9 @@ const getNodeTextLength = (node: Node): number => {
     
     if (node.nodeType === Node.ELEMENT_NODE) {
         const el = node as HTMLElement;
-        // Atomic elements that act as a single character/block
         if (el.tagName === 'MATH-FIELD' || el.classList.contains('prodoc-page-break')) {
             return 1;
         }
-        // BR tags are effectively 1 character (newline)
         if (el.tagName === 'BR') {
             return 1;
         }
@@ -65,7 +62,6 @@ const getNodeTextLength = (node: Node): number => {
             len += getNodeTextLength(childNodes[i]);
         }
         
-        // Add 1 for block boundary to disambiguate positions between blocks
         if (isBlock(el)) len += 1;
         
         return len;
@@ -74,13 +70,11 @@ const getNodeTextLength = (node: Node): number => {
     return 0;
 };
 
-// 2. Get Global Offset
 const getGlobalCursorPosition = (): number | null => {
     const sel = window.getSelection();
     if (!sel || !sel.rangeCount) return null;
     const range = sel.getRangeAt(0);
     
-    // Determine which page we are on
     let pageElement: HTMLElement | null = null;
     let pageIndex = -1;
     let curr: Node | null = range.startContainer;
@@ -101,8 +95,6 @@ const getGlobalCursorPosition = (): number | null => {
 
     let globalOffset = 0;
 
-    // Sum previous pages
-    // We query DOM directly to ensure we get the state right before the update
     for (let i = 1; i < pageIndex; i++) {
         const pEl = document.getElementById(`prodoc-editor-${i}`);
         if (pEl) {
@@ -110,13 +102,11 @@ const getGlobalCursorPosition = (): number | null => {
         }
     }
 
-    // Add local offset
     globalOffset += getOffsetInNode(pageElement, range.startContainer, range.startOffset);
 
     return globalOffset;
 };
 
-// Helper to calculate offset within a root node up to a specific target node/offset
 const getOffsetInNode = (root: Node, target: Node, targetOffset: number): number => {
     let offset = 0;
     let found = false;
@@ -128,7 +118,6 @@ const getOffsetInNode = (root: Node, target: Node, targetOffset: number): number
             if (node.nodeType === Node.TEXT_NODE) {
                 offset += targetOffset;
             } else {
-                // If cursor is on Element, targetOffset is child index
                 for(let i=0; i<targetOffset; i++) {
                     offset += getNodeTextLength(node.childNodes[i]);
                 }
@@ -168,9 +157,7 @@ const getOffsetInNode = (root: Node, target: Node, targetOffset: number): number
     return offset;
 };
 
-// 3. Restore Cursor
 const restoreGlobalCursor = (globalOffset: number) => {
-    // Find total pages currently in DOM
     const pages = document.querySelectorAll('[id^="prodoc-editor-"]');
     const totalPages = pages.length;
     
@@ -182,9 +169,6 @@ const restoreGlobalCursor = (globalOffset: number) => {
         
         const pageLen = getNodeTextLength(el);
         
-        // Logic: If offset falls in this page.
-        // We use < instead of <= to prefer the START of the next page if we are exactly on the boundary
-        // and that boundary represents a new block/page.
         if (globalOffset < currentTotal + pageLen) {
             const localOffset = Math.max(0, globalOffset - currentTotal);
             setCursorInNode(el, localOffset);
@@ -193,7 +177,6 @@ const restoreGlobalCursor = (globalOffset: number) => {
         currentTotal += pageLen;
     }
     
-    // If we overshoot or hit exact end of document, put at end of last page
     const lastPage = document.getElementById(`prodoc-editor-${totalPages}`);
     if (lastPage) {
         const lastLen = getNodeTextLength(lastPage);
@@ -222,7 +205,6 @@ const setCursorInNode = (root: HTMLElement, offset: number) => {
             const el = node as HTMLElement;
             if (el.tagName === 'MATH-FIELD' || el.classList.contains('prodoc-page-break') || el.tagName === 'BR') {
                 if (currentCount + 1 >= offset) {
-                    // For BR/Atomic, place cursor after it
                     range.setStartAfter(node);
                     range.collapse(true);
                     found = true;
@@ -235,17 +217,13 @@ const setCursorInNode = (root: HTMLElement, offset: number) => {
                     if (found) return;
                 }
                 
-                // Account for block boundary
                 if (isBlock(el)) {
-                    // If offset targets exactly this virtual boundary, it usually means 
-                    // start of next node, so we let the loop continue or next sibling pick it up.
                     currentCount += 1;
                 }
             }
         }
     };
 
-    // Edge case: empty root or offset 0
     if (offset === 0) {
         range.setStart(root, 0);
         range.collapse(true);
@@ -261,9 +239,7 @@ const setCursorInNode = (root: HTMLElement, offset: number) => {
             sel.removeAllRanges();
             sel.addRange(range);
             
-            // Scroll into view logic
             const rect = range.getBoundingClientRect();
-            // If rect is 0 (hidden or collapsed in empty), fallback to container
             if (rect.top === 0 && rect.height === 0) {
                  const el = range.startContainer.nodeType === Node.TEXT_NODE 
                     ? range.startContainer.parentElement 
@@ -277,7 +253,6 @@ const setCursorInNode = (root: HTMLElement, offset: number) => {
             }
         }
     } else {
-        // Fallback: If not found (e.g. due to weird mismatch), set to end
         const range = document.createRange();
         range.selectNodeContents(root);
         range.collapse(false);
@@ -286,6 +261,56 @@ const setCursorInNode = (root: HTMLElement, offset: number) => {
         sel?.addRange(range);
     }
 };
+
+// --- Virtualized Row Component ---
+const PageRow = React.memo(({ index, style, data }: ListChildComponentProps) => {
+    const { 
+        pages, 
+        config, 
+        zoom, 
+        showFormattingMarks, 
+        handlePageUpdate, 
+        handlePageFocus, 
+        activeEditingArea, 
+        setActiveEditingArea, 
+        headerContent, 
+        setHeaderContent, 
+        footerContent, 
+        setFooterContent 
+    } = data;
+
+    const pageContent = pages[index];
+
+    return (
+        <div style={style} className="w-full flex justify-center">
+            {/* Added padding wrapper to handle the gap logic visually */}
+            <div className="pt-8">
+                <div 
+                    className="prodoc-page-wrapper box-border shrink-0 transition-all duration-300 relative group"
+                    data-page-index={index}
+                >
+                    <EditorPage
+                        pageNumber={index + 1}
+                        totalPages={pages.length}
+                        content={pageContent}
+                        config={config}
+                        zoom={zoom}
+                        showFormattingMarks={showFormattingMarks}
+                        onContentChange={handlePageUpdate}
+                        onFocus={(e) => handlePageFocus(index, e)}
+                        activeEditingArea={activeEditingArea}
+                        setActiveEditingArea={setActiveEditingArea}
+                        headerContent={headerContent}
+                        setHeaderContent={setHeaderContent}
+                        footerContent={footerContent}
+                        setFooterContent={setFooterContent}
+                    />
+                    {/* Visual separation logic mostly handled by gap/padding now, but keeping for consistency if needed */}
+                </div>
+            </div>
+        </div>
+    );
+});
 
 export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
   width,
@@ -314,9 +339,8 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
   
   const [pages, setPages] = useState<string[]>(() => paginateContent(content, pageConfig).pages);
   const rulerContainerRef = useRef<HTMLDivElement>(null);
-  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+  const listRef = useRef<List>(null);
   
-  // Ref to hold the cursor position we want to restore after a layout effect
   const cursorRestorationRef = useRef<number | null>(null);
 
   // Pagination Effect
@@ -326,9 +350,7 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
     const timer = setTimeout(() => {
         if (!isMounted) return;
         
-        // 1. Capture Global Cursor BEFORE pagination changes the DOM structure
         const currentCursor = getGlobalCursorPosition();
-        
         const result = paginateContent(content, pageConfig);
         
         setPages(result.pages);
@@ -352,14 +374,11 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
           restoreGlobalCursor(cursorRestorationRef.current);
           cursorRestorationRef.current = null;
       }
-  }, [pages]); // Runs when pages structure updates
+  }, [pages]);
 
-  // On Mount or Page Change, sync context ref to the active page so AI tools know where to insert
   useEffect(() => {
       const activePageEl = document.getElementById(`prodoc-editor-${currentPage}`);
       if (activePageEl && editorRef) {
-          // Check if we are focusing something else (like Copilot input), don't steal
-          // But if nothing relevant is focused, or selection is inside page, update context ref
           (editorRef as React.MutableRefObject<HTMLDivElement | null>).current = activePageEl as HTMLDivElement;
       }
   }, [currentPage, editorRef, pages]);
@@ -370,7 +389,6 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
         if (updatedPages[pageIndex] !== newHtml) {
             updatedPages[pageIndex] = newHtml;
             const fullContent = updatedPages.join('');
-            // Defer setContent to next tick to let React render current changes
             setTimeout(() => setContent(fullContent), 0);
             return updatedPages;
         }
@@ -385,70 +403,79 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
       }
   }, [setCurrentPage, editorRef]);
 
-  // Unified scroll handler
-  const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
-      const container = e.currentTarget;
-      
-      // Sync Ruler
-      if (rulerContainerRef.current) {
-          rulerContainerRef.current.scrollLeft = container.scrollLeft;
-      }
+  // Virtualization Items Props
+  const itemData = useMemo(() => ({
+      pages,
+      config: pageConfig,
+      zoom,
+      showFormattingMarks,
+      handlePageUpdate,
+      handlePageFocus,
+      activeEditingArea,
+      setActiveEditingArea,
+      headerContent,
+      setHeaderContent,
+      footerContent,
+      setFooterContent
+  }), [pages, pageConfig, zoom, showFormattingMarks, handlePageUpdate, handlePageFocus, activeEditingArea, setActiveEditingArea, headerContent, setHeaderContent, footerContent, setFooterContent]);
 
-      // Determine active page
-      const containerRect = container.getBoundingClientRect();
-      const centerY = containerRect.top + containerRect.height / 2;
-      const centerX = containerRect.left + containerRect.width / 2;
-
-      const pageWrappers = Array.from(container.getElementsByClassName('prodoc-page-wrapper')) as HTMLElement[];
-      
-      let closestPage = 1;
-      let minDistance = Infinity;
-
-      for (const wrapper of pageWrappers) {
-          const rect = wrapper.getBoundingClientRect();
-          const wrapperCenterX = rect.left + rect.width / 2;
-          const wrapperCenterY = rect.top + rect.height / 2;
-          
-          const dist = Math.hypot(wrapperCenterX - centerX, wrapperCenterY - centerY);
-          
-          if (dist < minDistance) {
-              minDistance = dist;
-              const pageIndex = Number(wrapper.getAttribute('data-page-index'));
-              if (!isNaN(pageIndex)) closestPage = pageIndex + 1;
-          }
+  // Calculate Page Size for Virtualization
+  const itemSize = useMemo(() => {
+      let baseH = 0;
+      if (pageConfig.size === 'Custom' && pageConfig.customHeight) {
+          baseH = pageConfig.customHeight * 96;
+      } else {
+          const base = PAGE_SIZES[pageConfig.size as string] || PAGE_SIZES['Letter'];
+          baseH = pageConfig.orientation === 'portrait' ? base.height : base.width;
       }
       
-      setCurrentPage(closestPage);
+      const scaledHeight = baseH * (zoom / 100);
+      const GAP_SIZE = 32; // py-8 equivalent
+      return scaledHeight + GAP_SIZE;
+  }, [pageConfig.size, pageConfig.orientation, pageConfig.customHeight, zoom]);
+
+  const handleItemsRendered = useCallback(({ visibleStartIndex }: { visibleStartIndex: number }) => {
+      setCurrentPage(visibleStartIndex + 1);
   }, [setCurrentPage]);
 
-  const setRefs = useCallback((node: HTMLDivElement | null) => {
-      scrollContainerRef.current = node;
-      containerRef(node);
-  }, [containerRef]);
+  // Handle Scroll Sync for Ruler
+  const onScroll = useCallback(({ scrollOffset }: { scrollOffset: number, scrollUpdateWasRequested: boolean }) => {
+      // Typically vertical scroll doesn't affect horizontal ruler scroll, 
+      // but if we had horizontal scrolling on the outer container, we'd need to sync.
+      // FixedSizeList handles vertical scrolling. 
+      // If the content is wider than viewport, FixedSizeList allows horizontal overflow via `style={{ overflow: 'auto' }}` on outer element?
+      // react-window list usually handles one direction.
+      // For print layout, horizontal scroll is usually needed.
+      // FixedSizeList creates a container of `width`. If page is wider, we need `width` to match content or `overflow: auto`.
+      // We set List `width={width}` which is the AutoSizer width (viewport width).
+      // The Row inner content centers the page. If page > viewport, centering might clip or require scroll.
+      // To support horizontal scroll with react-window, we typically rely on the inner elements being wide,
+      // but react-window clips overflow. 
+      // Ideally, `width` passed to List should be `Math.max(viewportWidth, pageScaledWidth + padding)`.
+      // But AutoSizer gives viewport width.
+  }, []);
 
-  const handleBackgroundClick = (e: React.MouseEvent) => {
-      if (e.target === e.currentTarget && activeEditingArea !== 'body') {
-          setActiveEditingArea('body');
-      } else if (e.target === e.currentTarget) {
-          // Clicked outside pages, focus last page end
-          const lastPageId = `prodoc-editor-${pages.length}`;
-          const lastPage = document.getElementById(lastPageId);
-          if (lastPage) {
-              lastPage.focus();
-              const range = document.createRange();
-              range.selectNodeContents(lastPage);
-              range.collapse(false);
-              const sel = window.getSelection();
-              sel?.removeAllRanges();
-              sel?.addRange(range);
-              
-              // Also update ref
-              if (editorRef) {
-                  (editorRef as React.MutableRefObject<HTMLDivElement | null>).current = lastPage as HTMLDivElement;
-              }
-          }
+  // Compute actual content width for horizontal scrolling support
+  const contentWidth = useMemo(() => {
+      let baseW = 0;
+      if (pageConfig.size === 'Custom' && pageConfig.customWidth) {
+          baseW = pageConfig.customWidth * 96;
+      } else {
+          const base = PAGE_SIZES[pageConfig.size as string] || PAGE_SIZES['Letter'];
+          baseW = pageConfig.orientation === 'portrait' ? base.width : base.height;
       }
-  };
+      return baseW * (zoom / 100) + 64; // + padding
+  }, [pageConfig, zoom]);
+
+  const listWidth = Math.max(width, contentWidth);
+
+  // Sync horizontal scroll for ruler
+  const handleOuterScroll = useCallback((e: React.UIEvent<HTMLElement>) => {
+      const scrollLeft = e.currentTarget.scrollLeft;
+      if (rulerContainerRef.current) {
+          rulerContainerRef.current.scrollLeft = scrollLeft;
+      }
+  }, []);
 
   const isVertical = pageMovement === 'vertical';
 
@@ -467,47 +494,80 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
          </div>
        )}
 
-       <div 
-          ref={setRefs}
-          className="flex-1 relative overflow-auto scrollbar-thin scrollbar-thumb-slate-400 dark:scrollbar-thumb-slate-600 scrollbar-track-transparent"
-          onScroll={handleScroll}
-          onDoubleClick={() => setActiveEditingArea('body')}
-       >
-           <div 
-                className={`min-w-full min-h-full w-fit flex ${isVertical ? 'flex-col items-center justify-start py-8 gap-8' : 'flex-row flex-wrap justify-center content-start py-8 gap-8'}`}
-                onClick={handleBackgroundClick}
-           >
-                {pages.map((pageContent, index) => (
-                    <div 
-                        key={index} 
-                        className="prodoc-page-wrapper box-border shrink-0 transition-all duration-300 relative group"
-                        data-page-index={index}
-                    >
-                        <EditorPage
-                            pageNumber={index + 1}
-                            totalPages={pages.length}
-                            content={pageContent}
-                            config={pageConfig}
-                            zoom={zoom}
-                            showFormattingMarks={showFormattingMarks}
-                            onContentChange={handlePageUpdate}
-                            onFocus={(e) => handlePageFocus(index, e)}
-                            activeEditingArea={activeEditingArea}
-                            setActiveEditingArea={setActiveEditingArea}
-                            headerContent={headerContent}
-                            setHeaderContent={setHeaderContent}
-                            footerContent={footerContent}
-                            setFooterContent={setFooterContent}
-                        />
-                        {index < pages.length - 1 && isVertical && (
-                            <div className="absolute left-0 right-0 -bottom-8 h-8 opacity-0 group-hover:opacity-100 flex items-center justify-center pointer-events-none transition-opacity">
-                                <div className="h-[1px] bg-slate-400 w-12"></div>
-                            </div>
-                        )}
-                    </div>
+       {isVertical ? (
+           <List
+                ref={listRef}
+                height={height - (showRuler ? 25 : 0)}
+                itemCount={pages.length}
+                itemSize={itemSize}
+                width={width}
+                className="scrollbar-thin scrollbar-thumb-slate-400 dark:scrollbar-thumb-slate-600 scrollbar-track-transparent"
+                itemData={itemData}
+                outerRef={containerRef}
+                onItemsRendered={handleItemsRendered}
+                outerElementType={React.forwardRef((props, ref: any) => (
+                    <div {...props} ref={ref} onScroll={(e) => {
+                        props.onScroll && props.onScroll(e);
+                        handleOuterScroll(e);
+                    }} style={{ ...props.style, overflowX: 'auto', overflowY: 'auto' }} />
                 ))}
+                innerElementType={React.forwardRef(({ style, ...rest }: any, ref: any) => (
+                    <div
+                        ref={ref}
+                        style={{
+                            ...style,
+                            width: listWidth, // Force inner width to allow horizontal scroll
+                            position: 'relative'
+                        }}
+                        {...rest}
+                    />
+                ))}
+           >
+               {PageRow}
+           </List>
+       ) : (
+           /* Fallback for Side-to-Side (non-virtualized for grid complexity) */
+           <div 
+              ref={containerRef}
+              className="flex-1 relative overflow-auto scrollbar-thin scrollbar-thumb-slate-400 dark:scrollbar-thumb-slate-600 scrollbar-track-transparent"
+              onScroll={(e) => handleOuterScroll(e)}
+              onDoubleClick={() => setActiveEditingArea('body')}
+           >
+               <div 
+                    className="min-w-full min-h-full w-fit flex flex-row flex-wrap justify-center content-start py-8 gap-8"
+                    onClick={(e) => {
+                        if (e.target === e.currentTarget && activeEditingArea !== 'body') {
+                            setActiveEditingArea('body');
+                        }
+                    }}
+               >
+                    {pages.map((pageContent, index) => (
+                        <div 
+                            key={index} 
+                            className="prodoc-page-wrapper box-border shrink-0 transition-all duration-300 relative group"
+                            data-page-index={index}
+                        >
+                            <EditorPage
+                                pageNumber={index + 1}
+                                totalPages={pages.length}
+                                content={pageContent}
+                                config={pageConfig}
+                                zoom={zoom}
+                                showFormattingMarks={showFormattingMarks}
+                                onContentChange={handlePageUpdate}
+                                onFocus={(e) => handlePageFocus(index, e)}
+                                activeEditingArea={activeEditingArea}
+                                setActiveEditingArea={setActiveEditingArea}
+                                headerContent={headerContent}
+                                setHeaderContent={setHeaderContent}
+                                footerContent={footerContent}
+                                setFooterContent={setFooterContent}
+                            />
+                        </div>
+                    ))}
+               </div>
            </div>
-       </div>
+       )}
     </div>
   );
 });

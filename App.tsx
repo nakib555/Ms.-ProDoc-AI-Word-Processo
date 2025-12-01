@@ -1,15 +1,17 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, Suspense } from 'react';
 import Ribbon from './components/Ribbon';
 import Editor from './components/Editor';
 import StatusBar from './components/StatusBar';
 import { ReadModeToolbar } from './components/ribbon/tabs/ViewTab/views/ReadMode/ReadModeToolbar';
-import { CopilotSidebar } from './components/CopilotSidebar';
 import { RibbonTab } from './types';
 import { Loader2 } from 'lucide-react';
 import { EditorProvider, useEditor } from './contexts/EditorContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { useResponsive } from './hooks/useResponsive';
+
+// Lazy load the sidebar as it's a secondary feature
+const CopilotSidebar = React.lazy(() => import('./components/CopilotSidebar').then(m => ({ default: m.CopilotSidebar })));
 
 const AppContent: React.FC = () => {
   const [activeTab, setActiveTab] = useState<RibbonTab | null>(RibbonTab.HOME);
@@ -71,7 +73,11 @@ const AppContent: React.FC = () => {
             )}
           </div>
           
-          {viewMode !== 'web' && <CopilotSidebar />}
+          {viewMode !== 'web' && (
+            <Suspense fallback={null}>
+              <CopilotSidebar />
+            </Suspense>
+          )}
         </div>
       </div>
 
