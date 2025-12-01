@@ -66,7 +66,7 @@ export const WriteWithAITool: React.FC = () => {
   };
 
   // Dynamic UI based on AI State
-  let Icon = Sparkles;
+  let Icon: React.ElementType = Sparkles;
   let label = "Write with AI";
   let className = "text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700 bg-indigo-50/50 border border-indigo-100";
 
