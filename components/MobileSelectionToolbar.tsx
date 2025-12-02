@@ -7,6 +7,7 @@ export const MobileSelectionToolbar: React.FC = () => {
     const { 
         selectionMode,
         setSelectionMode,
+        setIsKeyboardLocked
     } = useEditor();
     
     // Local state for "Extend" mode (Shift key behavior)
@@ -102,7 +103,10 @@ export const MobileSelectionToolbar: React.FC = () => {
 
             {/* Close Button */}
             <button 
-                onClick={() => setSelectionMode(false)}
+                onClick={() => {
+                    setSelectionMode(false);
+                    setIsKeyboardLocked(false);
+                }}
                 className="p-2 text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-colors"
             >
                 <X size={18} strokeWidth={2.5} />

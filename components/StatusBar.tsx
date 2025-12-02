@@ -77,7 +77,11 @@ const StatusBar: React.FC = () => {
             
             {/* Smart Selection Toggle (Mobile Helper) */}
             <button 
-                onClick={() => setSelectionMode(!selectionMode)}
+                onClick={() => {
+                    const newState = !selectionMode;
+                    setSelectionMode(newState);
+                    setIsKeyboardLocked(newState);
+                }}
                 className={`p-1.5 rounded transition-all flex items-center gap-1 ${selectionMode ? 'text-indigo-400 bg-indigo-900/20 ring-1 ring-indigo-500/50' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}
                 title={selectionMode ? "Disable Smart Select Mode" : "Enable Smart Select Mode (Tap to Extend Selection)"}
             >
