@@ -39,14 +39,16 @@ export const AdvancedExpandDialog: React.FC<AdvancedExpandDialogProps> = ({
   const [selectedMode, setSelectedMode] = useState('detail');
   const [isGenerating, setIsGenerating] = useState(false);
   const [result, setResult] = useState('');
-  const [mobileView, setMobileView] = useState<'settings' | 'preview'>('settings');
   
+  const [mobileTab, setMobileTab] = useState<'settings' | 'preview'>('settings');
+
   const handleGenerate = async () => {
     if (!inputText.trim()) return;
     
     setIsGenerating(true);
     setResult('');
-    setMobileView('preview');
+    // Auto-switch to preview on mobile
+    setMobileTab('preview');
 
     const modeConfig = EXPAND_MODES.find(m => m.id === selectedMode);
     
@@ -73,9 +75,6 @@ export const AdvancedExpandDialog: React.FC<AdvancedExpandDialogProps> = ({
     try {
       const response = await generateAIContent('generate_content', '', prompt, 'gemini-3-pro-preview');
       
-      console.group("AI Expansion Debug");
-      console.log("Raw Response:", response);
-
       let cleanJson = response.trim();
       const codeBlockMatch = cleanJson.match(/```(?:json)?([\s\S]*?)```/);
       if (codeBlockMatch) cleanJson = codeBlockMatch[1].trim();
@@ -84,20 +83,15 @@ export const AdvancedExpandDialog: React.FC<AdvancedExpandDialogProps> = ({
       if (cleanJson.indexOf('{') > 0) cleanJson = cleanJson.substring(cleanJson.indexOf('{'));
       if (cleanJson.lastIndexOf('}') < cleanJson.length - 1) cleanJson = cleanJson.substring(0, cleanJson.lastIndexOf('}') + 1);
 
-      console.log("Cleaned JSON:", cleanJson);
-
       try {
           const parsed = JSON.parse(cleanJson);
-          console.log("Parsed Object:", parsed);
           const html = jsonToHtml(parsed);
-          console.log("Generated HTML:", html);
           setResult(html);
       } catch (e) {
           console.error("JSON Parse Error", e);
           // Fallback text render
           setResult(`<p>${response.replace(/\n/g, '<br/>')}</p>`);
       }
-      console.groupEnd();
     } catch (e) {
       console.error(e);
       setResult('<p class="text-red-500">Generation failed. Please try again.</p>');
@@ -109,30 +103,29 @@ export const AdvancedExpandDialog: React.FC<AdvancedExpandDialogProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200 p-2 md:p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200 p-4" onClick={onClose}>
       <div 
-        className="bg-white dark:bg-slate-900 w-full h-[80vh] md:w-[95vw] md:h-[85vh] max-w-6xl rounded-2xl shadow-2xl border border-white/20 dark:border-slate-700 flex flex-col md:flex-row overflow-hidden animate-in zoom-in-95 duration-200"
+        className="bg-white dark:bg-slate-900 w-full max-w-6xl h-[85vh] md:h-[80vh] rounded-2xl shadow-2xl border border-white/20 dark:border-slate-700 flex flex-col md:flex-row overflow-hidden animate-in zoom-in-95 duration-200 ring-1 ring-black/10"
         onClick={e => e.stopPropagation()}
       >
         {/* Left Panel: Configuration */}
         <div className={`
-            w-full md:w-[400px] bg-slate-50 dark:bg-slate-950 border-r border-slate-200 dark:border-slate-800 flex-col shrink-0
-            ${mobileView === 'settings' ? 'flex' : 'hidden md:flex'}
+            flex-col bg-slate-50 dark:bg-slate-950 border-r border-slate-200 dark:border-slate-800 shrink-0 transition-all duration-300
+            md:w-[400px] md:flex
+            ${mobileTab === 'settings' ? 'flex w-full h-full' : 'hidden'}
         `}>
             <div className="p-5 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center">
-                <div className="flex items-center gap-2">
-                    <div className="p-1.5 bg-blue-100 dark:bg-blue-900/30 rounded-lg text-blue-600 dark:text-blue-400">
-                        <ZoomIn size={18} />
-                    </div>
-                    <div>
-                        <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100">
-                            Smart Expander
-                        </h2>
-                        <p className="text-xs text-slate-500">Enrich your content.</p>
-                    </div>
+                <div>
+                    <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                        <div className="p-1.5 bg-blue-100 dark:bg-blue-900/30 rounded-lg text-blue-600 dark:text-blue-400">
+                            <ZoomIn size={18} />
+                        </div>
+                        Smart Expander
+                    </h2>
+                    <p className="text-xs text-slate-500 mt-1">Enrich your content with precision.</p>
                 </div>
-                {/* Mobile Close */}
-                <button onClick={onClose} className="md:hidden text-slate-400 p-1 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-full">
+                {/* Mobile Close Button */}
+                <button onClick={onClose} className="md:hidden p-2 text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-full">
                     <X size={20} />
                 </button>
             </div>
@@ -193,21 +186,21 @@ export const AdvancedExpandDialog: React.FC<AdvancedExpandDialogProps> = ({
 
         {/* Right Panel: Result */}
         <div className={`
-            flex-1 flex-col bg-slate-100 dark:bg-slate-950 min-w-0 relative
-            ${mobileView === 'preview' ? 'flex' : 'hidden md:flex'}
+            flex-col bg-slate-100 dark:bg-slate-950 min-w-0 relative flex-1
+            md:flex
+            ${mobileTab === 'preview' ? 'flex w-full h-full' : 'hidden'}
         `}>
-            <div className="h-14 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-between px-4 md:px-6 shrink-0">
-                <div className="flex items-center gap-2">
-                    {/* Mobile Back Button */}
+            <div className="h-16 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-between px-6 shrink-0">
+                <div className="flex items-center gap-3">
                     <button 
-                        onClick={() => setMobileView('settings')}
-                        className="md:hidden p-1.5 -ml-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg flex items-center gap-1 transition-colors"
+                        onClick={() => setMobileTab('settings')}
+                        className="md:hidden p-2 -ml-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors flex items-center gap-1"
                     >
-                        <ArrowLeft size={18} />
+                        <ArrowLeft size={18} /> 
                         <span className="text-xs font-bold">Settings</span>
                     </button>
 
-                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wide hidden md:flex items-center gap-2">
+                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wide flex items-center gap-2">
                         Result Preview
                         {result && <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>}
                     </span>
@@ -250,7 +243,7 @@ export const AdvancedExpandDialog: React.FC<AdvancedExpandDialogProps> = ({
                             }
                         `}</style>
                         <div 
-                            className="preview-result prose prose-slate dark:prose-invert max-w-3xl mx-auto bg-white dark:bg-slate-900 p-10 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 min-h-[500px]"
+                            className="preview-result prose prose-slate dark:prose-invert max-w-3xl mx-auto bg-white dark:bg-slate-900 p-8 md:p-10 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 min-h-[500px]"
                             dangerouslySetInnerHTML={{ __html: result }}
                         />
                     </div>
@@ -274,7 +267,7 @@ export const AdvancedExpandDialog: React.FC<AdvancedExpandDialogProps> = ({
                                 </div>
                                 <h3 className="text-lg font-bold text-slate-600 dark:text-slate-300">Ready to Expand</h3>
                                 <p className="text-sm leading-relaxed opacity-70">
-                                    Select a mode on the left to transform "{inputText.substring(0, 30)}..." into something more comprehensive.
+                                    Select a mode {window.innerWidth >= 768 ? 'on the left' : 'in Settings'} to transform "{inputText.substring(0, 30)}..." into something more comprehensive.
                                 </p>
                             </div>
                         )}
@@ -283,14 +276,14 @@ export const AdvancedExpandDialog: React.FC<AdvancedExpandDialogProps> = ({
             </div>
 
             {/* Result Actions */}
-            <div className="h-16 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-end px-4 md:px-6 gap-3 shrink-0">
+            <div className="h-16 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-end px-6 gap-3 shrink-0">
                 {result && (
                     <>
                         <button 
                             onClick={() => navigator.clipboard.writeText(result.replace(/<[^>]*>?/gm, ''))}
                             className="px-4 py-2 text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg flex items-center gap-2 transition-colors"
                         >
-                            <Copy size={16} /> Copy
+                            <Copy size={16} /> <span className="hidden sm:inline">Copy</span>
                         </button>
                         <button 
                             onClick={() => { onInsert(result); onClose(); }}

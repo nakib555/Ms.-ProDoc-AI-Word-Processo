@@ -51,16 +51,17 @@ export const AdvancedSummarizeDialog: React.FC<AdvancedSummarizeDialogProps> = (
     highlightInsights: false
   });
 
+  const [mobileTab, setMobileTab] = useState<'settings' | 'preview'>('settings');
   const [isGenerating, setIsGenerating] = useState(false);
   const [result, setResult] = useState('');
-  const [mobileView, setMobileView] = useState<'settings' | 'preview'>('settings');
   
   const { } = useEditor();
 
   const handleGenerate = async () => {
     setIsGenerating(true);
     setResult('');
-    setMobileView('preview'); // Switch to preview on mobile
+    // Auto-switch to preview on mobile when generating
+    setMobileTab('preview');
 
     // Construct the prompt based on UI state
     let lengthDesc = "medium length";
@@ -158,15 +159,16 @@ export const AdvancedSummarizeDialog: React.FC<AdvancedSummarizeDialogProps> = (
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200 p-2 md:p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-200 p-4" onClick={onClose}>
       <div 
-        className="bg-white dark:bg-slate-900 w-full h-[80vh] md:w-[95vw] md:h-[85vh] max-w-5xl rounded-2xl shadow-2xl border border-white/20 dark:border-slate-700 flex flex-col md:flex-row overflow-hidden animate-in zoom-in-95 duration-200"
+        className="bg-white dark:bg-slate-900 w-full max-w-5xl h-[85vh] md:h-[80vh] rounded-2xl shadow-2xl border border-white/20 dark:border-slate-700 flex flex-col md:flex-row overflow-hidden animate-in zoom-in-95 duration-200 ring-1 ring-black/10"
         onClick={e => e.stopPropagation()}
       >
         {/* Left Sidebar: Controls */}
         <div className={`
-            w-full md:w-80 bg-slate-50 dark:bg-slate-950 border-r border-slate-200 dark:border-slate-800 flex-col shrink-0
-            ${mobileView === 'settings' ? 'flex' : 'hidden md:flex'}
+            flex-col bg-slate-50 dark:bg-slate-950 border-r border-slate-200 dark:border-slate-800 shrink-0 transition-all duration-300
+            md:w-80 md:flex
+            ${mobileTab === 'settings' ? 'flex w-full h-full' : 'hidden'}
         `}>
             <div className="p-5 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center">
                 <div>
@@ -178,8 +180,8 @@ export const AdvancedSummarizeDialog: React.FC<AdvancedSummarizeDialogProps> = (
                     </h2>
                     <p className="text-xs text-slate-500 mt-1">Distill content into clarity.</p>
                 </div>
-                {/* Mobile Close Button */}
-                <button onClick={onClose} className="md:hidden text-slate-400 p-1 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-full">
+                {/* Mobile Close */}
+                <button onClick={onClose} className="md:hidden p-2 text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-full">
                     <X size={20} />
                 </button>
             </div>
@@ -288,7 +290,7 @@ export const AdvancedSummarizeDialog: React.FC<AdvancedSummarizeDialogProps> = (
                 </div>
             </div>
 
-            <div className="p-5 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+            <div className="p-5 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 sticky bottom-0">
                 <button 
                     onClick={handleGenerate}
                     disabled={isGenerating}
@@ -302,26 +304,27 @@ export const AdvancedSummarizeDialog: React.FC<AdvancedSummarizeDialogProps> = (
 
         {/* Right Panel: Content */}
         <div className={`
-            flex-1 flex-col bg-white dark:bg-slate-950 min-w-0
-            ${mobileView === 'preview' ? 'flex' : 'hidden md:flex'}
+            flex-col bg-white dark:bg-slate-950 min-w-0 flex-1
+            md:flex
+            ${mobileTab === 'preview' ? 'flex w-full h-full' : 'hidden'}
         `}>
             {/* Header */}
-            <div className="h-14 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-between px-4 md:px-6 shrink-0">
-                <div className="flex items-center gap-2">
-                    {/* Mobile Back Button */}
+            <div className="h-16 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-between px-6 shrink-0">
+                <div className="flex items-center gap-3">
                     <button 
-                        onClick={() => setMobileView('settings')}
-                        className="md:hidden p-1.5 -ml-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg flex items-center gap-1 transition-colors"
+                        onClick={() => setMobileTab('settings')}
+                        className="md:hidden p-2 -ml-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors flex items-center gap-1"
                     >
-                        <ArrowLeft size={18} />
+                        <ArrowLeft size={18} /> 
                         <span className="text-xs font-bold">Settings</span>
                     </button>
-
-                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wide hidden md:flex items-center gap-2">
-                        Result Preview
+                    
+                    <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-slate-400 uppercase tracking-wide">Result Preview</span>
                         {result && <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>}
-                    </span>
+                    </div>
                 </div>
+                
                 <button onClick={onClose} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors p-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800">
                     <X size={20} />
                 </button>
@@ -350,8 +353,8 @@ export const AdvancedSummarizeDialog: React.FC<AdvancedSummarizeDialogProps> = (
                                 </div>
                                 <h3 className="text-lg font-bold text-slate-600 dark:text-slate-300">Ready to Summarize</h3>
                                 <p className="text-sm leading-relaxed text-slate-400">
-                                    Configure your summary options on the left and click <strong>Generate</strong>.
-                                    The AI will analyze "{initialText.substring(0, 20)}..." and extract the key information.
+                                    Configure your summary options {window.innerWidth >= 768 ? 'on the left' : 'in Settings'} and click <strong>Generate</strong>.
+                                    The AI will analyze your text and extract the key information.
                                 </p>
                             </div>
                         )}
@@ -360,14 +363,14 @@ export const AdvancedSummarizeDialog: React.FC<AdvancedSummarizeDialogProps> = (
             </div>
 
             {/* Footer Actions */}
-            <div className="h-16 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-end px-4 md:px-6 gap-3 shrink-0">
+            <div className="h-16 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-end px-6 gap-3 shrink-0">
                 {result && (
                     <>
                         <button 
                             onClick={() => navigator.clipboard.writeText(result.replace(/<[^>]*>?/gm, ''))}
                             className="px-4 py-2 text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg flex items-center gap-2 transition-colors"
                         >
-                            <Copy size={16} /> <span className="hidden sm:inline">Copy Text</span>
+                            <Copy size={16} /> <span className="hidden sm:inline">Copy</span>
                         </button>
                         <button 
                             onClick={() => { onInsert(result); onClose(); }}
