@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { 
   X, FileText, List, AlignLeft, Hash, Zap, Globe, 
   Sparkles, Check, Copy, ArrowRight, Settings2, Sliders, 
-  RefreshCw, MessageSquare
+  RefreshCw, MessageSquare, ArrowLeft
 } from 'lucide-react';
 import { generateAIContent } from '../../../../../services/geminiService';
 import { useEditor } from '../../../../../contexts/EditorContext';
@@ -53,12 +53,14 @@ export const AdvancedSummarizeDialog: React.FC<AdvancedSummarizeDialogProps> = (
 
   const [isGenerating, setIsGenerating] = useState(false);
   const [result, setResult] = useState('');
+  const [mobileView, setMobileView] = useState<'settings' | 'preview'>('settings');
   
   const { } = useEditor();
 
   const handleGenerate = async () => {
     setIsGenerating(true);
     setResult('');
+    setMobileView('preview'); // Switch to preview on mobile
 
     // Construct the prompt based on UI state
     let lengthDesc = "medium length";
@@ -156,21 +158,30 @@ export const AdvancedSummarizeDialog: React.FC<AdvancedSummarizeDialogProps> = (
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200 p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200 p-2 md:p-4" onClick={onClose}>
       <div 
-        className="bg-white dark:bg-slate-900 w-full max-w-5xl h-[85vh] rounded-2xl shadow-2xl border border-white/20 dark:border-slate-700 flex flex-col md:flex-row overflow-hidden animate-in zoom-in-95 duration-200"
+        className="bg-white dark:bg-slate-900 w-full h-[80vh] md:w-[95vw] md:h-[85vh] max-w-5xl rounded-2xl shadow-2xl border border-white/20 dark:border-slate-700 flex flex-col md:flex-row overflow-hidden animate-in zoom-in-95 duration-200"
         onClick={e => e.stopPropagation()}
       >
         {/* Left Sidebar: Controls */}
-        <div className="w-full md:w-80 bg-slate-50 dark:bg-slate-950 border-r border-slate-200 dark:border-slate-800 flex flex-col shrink-0">
-            <div className="p-5 border-b border-slate-200 dark:border-slate-800">
-                <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
-                    <div className="p-1.5 bg-violet-100 dark:bg-violet-900/30 rounded-lg text-violet-600 dark:text-violet-400">
-                        <Zap size={18} />
-                    </div>
-                    Summarizer
-                </h2>
-                <p className="text-xs text-slate-500 mt-1">Distill content into clarity.</p>
+        <div className={`
+            w-full md:w-80 bg-slate-50 dark:bg-slate-950 border-r border-slate-200 dark:border-slate-800 flex-col shrink-0
+            ${mobileView === 'settings' ? 'flex' : 'hidden md:flex'}
+        `}>
+            <div className="p-5 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center">
+                <div>
+                    <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                        <div className="p-1.5 bg-violet-100 dark:bg-violet-900/30 rounded-lg text-violet-600 dark:text-violet-400">
+                            <Zap size={18} />
+                        </div>
+                        Summarizer
+                    </h2>
+                    <p className="text-xs text-slate-500 mt-1">Distill content into clarity.</p>
+                </div>
+                {/* Mobile Close Button */}
+                <button onClick={onClose} className="md:hidden text-slate-400 p-1 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-full">
+                    <X size={20} />
+                </button>
             </div>
 
             <div className="flex-1 overflow-y-auto p-5 space-y-6 custom-scrollbar">
@@ -290,12 +301,26 @@ export const AdvancedSummarizeDialog: React.FC<AdvancedSummarizeDialogProps> = (
         </div>
 
         {/* Right Panel: Content */}
-        <div className="flex-1 flex flex-col bg-white dark:bg-slate-950 min-w-0">
+        <div className={`
+            flex-1 flex-col bg-white dark:bg-slate-950 min-w-0
+            ${mobileView === 'preview' ? 'flex' : 'hidden md:flex'}
+        `}>
             {/* Header */}
-            <div className="h-14 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-between px-6 shrink-0">
+            <div className="h-14 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-between px-4 md:px-6 shrink-0">
                 <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wide">Result Preview</span>
-                    {result && <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>}
+                    {/* Mobile Back Button */}
+                    <button 
+                        onClick={() => setMobileView('settings')}
+                        className="md:hidden p-1.5 -ml-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg flex items-center gap-1 transition-colors"
+                    >
+                        <ArrowLeft size={18} />
+                        <span className="text-xs font-bold">Settings</span>
+                    </button>
+
+                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wide hidden md:flex items-center gap-2">
+                        Result Preview
+                        {result && <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>}
+                    </span>
                 </div>
                 <button onClick={onClose} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors p-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800">
                     <X size={20} />
@@ -305,9 +330,9 @@ export const AdvancedSummarizeDialog: React.FC<AdvancedSummarizeDialogProps> = (
             {/* Viewport */}
             <div className="flex-1 overflow-hidden relative">
                 {result ? (
-                    <div className="absolute inset-0 overflow-y-auto custom-scrollbar p-8 animate-in slide-in-from-top-4 fade-in duration-500">
+                    <div className="absolute inset-0 overflow-y-auto custom-scrollbar p-6 md:p-8 animate-in slide-in-from-top-4 fade-in duration-500">
                         <div 
-                            className="prose dark:prose-invert max-w-3xl mx-auto bg-white dark:bg-slate-900 p-8 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800"
+                            className="prose dark:prose-invert max-w-3xl mx-auto bg-white dark:bg-slate-900 p-6 md:p-8 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800"
                             dangerouslySetInnerHTML={{ __html: result }}
                         />
                     </div>
@@ -335,20 +360,20 @@ export const AdvancedSummarizeDialog: React.FC<AdvancedSummarizeDialogProps> = (
             </div>
 
             {/* Footer Actions */}
-            <div className="h-16 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-end px-6 gap-3 shrink-0">
+            <div className="h-16 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-end px-4 md:px-6 gap-3 shrink-0">
                 {result && (
                     <>
                         <button 
                             onClick={() => navigator.clipboard.writeText(result.replace(/<[^>]*>?/gm, ''))}
                             className="px-4 py-2 text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg flex items-center gap-2 transition-colors"
                         >
-                            <Copy size={16} /> Copy Text
+                            <Copy size={16} /> <span className="hidden sm:inline">Copy Text</span>
                         </button>
                         <button 
                             onClick={() => { onInsert(result); onClose(); }}
                             className="px-6 py-2 bg-violet-600 hover:bg-violet-700 text-white text-sm font-bold rounded-lg shadow-md transition-all flex items-center gap-2 active:scale-95"
                         >
-                            <Check size={18} /> Insert into Document
+                            <Check size={18} /> Insert
                         </button>
                     </>
                 )}

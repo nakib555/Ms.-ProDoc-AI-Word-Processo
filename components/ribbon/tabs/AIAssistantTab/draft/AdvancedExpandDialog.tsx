@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { 
   X, Maximize2, ListPlus, BookOpen, History, ListOrdered, 
   Lightbulb, TrendingUp, Book, BarChart, Feather, ArrowRight,
-  Check, RefreshCw, Copy, Sparkles, MessageSquare, ZoomIn
+  Check, RefreshCw, Copy, Sparkles, MessageSquare, ZoomIn, ArrowLeft
 } from 'lucide-react';
 import { generateAIContent } from '../../../../../services/geminiService';
 import { useEditor } from '../../../../../contexts/EditorContext';
@@ -39,12 +39,14 @@ export const AdvancedExpandDialog: React.FC<AdvancedExpandDialogProps> = ({
   const [selectedMode, setSelectedMode] = useState('detail');
   const [isGenerating, setIsGenerating] = useState(false);
   const [result, setResult] = useState('');
+  const [mobileView, setMobileView] = useState<'settings' | 'preview'>('settings');
   
   const handleGenerate = async () => {
     if (!inputText.trim()) return;
     
     setIsGenerating(true);
     setResult('');
+    setMobileView('preview');
 
     const modeConfig = EXPAND_MODES.find(m => m.id === selectedMode);
     
@@ -107,21 +109,32 @@ export const AdvancedExpandDialog: React.FC<AdvancedExpandDialogProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200 p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200 p-2 md:p-4" onClick={onClose}>
       <div 
-        className="bg-white dark:bg-slate-900 w-full max-w-6xl h-[85vh] rounded-2xl shadow-2xl border border-white/20 dark:border-slate-700 flex flex-col md:flex-row overflow-hidden animate-in zoom-in-95 duration-200"
+        className="bg-white dark:bg-slate-900 w-full h-[80vh] md:w-[95vw] md:h-[85vh] max-w-6xl rounded-2xl shadow-2xl border border-white/20 dark:border-slate-700 flex flex-col md:flex-row overflow-hidden animate-in zoom-in-95 duration-200"
         onClick={e => e.stopPropagation()}
       >
         {/* Left Panel: Configuration */}
-        <div className="w-full md:w-[400px] bg-slate-50 dark:bg-slate-950 border-r border-slate-200 dark:border-slate-800 flex flex-col shrink-0">
-            <div className="p-5 border-b border-slate-200 dark:border-slate-800">
-                <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+        <div className={`
+            w-full md:w-[400px] bg-slate-50 dark:bg-slate-950 border-r border-slate-200 dark:border-slate-800 flex-col shrink-0
+            ${mobileView === 'settings' ? 'flex' : 'hidden md:flex'}
+        `}>
+            <div className="p-5 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center">
+                <div className="flex items-center gap-2">
                     <div className="p-1.5 bg-blue-100 dark:bg-blue-900/30 rounded-lg text-blue-600 dark:text-blue-400">
                         <ZoomIn size={18} />
                     </div>
-                    Smart Expander
-                </h2>
-                <p className="text-xs text-slate-500 mt-1">Enrich your content with precision.</p>
+                    <div>
+                        <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100">
+                            Smart Expander
+                        </h2>
+                        <p className="text-xs text-slate-500">Enrich your content.</p>
+                    </div>
+                </div>
+                {/* Mobile Close */}
+                <button onClick={onClose} className="md:hidden text-slate-400 p-1 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-full">
+                    <X size={20} />
+                </button>
             </div>
 
             <div className="flex-1 overflow-y-auto p-5 custom-scrollbar">
@@ -179,12 +192,26 @@ export const AdvancedExpandDialog: React.FC<AdvancedExpandDialogProps> = ({
         </div>
 
         {/* Right Panel: Result */}
-        <div className="flex-1 flex flex-col bg-slate-100 dark:bg-slate-950 min-w-0 relative">
-            <div className="h-14 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-between px-6 shrink-0">
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-wide flex items-center gap-2">
-                    Result Preview
-                    {result && <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>}
-                </span>
+        <div className={`
+            flex-1 flex-col bg-slate-100 dark:bg-slate-950 min-w-0 relative
+            ${mobileView === 'preview' ? 'flex' : 'hidden md:flex'}
+        `}>
+            <div className="h-14 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-between px-4 md:px-6 shrink-0">
+                <div className="flex items-center gap-2">
+                    {/* Mobile Back Button */}
+                    <button 
+                        onClick={() => setMobileView('settings')}
+                        className="md:hidden p-1.5 -ml-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg flex items-center gap-1 transition-colors"
+                    >
+                        <ArrowLeft size={18} />
+                        <span className="text-xs font-bold">Settings</span>
+                    </button>
+
+                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wide hidden md:flex items-center gap-2">
+                        Result Preview
+                        {result && <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>}
+                    </span>
+                </div>
                 <button onClick={onClose} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full text-slate-400 transition-colors">
                     <X size={20} />
                 </button>
@@ -192,7 +219,7 @@ export const AdvancedExpandDialog: React.FC<AdvancedExpandDialogProps> = ({
 
             <div className="flex-1 overflow-hidden relative">
                 {result ? (
-                    <div className="absolute inset-0 overflow-y-auto custom-scrollbar p-8">
+                    <div className="absolute inset-0 overflow-y-auto custom-scrollbar p-6 md:p-8">
                         <style>{`
                             .preview-result {
                                 font-family: 'Inter', sans-serif;
@@ -256,7 +283,7 @@ export const AdvancedExpandDialog: React.FC<AdvancedExpandDialogProps> = ({
             </div>
 
             {/* Result Actions */}
-            <div className="h-16 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-end px-6 gap-3 shrink-0">
+            <div className="h-16 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-end px-4 md:px-6 gap-3 shrink-0">
                 {result && (
                     <>
                         <button 
