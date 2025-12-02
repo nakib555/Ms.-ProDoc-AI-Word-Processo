@@ -8,7 +8,7 @@ import { getDocumentStats } from '../utils/textUtils';
 const WordCountDialog = React.lazy(() => import('./WordCountDialog').then(m => ({ default: m.WordCountDialog })));
 
 const StatusBar: React.FC = () => {
-  const { wordCount, zoom, viewMode, setZoom, setViewMode, content, currentPage, totalPages, isAIProcessing } = useEditor();
+  const { wordCount, zoom, viewMode, setViewMode, content, currentPage, totalPages, isAIProcessing, setZoom } = useEditor();
   const { theme, toggleTheme } = useTheme();
   const zoomControlsRef = useRef<HTMLDivElement>(null);
   const [showWordCountDialog, setShowWordCountDialog] = useState(false);
@@ -53,10 +53,11 @@ const StatusBar: React.FC = () => {
           onMouseDown={handleMouseDown}
           className="h-9 bg-slate-900 dark:bg-slate-950 text-slate-400 flex items-center justify-between px-2 sm:px-4 text-xs sm:text-sm select-none z-30 no-print flex-shrink-0 border-t border-slate-800 dark:border-slate-900 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] overflow-hidden transition-colors duration-300"
         >
-          <div className="flex items-center gap-2 sm:gap-6 font-medium">
+          <div className="flex items-center gap-3 sm:gap-6 font-medium shrink-0">
             <div className="flex items-center gap-1.5 hover:text-slate-200 cursor-pointer transition-colors whitespace-nowrap" title="Page Count">
-                <Layout size={14} />
-                <span>{viewMode === 'print' ? `Page ${currentPage} of ${totalPages}` : 'Web Layout'}</span>
+                <Layout size={14} className="shrink-0" />
+                <span className="hidden sm:inline">{viewMode === 'print' ? `Page ${currentPage} of ${totalPages}` : 'Web Layout'}</span>
+                <span className="sm:hidden text-[10px] font-semibold">{viewMode === 'print' ? `${currentPage} / ${totalPages}` : 'Web'}</span>
             </div>
             
             <div 
@@ -64,8 +65,9 @@ const StatusBar: React.FC = () => {
                 title="Click for detailed statistics"
                 onClick={() => setShowWordCountDialog(true)}
             >
-                <Type size={14} />
-                <span>{wordCount} words</span>
+                <Type size={14} className="shrink-0" />
+                <span className="hidden sm:inline">{wordCount} words</span>
+                <span className="sm:hidden text-[10px] font-semibold">{wordCount} w</span>
             </div>
             
             <span className="hover:text-slate-200 cursor-pointer transition-colors hidden md:inline whitespace-nowrap">English (US)</span>
@@ -100,16 +102,16 @@ const StatusBar: React.FC = () => {
                  </button>
             </div>
 
-            {/* Zoom Controls - Always Visible */}
+            {/* Zoom Controls - Optimized for Mobile */}
             <div 
                 ref={zoomControlsRef}
-                className="flex items-center gap-1 sm:gap-3 cursor-ew-resize hover:bg-slate-800/50 rounded-lg px-1 transition-colors"
+                className="flex items-center gap-0.5 sm:gap-3 cursor-ew-resize hover:bg-slate-800/50 rounded-lg px-1 transition-colors"
                 title="Scroll to Zoom"
             >
                 <div className="h-4 w-[1px] bg-slate-700 mx-1 hidden sm:block"></div>
                 <button onClick={() => setZoom(z => Math.max(10, z - 10))} className="hover:bg-slate-800 p-1 rounded-full text-slate-400 hover:text-white transition-colors" title="Zoom Out"><Minus size={14} /></button>
                 
-                <div className="items-center gap-2 group relative hidden sm:flex">
+                <div className="items-center gap-2 group relative hidden md:flex">
                     <input 
                         type="range" 
                         min="10" 
@@ -120,7 +122,7 @@ const StatusBar: React.FC = () => {
                         title="Zoom Level"
                     />
                 </div>
-                <span className="w-8 sm:w-12 text-right font-semibold tabular-nums text-slate-200">{zoom}%</span>
+                <span className="w-8 sm:w-12 text-right font-semibold tabular-nums text-slate-200 text-[10px] sm:text-xs">{zoom}%</span>
                 
                 <button onClick={() => setZoom(z => Math.min(500, z + 10))} className="hover:bg-slate-800 p-1 rounded-full text-slate-400 hover:text-white transition-colors" title="Zoom In"><Plus size={14} /></button>
             </div>
