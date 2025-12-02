@@ -71,6 +71,10 @@ interface EditorContextType {
   // Keyboard Lock
   isKeyboardLocked: boolean;
   setIsKeyboardLocked: React.Dispatch<React.SetStateAction<boolean>>;
+
+  // Selection Mode (Mobile Helper)
+  selectionMode: boolean;
+  setSelectionMode: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 const EditorContext = createContext<EditorContextType | undefined>(undefined);
@@ -104,8 +108,9 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [headerContent, setHeaderContent] = useState('<div style="color: #94a3b8;">[Header]</div>');
   const [footerContent, setFooterContent] = useState('<div style="color: #94a3b8;">[Page <span class="page-number-placeholder">1</span>]</div>');
   
-  // Keyboard Lock
+  // Keyboard Lock & Selection Mode
   const [isKeyboardLocked, setIsKeyboardLocked] = useState(false);
+  const [selectionMode, setSelectionMode] = useState(false);
 
   const [pageConfig, setPageConfig] = useState<PageConfig>({
     size: 'Letter',
@@ -522,7 +527,9 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     footerContent,
     setFooterContent,
     isKeyboardLocked,
-    setIsKeyboardLocked
+    setIsKeyboardLocked,
+    selectionMode,
+    setSelectionMode
   }), [
     content,
     wordCount,
@@ -558,7 +565,8 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     activeEditingArea,
     headerContent,
     footerContent,
-    isKeyboardLocked
+    isKeyboardLocked,
+    selectionMode
   ]);
 
   return (

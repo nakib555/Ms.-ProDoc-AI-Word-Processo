@@ -94,6 +94,7 @@ export const AdvancedGrammarDialog: React.FC<AdvancedGrammarDialogProps> = ({
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [editableText, setEditableText] = useState('');
   const [activeTab, setActiveTab] = useState<'input' | 'preview'>('input');
+  const [error, setError] = useState<string | null>(null);
   
   // Sidebar State
   const [sidebarView, setSidebarView] = useState<'settings' | 'history'>('settings');
@@ -119,6 +120,7 @@ export const AdvancedGrammarDialog: React.FC<AdvancedGrammarDialogProps> = ({
         // Reset to settings view on open
         setSidebarView('settings');
         setMobileView('editor');
+        setError(null);
     }
   }, [isOpen, initialText]);
 
@@ -126,6 +128,7 @@ export const AdvancedGrammarDialog: React.FC<AdvancedGrammarDialogProps> = ({
     if (!text.trim()) return;
     setIsAnalyzing(true);
     setResult(null);
+    setError(null);
     setActiveTab('preview'); 
     
     // On mobile, switch back to editor view to see results
@@ -137,9 +140,8 @@ export const AdvancedGrammarDialog: React.FC<AdvancedGrammarDialogProps> = ({
     const apiKey = localKey || process.env.API_KEY;
 
     if (!apiKey) {
-        alert("API Key is missing. Please configure it in the AI Assistant tab.");
+        setError("API Key is missing. Please configure it in the AI Assistant tab.");
         setIsAnalyzing(false);
-        setActiveTab('input');
         return;
     }
 
@@ -177,12 +179,15 @@ export const AdvancedGrammarDialog: React.FC<AdvancedGrammarDialogProps> = ({
       });
       
       let cleanJson = response.text || "{}";
-      // Ensure no markdown code blocks remain
       if (cleanJson.startsWith('```')) {
           cleanJson = cleanJson.replace(/^```(?:json)?\s*/, '').replace(/```\s*$/, '');
       }
       
       const data = JSON.parse(cleanJson);
+      if (data.error) {
+          throw new Error(data.error);
+      }
+      
       setResult(data);
       setEditableText(data.correctedText || '');
 
@@ -196,10 +201,18 @@ export const AdvancedGrammarDialog: React.FC<AdvancedGrammarDialogProps> = ({
       };
       setHistory(prev => [newItem, ...prev]);
 
-    } catch (error) {
+    } catch (error: any) {
       console.error("Analysis failed", error);
-      alert("Failed to analyze text. Please check your API key or network connection.");
-      setActiveTab('input');
+      let errMsg = error.message || "Failed to analyze text.";
+      const lowerMsg = errMsg.toLowerCase();
+      
+      if (lowerMsg.includes('429') || lowerMsg.includes('quota') || lowerMsg.includes('exhausted')) {
+          errMsg = "⚠️ Quota exceeded. Please check your API billing or try again later.";
+      } else if (lowerMsg.includes('503') || lowerMsg.includes('overloaded')) {
+          errMsg = "⚠️ AI model is overloaded. Please try again in a moment.";
+      }
+      
+      setError(errMsg);
     } finally {
       setIsAnalyzing(false);
     }
@@ -211,6 +224,7 @@ export const AdvancedGrammarDialog: React.FC<AdvancedGrammarDialogProps> = ({
       setEditableText(item.result.correctedText || '');
       setSettings(item.settingsSnapshot);
       setActiveTab('preview');
+      setError(null);
       // On mobile, if restoring from history (sidebar), go to editor
       if (window.innerWidth < 768) {
           setMobileView('editor');
@@ -222,7 +236,7 @@ export const AdvancedGrammarDialog: React.FC<AdvancedGrammarDialogProps> = ({
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300 p-2 md:p-4" onClick={onClose}>
       <div 
-        className="bg-white dark:bg-slate-900 w-full h-[70vh] md:w-[95vw] md:h-[85vh] md:max-w-6xl rounded-2xl shadow-2xl border border-white/20 dark:border-slate-700 flex flex-col md:flex-row overflow-hidden animate-in zoom-in-95 duration-300 ring-1 ring-black/10"
+        className="bg-white dark:bg-slate-900 w-full h-[75vh] md:w-[95vw] md:h-[85vh] md:max-w-6xl rounded-2xl shadow-2xl border border-white/20 dark:border-slate-700 flex flex-col md:flex-row overflow-hidden animate-in zoom-in-95 duration-300 ring-1 ring-black/10"
         onClick={e => e.stopPropagation()}
       >
         {/* Sidebar Configuration */}
@@ -427,8 +441,8 @@ export const AdvancedGrammarDialog: React.FC<AdvancedGrammarDialogProps> = ({
                         Original
                     </button>
                     <button 
-                        onClick={() => { if(result || isAnalyzing) setActiveTab('preview'); }}
-                        disabled={!result && !isAnalyzing}
+                        onClick={() => { if(result || isAnalyzing || error) setActiveTab('preview'); }}
+                        disabled={!result && !isAnalyzing && !error}
                         className={`px-4 md:px-6 py-1.5 text-xs font-bold uppercase tracking-wide rounded-md transition-all flex items-center gap-2 ${activeTab === 'preview' ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 disabled:opacity-50 disabled:cursor-not-allowed'}`}
                     >
                         Improved {result && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>}
@@ -459,7 +473,15 @@ export const AdvancedGrammarDialog: React.FC<AdvancedGrammarDialogProps> = ({
                 {/* Preview View */}
                 <div className={`absolute inset-0 flex flex-col transition-all duration-300 bg-slate-50 dark:bg-slate-950 ${activeTab === 'preview' ? 'opacity-100 z-10 translate-x-0' : 'opacity-0 z-0 translate-x-10 pointer-events-none'}`}>
                     
-                    {isAnalyzing ? (
+                    {error ? (
+                        <div className="flex-1 flex flex-col items-center justify-center text-slate-400 gap-4 p-8 text-center">
+                            <div className="p-3 bg-red-100 dark:bg-red-900/30 rounded-full text-red-500">
+                                <AlertCircle size={32} />
+                            </div>
+                            <p className="text-sm text-red-600 dark:text-red-400 max-w-md">{error}</p>
+                            <button onClick={handleAnalyze} className="text-xs bg-white border border-slate-200 px-3 py-1.5 rounded hover:bg-slate-50 transition-colors">Retry Analysis</button>
+                        </div>
+                    ) : isAnalyzing ? (
                         <div className="flex-1 flex flex-col items-center justify-center text-slate-400 gap-6">
                             <div className="relative">
                                 <div className="w-20 h-20 border-4 border-indigo-100 dark:border-slate-800 rounded-full"></div>

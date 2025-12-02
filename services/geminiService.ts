@@ -17,6 +17,22 @@ const getClient = () => {
   return null;
 };
 
+const formatGeminiError = (error: any): string => {
+  const msg = error.message || error.toString();
+  const lowerMsg = msg.toLowerCase();
+  
+  if (lowerMsg.includes('429') || lowerMsg.includes('quota') || lowerMsg.includes('exhausted')) {
+    return "⚠️ Quota exceeded. The AI usage limit has been reached. Please check your billing or try again later.";
+  }
+  if (lowerMsg.includes('503') || lowerMsg.includes('overloaded') || lowerMsg.includes('capacity')) {
+    return "⚠️ The AI model is currently overloaded. Please try again in a few moments.";
+  }
+  if (lowerMsg.includes('key') || lowerMsg.includes('auth')) {
+    return "⚠️ Invalid or missing API Key. Please check your settings.";
+  }
+  return `⚠️ AI Error: ${msg}`;
+};
+
 export const generateAIContent = async (
   operation: AIOperation,
   text: string,
@@ -49,7 +65,7 @@ export const generateAIContent = async (
     return response.text;
   } catch (error: any) {
     console.error("Gemini API Error:", error);
-    return JSON.stringify({ error: error.message || "Unknown API Error" });
+    return JSON.stringify({ error: formatGeminiError(error) });
   }
 };
 
@@ -80,7 +96,7 @@ export const streamAIContent = async function* (
     }
   } catch (error) {
     console.error("Gemini Stream Error:", error);
-    throw error;
+    throw new Error(formatGeminiError(error));
   }
 };
 
@@ -117,7 +133,7 @@ export const chatWithDocumentStream = async function* (
     }
   } catch (error) {
     console.error("Gemini Chat Error:", error);
-    throw error;
+    throw new Error(formatGeminiError(error));
   }
 };
 
@@ -146,6 +162,6 @@ export const generateAIImage = async (prompt: string): Promise<string | null> =>
     return null;
   } catch (error: any) {
     console.error("Gemini Image Gen Error:", error);
-    throw new Error(error.message || "Failed to generate image.");
+    throw new Error(formatGeminiError(error));
   }
 };

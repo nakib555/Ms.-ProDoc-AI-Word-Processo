@@ -127,6 +127,12 @@ export const AdvancedSummarizeDialog: React.FC<AdvancedSummarizeDialogProps> = (
       
       try {
           const parsed = JSON.parse(cleanJson);
+          
+          if (parsed.error) {
+              setResult(`<div class="p-4 rounded-lg bg-red-50 text-red-700 text-sm border border-red-200">${parsed.error}</div>`);
+              return;
+          }
+
           // Convert the structured JSON response to HTML for display
           const html = jsonToHtml(parsed);
           if (!html) throw new Error("Empty HTML generated from JSON");
@@ -161,7 +167,7 @@ export const AdvancedSummarizeDialog: React.FC<AdvancedSummarizeDialogProps> = (
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-200 p-4" onClick={onClose}>
       <div 
-        className="bg-white dark:bg-slate-900 w-full max-w-5xl h-[70vh] md:h-[80vh] rounded-2xl shadow-2xl border border-white/20 dark:border-slate-700 flex flex-col md:flex-row overflow-hidden animate-in zoom-in-95 duration-200 ring-1 ring-black/10"
+        className="bg-white dark:bg-slate-900 w-full max-w-5xl h-[75vh] md:h-[80vh] rounded-2xl shadow-2xl border border-white/20 dark:border-slate-700 flex flex-col md:flex-row overflow-hidden animate-in zoom-in-95 duration-200 ring-1 ring-black/10"
         onClick={e => e.stopPropagation()}
       >
         {/* Left Sidebar: Controls */}

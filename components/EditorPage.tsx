@@ -58,7 +58,7 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
   const headerRef = useRef<HTMLDivElement>(null);
   const footerRef = useRef<HTMLDivElement>(null);
   const scale = zoom / 100;
-  const { isKeyboardLocked } = useEditor();
+  const { isKeyboardLocked, selectionMode } = useEditor();
 
   const isHeaderFooterMode = activeEditingArea === 'header' || activeEditingArea === 'footer';
   const MIN_BODY_GAP = 192; // 2 inches minimum body gap @ 96 DPI
@@ -321,7 +321,47 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
     }
   };
 
+  const handleEditorClick = (e: React.MouseEvent) => {
+      // Smart Select Mode Logic
+      if (selectionMode && editorRef.current) {
+          e.preventDefault();
+          e.stopPropagation();
+          
+          const target = e.target as Node;
+          
+          // Helper to find the closest block-level parent within the editor
+          const findBlockParent = (node: Node): Node | null => {
+              let curr: Node | null = node;
+              while (curr && curr !== editorRef.current) {
+                  if (curr.nodeType === Node.ELEMENT_NODE) {
+                      const el = curr as HTMLElement;
+                      // Common block elements in rich text
+                      if (['P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'LI', 'DIV', 'TR', 'BLOCKQUOTE'].includes(el.tagName)) {
+                          return el;
+                      }
+                  }
+                  curr = curr.parentNode;
+              }
+              return null; // Fallback if direct text node in root or similar
+          };
+
+          const block = findBlockParent(target);
+          if (block) {
+              const range = document.createRange();
+              range.selectNodeContents(block);
+              const sel = window.getSelection();
+              if (sel) {
+                  sel.removeAllRanges();
+                  sel.addRange(range);
+              }
+          }
+      }
+  };
+
   const handlePageClick = (e: React.MouseEvent) => {
+      // Do not process page margin clicks if selection mode is on, let handleEditorClick capture inside
+      if (selectionMode) return;
+
       // Improve margin clicking experience
       if (editorRef.current && !editorRef.current.contains(e.target as Node) && !isHeaderFooterMode) {
           editorRef.current.focus();
@@ -451,7 +491,8 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
 
   const onHeaderDoubleClick = (e: React.MouseEvent) => {
       e.stopPropagation();
-      if (setActiveEditingArea && !isKeyboardLocked) {
+      // Ensure we don't enter header mode if keyboard/editing is locked
+      if (setActiveEditingArea && !isKeyboardLocked && !selectionMode) {
           setActiveEditingArea('header');
           setTimeout(() => {
               if (headerRef.current) {
@@ -475,7 +516,8 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
 
   const onFooterDoubleClick = (e: React.MouseEvent) => {
       e.stopPropagation();
-      if (setActiveEditingArea && !isKeyboardLocked) {
+      // Ensure we don't enter footer mode if keyboard/editing is locked
+      if (setActiveEditingArea && !isKeyboardLocked && !selectionMode) {
           setActiveEditingArea('footer');
           setTimeout(() => {
               if (footerRef.current) {
@@ -497,7 +539,7 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
   };
 
   const onBodyDoubleClick = (e: React.MouseEvent) => {
-      if (activeEditingArea !== 'body' && setActiveEditingArea && !isKeyboardLocked) {
+      if (activeEditingArea !== 'body' && setActiveEditingArea && !isKeyboardLocked && !selectionMode) {
           e.stopPropagation();
           setActiveEditingArea('body');
           setTimeout(() => {
@@ -517,8 +559,17 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
   const bodyHeight = height - margins.top - margins.bottom - gutterTop;
 
   // Determine effective contentEditable state
+  // Even if keyboard is locked, selection should be possible, so contentEditable must be "true" for robust native selection in some browsers
+  // but we intercept input events. However, making it false + user-select: text is safer for "ReadOnly" mode.
+  // BUT Smart Select needs to work. If contentEditable is false, range selection works fine.
+  
   const isBodyEditable = !readOnly && !isHeaderFooterMode && !isKeyboardLocked;
   const isHeaderFooterEditable = isHeaderFooterMode && !isKeyboardLocked;
+
+  // Cursor style logic
+  let cursorStyle = 'cursor-text';
+  if (selectionMode) cursorStyle = 'cursor-pointer'; // or cursor-cell / cursor-context-menu
+  else if (isKeyboardLocked) cursorStyle = 'cursor-default';
 
   return (
     <div 
@@ -529,7 +580,7 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
         }}
     >
         <div 
-            className={`absolute inset-0 bg-white overflow-hidden transition-transform duration-300 ease-[cubic-bezier(0.2,0,0,1)] ${isKeyboardLocked ? 'cursor-default' : 'cursor-text'}`}
+            className={`absolute inset-0 bg-white overflow-hidden transition-transform duration-300 ease-[cubic-bezier(0.2,0,0,1)] ${cursorStyle}`}
             style={{
                 transform: `scale(${scale})`,
                 transformOrigin: 'top left',
@@ -600,6 +651,7 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
                     onInput={handleInput}
                     onKeyDown={handleKeyDown}
                     onFocus={onFocus}
+                    onClick={handleEditorClick}
                     suppressContentEditableWarning={true}
                     style={{
                         fontFamily: 'Calibri, Inter, sans-serif',

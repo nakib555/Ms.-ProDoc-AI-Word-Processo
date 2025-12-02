@@ -80,8 +80,9 @@ export const RibbonTabBar: React.FC<RibbonTabBarProps> = React.memo(({ activeTab
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [showLeftArrow, setShowLeftArrow] = useState(false);
   const [showRightArrow, setShowRightArrow] = useState(false);
-  const { activeElementType, viewMode } = useEditor();
+  const { activeElementType, viewMode, activeEditingArea } = useEditor();
   const prevElementTypeRef = useRef(activeElementType);
+  const prevEditingAreaRef = useRef(activeEditingArea);
 
   const checkScroll = useCallback(() => {
     if (scrollContainerRef.current) {
@@ -123,20 +124,27 @@ export const RibbonTabBar: React.FC<RibbonTabBarProps> = React.memo(({ activeTab
   useEffect(() => {
       let timeoutId: ReturnType<typeof setTimeout>;
       const prevType = prevElementTypeRef.current;
+      const prevArea = prevEditingAreaRef.current;
 
-      if ((activeElementType === 'header' || activeElementType === 'footer') && (prevType !== 'header' && prevType !== 'footer')) {
+      // Header & Footer Logic based on activeEditingArea state (Explicit Mode)
+      const isHeaderFooterMode = activeEditingArea === 'header' || activeEditingArea === 'footer';
+      const wasHeaderFooterMode = prevArea === 'header' || prevArea === 'footer';
+
+      if (isHeaderFooterMode && !wasHeaderFooterMode) {
           onTabChange(RibbonTab.HEADER_FOOTER);
-      } else if (activeElementType === 'equation' && prevType !== 'equation') {
+      } else if (!isHeaderFooterMode && wasHeaderFooterMode) {
+          onTabChange(RibbonTab.HOME);
+      }
+      // Other Contextual Tabs based on Element Selection
+      else if (activeElementType === 'equation' && prevType !== 'equation') {
           onTabChange(RibbonTab.EQUATION);
       } 
       else if (activeElementType === 'table' && prevType !== 'table') {
           onTabChange(RibbonTab.TABLE_DESIGN);
       } 
+      // Close rules if not in specific mode
       else {
-          if (activeTab === RibbonTab.HEADER_FOOTER && activeElementType !== 'header' && activeElementType !== 'footer') {
-              timeoutId = setTimeout(() => onTabChange(RibbonTab.HOME), 200);
-          }
-          else if (activeTab === RibbonTab.EQUATION && activeElementType !== 'equation') {
+          if (activeTab === RibbonTab.EQUATION && activeElementType !== 'equation') {
               timeoutId = setTimeout(() => onTabChange(RibbonTab.HOME), 200);
           }
           else if ((activeTab === RibbonTab.TABLE_DESIGN || activeTab === RibbonTab.TABLE_LAYOUT) && activeElementType !== 'table') {
@@ -145,8 +153,10 @@ export const RibbonTabBar: React.FC<RibbonTabBarProps> = React.memo(({ activeTab
       }
 
       prevElementTypeRef.current = activeElementType;
+      prevEditingAreaRef.current = activeEditingArea;
+      
       return () => clearTimeout(timeoutId);
-  }, [activeElementType, activeTab, onTabChange]);
+  }, [activeElementType, activeEditingArea, activeTab, onTabChange]);
 
   useEffect(() => {
     const el = scrollContainerRef.current;
@@ -170,7 +180,9 @@ export const RibbonTabBar: React.FC<RibbonTabBarProps> = React.memo(({ activeTab
         el.removeEventListener('scroll', onScroll);
       };
     }
-  }, [activeElementType, checkScroll]);
+  }, [activeElementType, activeEditingArea, checkScroll]);
+
+  const isHeaderFooterMode = activeEditingArea === 'header' || activeEditingArea === 'footer';
 
   return (
     <div className="relative flex items-end bg-slate-900 dark:bg-slate-950 pt-1 flex-shrink-0 z-20 w-full group select-none border-b border-slate-800 dark:border-slate-900">
@@ -209,7 +221,7 @@ export const RibbonTabBar: React.FC<RibbonTabBarProps> = React.memo(({ activeTab
           );
         })}
         
-        { (activeElementType === 'header' || activeElementType === 'footer') && (
+        { isHeaderFooterMode && (
             <>
                 <div className="w-[1px] h-6 bg-slate-700 mx-1 mb-2"></div>
                 <TabButton tabId={RibbonTab.HEADER_FOOTER} icon={LayoutPanelTop} label="Header & Footer" isActive={activeTab === RibbonTab.HEADER_FOOTER} onClick={() => onTabChange(RibbonTab.HEADER_FOOTER)} isContextual colorClass="text-cyan-500" />
