@@ -348,12 +348,21 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
                   e.preventDefault();
                   e.stopPropagation();
 
-                  // If we already have a selection, extend it to the new click point
-                  if (sel.rangeCount > 0 && !sel.isCollapsed && sel.extend) {
+                  // If we already have a selection that isn't collapsed, attempt to extend it
+                  if (sel.rangeCount > 0 && !sel.isCollapsed) {
                       try {
-                          sel.extend(range.startContainer, range.startOffset);
+                          if (sel.extend) {
+                              sel.extend(range.startContainer, range.startOffset);
+                          } else {
+                              // Fallback for browsers/modes without robust extend support
+                              const newRange = document.createRange();
+                              newRange.setStart(sel.anchorNode!, sel.anchorOffset);
+                              newRange.setEnd(range.startContainer, range.startOffset);
+                              sel.removeAllRanges();
+                              sel.addRange(newRange);
+                          }
                       } catch (err) {
-                          // Fallback if extend fails (cross-boundary issues sometimes)
+                          // Fallback if extend fails
                           const newRange = document.createRange();
                           newRange.setStart(sel.anchorNode!, sel.anchorOffset);
                           newRange.setEnd(range.startContainer, range.startOffset);
@@ -361,11 +370,21 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
                           sel.addRange(newRange);
                       }
                   } else {
-                      // If no selection or collapsed cursor, just set the cursor (start point)
-                      // Or if we want "click to select word/paragraph", we could do that here
-                      // But "Click-Click" range selection is more powerful for the "single letter" requirement
+                      // If no selection or collapsed cursor, start a new word selection
                       sel.removeAllRanges();
                       sel.addRange(range);
+                      
+                      // Try to expand to word for easier initial selection
+                      // This assumes native modify API support which is common in WebKit/Blink
+                      // @ts-ignore
+                      if (typeof sel.modify === 'function') {
+                          // Collapse to cursor
+                          // Expand word around cursor
+                          // @ts-ignore
+                          sel.modify('move', 'backward', 'word');
+                          // @ts-ignore
+                          sel.modify('extend', 'forward', 'word');
+                      }
                   }
               }
           }

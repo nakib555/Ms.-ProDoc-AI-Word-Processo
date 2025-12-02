@@ -75,6 +75,7 @@ interface EditorContextType {
   // Selection Mode (Mobile Helper)
   selectionMode: boolean;
   setSelectionMode: React.Dispatch<React.SetStateAction<boolean>>;
+  hasActiveSelection: boolean;
 }
 
 const EditorContext = createContext<EditorContextType | undefined>(undefined);
@@ -111,6 +112,7 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   // Keyboard Lock & Selection Mode
   const [isKeyboardLocked, setIsKeyboardLocked] = useState(false);
   const [selectionMode, setSelectionMode] = useState(false);
+  const [hasActiveSelection, setHasActiveSelection] = useState(false);
 
   const [pageConfig, setPageConfig] = useState<PageConfig>({
     size: 'Letter',
@@ -172,6 +174,8 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       }
 
       const selection = window.getSelection();
+      setHasActiveSelection(!!(selection && selection.rangeCount > 0 && !selection.isCollapsed));
+
       if (!selection || selection.rangeCount === 0) {
         return;
       }
@@ -529,7 +533,8 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     isKeyboardLocked,
     setIsKeyboardLocked,
     selectionMode,
-    setSelectionMode
+    setSelectionMode,
+    hasActiveSelection
   }), [
     content,
     wordCount,
@@ -566,7 +571,8 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     headerContent,
     footerContent,
     isKeyboardLocked,
-    selectionMode
+    selectionMode,
+    hasActiveSelection
   ]);
 
   return (
