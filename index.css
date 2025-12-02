@@ -59,6 +59,20 @@
   box-sizing: border-box;
 }
 
+/* --- Smart Selection Mode (Mobile) --- */
+.smart-selection-active {
+  -webkit-touch-callout: none !important; /* Disable iOS callouts (magnifier, menu) */
+  -webkit-user-select: text !important;   /* Allow selection so programmatic ranges render */
+  user-select: text !important;
+  outline: none !important;
+}
+
+/* Enhance visibility of selection in this mode */
+.smart-selection-active::selection {
+  background-color: rgba(59, 130, 246, 0.3); /* blue-500 with opacity */
+  color: inherit;
+}
+
 /* --- Page Break Visuals --- */
 .prodoc-page-break {
   height: 0;

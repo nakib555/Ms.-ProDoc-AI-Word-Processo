@@ -60,6 +60,12 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
   const scale = zoom / 100;
   const { isKeyboardLocked, selectionMode } = useEditor();
 
+  // Smart Selection Refs
+  const wordPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const superLongPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pointerStartRef = useRef<{ x: number, y: number, time: number } | null>(null);
+
   const isHeaderFooterMode = activeEditingArea === 'header' || activeEditingArea === 'footer';
   const MIN_BODY_GAP = 192; // 2 inches minimum body gap @ 96 DPI
 
@@ -321,24 +327,174 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
     }
   };
 
+  // --- SMART SELECTION LOGIC ---
+
+  const selectWord = () => {
+      const sel = window.getSelection();
+      if (sel && sel.rangeCount > 0 && sel.modify) {
+          // Use 'modify' which handles word boundaries nicely across most browsers
+          // Move backward to start of word, then extend forward to end of word
+          sel.modify('move', 'backward', 'word');
+          sel.modify('extend', 'forward', 'word');
+      }
+  };
+
+  const selectSentence = () => {
+      const sel = window.getSelection();
+      if (!sel || sel.rangeCount === 0 || !sel.modify) return;
+      
+      try {
+          sel.modify('move', 'backward', 'sentence');
+          sel.modify('extend', 'forward', 'sentence');
+      } catch (e) {
+          sel.modify('move', 'backward', 'line');
+          sel.modify('extend', 'forward', 'line');
+      }
+  };
+
+  const selectParagraph = (target: EventTarget | null) => {
+      const sel = window.getSelection();
+      if (!sel) return;
+      
+      // Try to find the block element (P, H1, DIV, etc.)
+      let node = target as Node | null;
+      
+      if (node && node.nodeType === Node.TEXT_NODE) {
+          node = node.parentNode;
+      }
+
+      while (node && node !== editorRef.current && (node as HTMLElement).tagName) {
+          const el = node as HTMLElement;
+          const display = window.getComputedStyle(el).display;
+          if (display === 'block' || display === 'flex' || ['P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'LI', 'DIV', 'BLOCKQUOTE'].includes(el.tagName)) {
+              const range = document.createRange();
+              range.selectNodeContents(el);
+              sel.removeAllRanges();
+              sel.addRange(range);
+              return;
+          }
+          node = node.parentNode;
+      }
+      
+      if (sel.modify) {
+          sel.modify('move', 'backward', 'paragraph');
+          sel.modify('extend', 'forward', 'paragraph');
+      }
+  };
+
+  const selectPage = () => {
+      if (!editorRef.current) return;
+      const range = document.createRange();
+      range.selectNodeContents(editorRef.current);
+      const sel = window.getSelection();
+      sel?.removeAllRanges();
+      sel?.addRange(range);
+  };
+
+  const handleSmartPointerDown = (e: React.PointerEvent) => {
+      if (!selectionMode) return;
+      
+      // Force cursor placement at touch point to ensure selection starts correctly
+      if (!isHeaderFooterMode) {
+          if (document.caretRangeFromPoint) {
+              const range = document.caretRangeFromPoint(e.clientX, e.clientY);
+              if (range && editorRef.current?.contains(range.startContainer)) {
+                  const sel = window.getSelection();
+                  sel?.removeAllRanges();
+                  sel?.addRange(range);
+              }
+          } else if ((document as any).caretPositionFromPoint) {
+              const pos = (document as any).caretPositionFromPoint(e.clientX, e.clientY);
+              if (pos && editorRef.current?.contains(pos.offsetNode)) {
+                  const range = document.createRange();
+                  range.setStart(pos.offsetNode, pos.offset);
+                  range.collapse(true);
+                  const sel = window.getSelection();
+                  sel?.removeAllRanges();
+                  sel?.addRange(range);
+              }
+          }
+      }
+      
+      pointerStartRef.current = {
+          x: e.clientX,
+          y: e.clientY,
+          time: Date.now()
+      };
+
+      // Clear existing timers
+      if (wordPressTimerRef.current) clearTimeout(wordPressTimerRef.current);
+      if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
+      if (superLongPressTimerRef.current) clearTimeout(superLongPressTimerRef.current);
+
+      const target = e.target;
+
+      // 1s Timer: Select Word
+      wordPressTimerRef.current = setTimeout(() => {
+          selectWord();
+          if (navigator.vibrate) navigator.vibrate(20);
+      }, 1000);
+
+      // 2s Timer: Select Paragraph
+      longPressTimerRef.current = setTimeout(() => {
+          selectParagraph(target);
+          if (navigator.vibrate) navigator.vibrate(50);
+      }, 2000);
+
+      // 4s Timer: Select Page
+      superLongPressTimerRef.current = setTimeout(() => {
+          selectPage();
+          if (navigator.vibrate) navigator.vibrate([50, 50, 50]);
+      }, 4000);
+  };
+
+  const handleSmartPointerMove = (e: React.PointerEvent) => {
+      if (!selectionMode || !pointerStartRef.current) return;
+
+      const dist = Math.hypot(e.clientX - pointerStartRef.current.x, e.clientY - pointerStartRef.current.y);
+      
+      // If moved more than 10px, assume scrolling and cancel timers
+      if (dist > 10) {
+          if (wordPressTimerRef.current) clearTimeout(wordPressTimerRef.current);
+          if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
+          if (superLongPressTimerRef.current) clearTimeout(superLongPressTimerRef.current);
+          pointerStartRef.current = null;
+      }
+  };
+
+  const handleSmartPointerUp = (e: React.PointerEvent) => {
+      if (!selectionMode) return;
+
+      if (wordPressTimerRef.current) clearTimeout(wordPressTimerRef.current);
+      if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
+      if (superLongPressTimerRef.current) clearTimeout(superLongPressTimerRef.current);
+      pointerStartRef.current = null;
+  };
+
+  const handleSmartClick = (e: React.MouseEvent) => {
+      if (!selectionMode) return;
+      
+      if (e.detail === 2) {
+          // Double Click: Select Sentence
+          selectSentence();
+      }
+  };
+
   const handleEditorClick = (e: React.MouseEvent) => {
-      // In Selection Mode (mobile), we handle touches differently or let native behavior place cursor.
-      // This handler was for specialized pointer events if needed.
-      // With inputMode="none", native placement works but keyboard doesn't show.
+      if (selectionMode) {
+          handleSmartClick(e);
+      }
   };
 
   const handlePageClick = (e: React.MouseEvent) => {
-      // Do not process page margin clicks if selection mode is on, let standard behavior work
       if (selectionMode) return;
 
-      // Improve margin clicking experience
       if (editorRef.current && !editorRef.current.contains(e.target as Node) && !isHeaderFooterMode) {
           editorRef.current.focus();
           
           const editorRect = editorRef.current.getBoundingClientRect();
           const clickY = e.clientY;
           
-          // Clicked below content
           if (clickY > editorRect.bottom) {
               const range = document.createRange();
               range.selectNodeContents(editorRef.current);
@@ -347,7 +503,6 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
               sel?.removeAllRanges();
               sel?.addRange(range);
           } 
-          // Clicked above content
           else if (clickY < editorRect.top) {
               const range = document.createRange();
               range.selectNodeContents(editorRef.current);
@@ -356,21 +511,16 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
               sel?.removeAllRanges();
               sel?.addRange(range);
           }
-          // Clicked side margins - try to find nearest line
           else {
               let range: Range | null = null;
-              // @ts-ignore
-              if (document.caretPositionFromPoint) {
-                  // Firefox
-                  // @ts-ignore
-                  const pos = document.caretPositionFromPoint(e.clientX, e.clientY);
+              if ((document as any).caretPositionFromPoint) {
+                  const pos = (document as any).caretPositionFromPoint(e.clientX, e.clientY);
                   if (pos) {
                       range = document.createRange();
                       range.setStart(pos.offsetNode, pos.offset);
                       range.collapse(true);
                   }
               } else if (document.caretRangeFromPoint) {
-                  // WebKit / Standard
                   range = document.caretRangeFromPoint(e.clientX, e.clientY);
               }
               
@@ -528,7 +678,6 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
   const bodyHeight = height - margins.top - margins.bottom - gutterTop;
 
   // Determine effective contentEditable state
-  // When selectionMode is active, we want contentEditable=true BUT inputMode="none" to suppress keyboard
   const isBodyEditable = (!readOnly && !isHeaderFooterMode && !isKeyboardLocked) || selectionMode;
   const isHeaderFooterEditable = (isHeaderFooterMode && !isKeyboardLocked) || (isHeaderFooterMode && selectionMode);
 
@@ -546,7 +695,7 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
         }}
     >
         <div 
-            className={`absolute inset-0 bg-white overflow-hidden transition-transform duration-300 ease-[cubic-bezier(0.2,0,0,1)] ${cursorStyle}`}
+            className={`absolute inset-0 bg-white overflow-hidden transition-transform duration-300 ease-[cubic-bezier(0.2,0,0,1)] ${cursorStyle} ${selectionMode ? 'smart-selection-active' : ''}`}
             style={{
                 transform: `scale(${scale})`,
                 transformOrigin: 'top left',
@@ -597,7 +746,7 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
                  </div>
             )}
 
-            {/* Body Container (Writable Area) - Strict Absolute Positioning */}
+            {/* Body Container (Writable Area) */}
             <div 
                 className={`absolute overflow-hidden transition-opacity duration-300 ${isHeaderFooterMode ? 'opacity-50' : 'opacity-100'}`}
                 style={{ 
@@ -616,10 +765,18 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
                     className={`prodoc-editor w-full outline-none text-lg leading-loose break-words z-10 ${showFormattingMarks ? 'show-formatting-marks' : ''} ${isHeaderFooterMode ? 'pointer-events-none select-none' : ''}`}
                     contentEditable={isBodyEditable}
                     inputMode={selectionMode ? "none" : undefined}
+                    
                     onInput={handleInput}
                     onKeyDown={handleKeyDown}
                     onFocus={onFocus}
                     onClick={handleEditorClick}
+                    onContextMenu={(e) => selectionMode && e.preventDefault()}
+                    
+                    onPointerDown={handleSmartPointerDown}
+                    onPointerMove={handleSmartPointerMove}
+                    onPointerUp={handleSmartPointerUp}
+                    onPointerCancel={handleSmartPointerUp}
+
                     suppressContentEditableWarning={true}
                     style={{
                         fontFamily: 'Calibri, Inter, sans-serif',
