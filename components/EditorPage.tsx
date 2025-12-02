@@ -322,77 +322,13 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
   };
 
   const handleEditorClick = (e: React.MouseEvent) => {
-      // Smart Select Mode Logic
-      if (selectionMode && editorRef.current) {
-          // Standardize coordinate getting
-          let range: Range | null = null;
-          
-          // @ts-ignore
-          if (document.caretPositionFromPoint) {
-              // Firefox
-              // @ts-ignore
-              const pos = document.caretPositionFromPoint(e.clientX, e.clientY);
-              if (pos) {
-                  range = document.createRange();
-                  range.setStart(pos.offsetNode, pos.offset);
-                  range.collapse(true);
-              }
-          } else if (document.caretRangeFromPoint) {
-              // WebKit
-              range = document.caretRangeFromPoint(e.clientX, e.clientY);
-          }
-
-          if (range) {
-              const sel = window.getSelection();
-              if (sel) {
-                  e.preventDefault();
-                  e.stopPropagation();
-
-                  // If we already have a selection that isn't collapsed, attempt to extend it
-                  if (sel.rangeCount > 0 && !sel.isCollapsed) {
-                      try {
-                          if (sel.extend) {
-                              sel.extend(range.startContainer, range.startOffset);
-                          } else {
-                              // Fallback for browsers/modes without robust extend support
-                              const newRange = document.createRange();
-                              newRange.setStart(sel.anchorNode!, sel.anchorOffset);
-                              newRange.setEnd(range.startContainer, range.startOffset);
-                              sel.removeAllRanges();
-                              sel.addRange(newRange);
-                          }
-                      } catch (err) {
-                          // Fallback if extend fails
-                          const newRange = document.createRange();
-                          newRange.setStart(sel.anchorNode!, sel.anchorOffset);
-                          newRange.setEnd(range.startContainer, range.startOffset);
-                          sel.removeAllRanges();
-                          sel.addRange(newRange);
-                      }
-                  } else {
-                      // If no selection or collapsed cursor, start a new word selection
-                      sel.removeAllRanges();
-                      sel.addRange(range);
-                      
-                      // Try to expand to word for easier initial selection
-                      // This assumes native modify API support which is common in WebKit/Blink
-                      // @ts-ignore
-                      if (typeof sel.modify === 'function') {
-                          // Collapse to cursor
-                          // Expand word around cursor
-                          // @ts-ignore
-                          sel.modify('move', 'backward', 'word');
-                          // @ts-ignore
-                          sel.modify('extend', 'forward', 'word');
-                      }
-                  }
-              }
-          }
-      }
+      // In Selection Mode (mobile), we handle touches differently or let native behavior place cursor.
+      // This handler was for specialized pointer events if needed.
+      // With inputMode="none", native placement works but keyboard doesn't show.
   };
 
   const handlePageClick = (e: React.MouseEvent) => {
-      // Do not process page margin clicks if selection mode is on, let handleEditorClick capture inside
+      // Do not process page margin clicks if selection mode is on, let standard behavior work
       if (selectionMode) return;
 
       // Improve margin clicking experience
@@ -592,16 +528,13 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
   const bodyHeight = height - margins.top - margins.bottom - gutterTop;
 
   // Determine effective contentEditable state
-  // Even if keyboard is locked, selection should be possible, so contentEditable must be "true" for robust native selection in some browsers
-  // but we intercept input events. However, making it false + user-select: text is safer for "ReadOnly" mode.
-  // BUT Smart Select needs to work. If contentEditable is false, range selection works fine.
-  
-  const isBodyEditable = !readOnly && !isHeaderFooterMode && !isKeyboardLocked;
-  const isHeaderFooterEditable = isHeaderFooterMode && !isKeyboardLocked;
+  // When selectionMode is active, we want contentEditable=true BUT inputMode="none" to suppress keyboard
+  const isBodyEditable = (!readOnly && !isHeaderFooterMode && !isKeyboardLocked) || selectionMode;
+  const isHeaderFooterEditable = (isHeaderFooterMode && !isKeyboardLocked) || (isHeaderFooterMode && selectionMode);
 
   // Cursor style logic
   let cursorStyle = 'cursor-text';
-  if (selectionMode) cursorStyle = 'cursor-cell'; 
+  if (selectionMode) cursorStyle = 'cursor-crosshair'; // Visual cue for selection mode
   else if (isKeyboardLocked) cursorStyle = 'cursor-default';
 
   return (
@@ -646,6 +579,7 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
                         ref={headerRef}
                         className={`prodoc-header w-full min-h-full outline-none ${isHeaderFooterEditable ? 'cursor-text pointer-events-auto' : 'cursor-default pointer-events-none'}`}
                         contentEditable={isHeaderFooterEditable}
+                        inputMode={selectionMode ? "none" : undefined}
                         suppressContentEditableWarning
                         onInput={handleHeaderInput}
                         onFocus={() => setActiveEditingArea && setActiveEditingArea('header')}
@@ -681,6 +615,7 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
                     ref={editorRef}
                     className={`prodoc-editor w-full outline-none text-lg leading-loose break-words z-10 ${showFormattingMarks ? 'show-formatting-marks' : ''} ${isHeaderFooterMode ? 'pointer-events-none select-none' : ''}`}
                     contentEditable={isBodyEditable}
+                    inputMode={selectionMode ? "none" : undefined}
                     onInput={handleInput}
                     onKeyDown={handleKeyDown}
                     onFocus={onFocus}
@@ -717,6 +652,7 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
                         ref={footerRef}
                         className={`prodoc-footer w-full min-h-full outline-none ${isHeaderFooterEditable ? 'cursor-text pointer-events-auto' : 'cursor-default pointer-events-none'}`}
                         contentEditable={isHeaderFooterEditable}
+                        inputMode={selectionMode ? "none" : undefined}
                         suppressContentEditableWarning
                         onInput={handleFooterInput}
                         onFocus={() => setActiveEditingArea && setActiveEditingArea('footer')}

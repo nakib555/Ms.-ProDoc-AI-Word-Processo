@@ -44,7 +44,7 @@ export const WebLayoutView: React.FC<WebLayoutViewProps> = React.memo(({
   backgroundStyle
 }) => {
   const scale = zoom / 100;
-  const { isKeyboardLocked } = useEditor();
+  const { isKeyboardLocked, selectionMode } = useEditor();
   
   // Initialize MathLive for any equations
   useMathLive(content, editorRef);
@@ -113,8 +113,9 @@ export const WebLayoutView: React.FC<WebLayoutViewProps> = React.memo(({
              <div
                 key="editor-web"
                 ref={editorRef}
-                className={`prodoc-editor prodoc-editor-web w-full outline-none text-lg leading-loose text-slate-900 dark:text-slate-200 z-10 relative ${showFormattingMarks ? 'show-formatting-marks' : ''} ${isKeyboardLocked ? 'cursor-default' : 'cursor-text'}`}
-                contentEditable={!isKeyboardLocked}
+                className={`prodoc-editor prodoc-editor-web w-full outline-none text-lg leading-loose text-slate-900 dark:text-slate-200 z-10 relative ${showFormattingMarks ? 'show-formatting-marks' : ''} ${isKeyboardLocked && !selectionMode ? 'cursor-default' : 'cursor-text'}`}
+                contentEditable={!isKeyboardLocked || selectionMode}
+                inputMode={selectionMode ? "none" : undefined}
                 onInput={onInput}
                 onPaste={onPaste}
                 suppressContentEditableWarning={true}
