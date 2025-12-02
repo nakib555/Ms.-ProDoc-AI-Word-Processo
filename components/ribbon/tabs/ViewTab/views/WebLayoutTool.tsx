@@ -118,6 +118,25 @@ export const WebLayoutView: React.FC<WebLayoutViewProps> = React.memo(({
                 inputMode={selectionMode ? "none" : undefined}
                 onInput={onInput}
                 onPaste={onPaste}
+                onKeyDown={(e) => {
+                    // Undo / Redo Shortcuts
+                    if ((e.ctrlKey || e.metaKey) && !e.altKey) {
+                        if (e.key.toLowerCase() === 'z') {
+                            e.preventDefault();
+                            if (e.shiftKey) {
+                                document.execCommand('redo');
+                            } else {
+                                document.execCommand('undo');
+                            }
+                            return;
+                        }
+                        if (e.key.toLowerCase() === 'y') {
+                            e.preventDefault();
+                            document.execCommand('redo');
+                            return;
+                        }
+                    }
+                }}
                 suppressContentEditableWarning={true}
                 style={{
                     fontFamily: 'Calibri, Inter, sans-serif',

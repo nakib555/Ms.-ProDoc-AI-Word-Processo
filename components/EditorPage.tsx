@@ -234,6 +234,24 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (readOnly) return;
 
+    // Explicit Undo/Redo Handling to prevent conflicts and ensure support
+    if ((e.ctrlKey || e.metaKey) && !e.altKey) {
+        if (e.key.toLowerCase() === 'z') {
+            e.preventDefault();
+            if (e.shiftKey) {
+                document.execCommand('redo');
+            } else {
+                document.execCommand('undo');
+            }
+            return;
+        }
+        if (e.key.toLowerCase() === 'y') {
+            e.preventDefault();
+            document.execCommand('redo');
+            return;
+        }
+    }
+
     const selection = window.getSelection();
     if (!selection || !selection.rangeCount || !editorRef.current) return;
     const range = selection.getRangeAt(0);

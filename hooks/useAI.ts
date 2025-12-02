@@ -158,7 +158,14 @@ export const useAI = () => {
                      if (editorRef.current && options.mode !== 'replace') editorRef.current.focus();
                      
                      if (options.mode === 'replace') {
-                        setContent(jsonString);
+                        // Use execCommand to allow Undo
+                        if (editorRef.current) {
+                            editorRef.current.focus();
+                            executeCommand('selectAll');
+                            executeCommand('insertHTML', jsonString);
+                        } else {
+                            setContent(jsonString);
+                        }
                      } else {
                         executeCommand('insertText', jsonString);
                      }
@@ -216,19 +223,36 @@ export const useAI = () => {
                     
                     console.log("[useAI] Generated HTML for REPLACE:", generatedHtml);
                     
-                    // Use setContent directly for full replacement to ensure consistency across pages
-                    setContent(generatedHtml);
+                    // Use execCommand to preserve Undo stack for main body replacement
+                    if (editorRef.current) {
+                        editorRef.current.focus();
+                        executeCommand('selectAll');
+                        // Slight timeout to ensure browser processes the selectAll before insert
+                        // though usually sync execution works.
+                        executeCommand('insertHTML', generatedHtml);
+                        
+                        // Cleanup selection and scroll to top
+                        window.getSelection()?.removeAllRanges();
+                        editorRef.current.scrollTop = 0;
+                    } else {
+                        // Fallback if ref not available for some reason
+                        setContent(generatedHtml);
+                    }
                     
                 } else {
                     // Legacy format or simple content
                     const generatedHtml = jsonToHtml(parsedData);
                     console.log("[useAI] Generated HTML for REPLACE (Legacy):", generatedHtml);
-                    setContent(generatedHtml);
-                }
-                
-                // Reset scroll position
-                if (editorRef.current) {
-                    editorRef.current.scrollTop = 0;
+                    
+                    if (editorRef.current) {
+                        editorRef.current.focus();
+                        executeCommand('selectAll');
+                        executeCommand('insertHTML', generatedHtml);
+                        window.getSelection()?.removeAllRanges();
+                        editorRef.current.scrollTop = 0;
+                    } else {
+                        setContent(generatedHtml);
+                    }
                 }
                 
             } else {
