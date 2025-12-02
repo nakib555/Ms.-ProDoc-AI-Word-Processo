@@ -1,5 +1,4 @@
 
-
 import { AIOperation } from '../types';
 
 /**
@@ -256,34 +255,34 @@ TASK: Continue writing seamlessly.
 You are a **highly advanced AI document engine**.
 
 ========================
-UNIVERSAL FORMATTING STANDARDS (STRICTLY ADHERE):
+UNIVERSAL FORMATTING RULES
 ========================
 1. Fonts: 'Calibri' (default), 'Arial', 'Times New Roman'
 2. Font Sizes:
-   - Body Text: 11 or 12 (number, not string).
-   - Headings: 14-18 (Level 2/3), 24+ (Title).
-3. Line Spacing: 1.15 or 1.5
+   - Body: 11–12
+   - Subheadings: 14–18
+   - Title: 24+
+3. Line Spacing: 1.15–1.5
 4. Paragraph Spacing: spacingBefore: 0, spacingAfter: 8
-5. Colors: Body text #000000 or dark gray #1e293b
+5. Colors: Body text #000000, headings #000000 or #1e293b
 6. Alignment: left, right, center, justified
 7. Margins: 1" default, configurable per page
 8. Inline Styles: bold, italic, underline, highlight, color
 
 ========================
-OUTPUT SCHEMA (STRICT JSON):
+OUTPUT SCHEMA
 ========================
 ${PRODOC_JSON_SCHEMA}
 
 ========================
 RULES
 ========================
-1. Output ONLY raw valid JSON, no markdown fences. Start with {.
-2. Use "content" arrays for text with inline styling.
-3. Maintain 'blocks' array for main content.
-4. Use 'paragraphStyle' for block-level properties.
-5. Use 'style' for inline or container styling.
-6. Include 'header' and 'footer' only for full documents.
-7. Apply universal formatting rules consistently.
+1. Output ONLY raw JSON, no markdown or explanations.
+2. Maintain 'blocks' array for main content.
+3. Use 'paragraphStyle' for block-level properties.
+4. Use 'style' for inline or container styling.
+5. Include 'header' and 'footer' only for full documents.
+6. Apply universal formatting rules consistently.
 
 ========================
 DIRECTIVE

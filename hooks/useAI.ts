@@ -1,5 +1,5 @@
 
-import { AIOperation } from '../types';
+import { AIOperation, PageConfig } from '../types';
 import { generateAIContent, streamAIContent } from '../services/geminiService';
 import { useEditor } from '../contexts/EditorContext';
 import { jsonToHtml } from '../utils/documentConverter';
@@ -19,7 +19,8 @@ export const useAI = () => {
       setAiState, 
       content,
       setHeaderContent,
-      setFooterContent
+      setFooterContent,
+      setPageConfig
   } = useEditor();
 
   const performAIAction = async (
@@ -179,6 +180,18 @@ export const useAI = () => {
                 console.log("[useAI] Executing REPLACE mode");
                 
                 if (parsedData.document) {
+                    // Handle Settings (Page Setup)
+                    if (parsedData.document.settings) {
+                        const s = parsedData.document.settings;
+                        setPageConfig((prev: PageConfig) => ({
+                            ...prev,
+                            size: s.pageSize || prev.size,
+                            orientation: s.orientation || prev.orientation,
+                            margins: s.margins ? { ...prev.margins, ...s.margins } : prev.margins,
+                            pageColor: s.backgroundColor && s.backgroundColor !== '#FFFFFF' ? s.backgroundColor : undefined
+                        }));
+                    }
+
                     // Handle Header
                     if (parsedData.document.header) {
                         const headerHtml = jsonToHtml(parsedData.document.header);
