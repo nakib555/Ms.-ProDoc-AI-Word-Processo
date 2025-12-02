@@ -1,3 +1,4 @@
+
 export const countWords = (text: string): number => {
   return text.trim().split(/\s+/).filter(w => w.length > 0).length;
 };
@@ -41,4 +42,21 @@ export const getDocumentStats = (html: string) => {
     paragraphs,
     lines
   };
+};
+
+/**
+ * Converts a Point (pt) value to Pixels (px).
+ * Standard: 1pt = 1/72 inch. 96px = 1 inch.
+ * Formula: px = pt * (96 / 72) = pt * 1.3333
+ */
+export const ptToPx = (pt: number): number => {
+  return (pt * 96) / 72;
+};
+
+/**
+ * Converts a Pixel (px) value to Points (pt).
+ * Formula: pt = px * (72 / 96) = px * 0.75
+ */
+export const pxToPt = (px: number): number => {
+  return (px * 72) / 96;
 };

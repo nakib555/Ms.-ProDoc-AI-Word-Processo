@@ -11,34 +11,49 @@ export const FontFamilyTool: React.FC = () => {
   const { activeMenu, toggleMenu, closeMenu, menuPos, registerTrigger } = useHomeTab();
   const [currentFont, setCurrentFont] = useState('Arial');
   const [inputValue, setInputValue] = useState('Arial');
+  const [isMixed, setIsMixed] = useState(false);
   const menuId = 'font_family';
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Track selection to update font indicator
   useEffect(() => {
     const handleSelectionChange = () => {
+        // Method 1: Try document.queryCommandValue first (Standard rich text API)
+        // It often handles mixed selections by returning empty string or specific value
+        try {
+            const font = document.queryCommandValue('fontName');
+            if (font) {
+                const cleanFont = font.replace(/['"]/g, '');
+                setCurrentFont(cleanFont);
+                setInputValue(cleanFont);
+                setIsMixed(false);
+                return;
+            }
+        } catch (e) {}
+
+        // Method 2: Fallback to computed style of anchor node if command fails or returns nothing
         const selection = window.getSelection();
         if (!selection || selection.rangeCount === 0) return;
         
         let node = selection.anchorNode;
-        // If node is text, get parent. If null (rare), ignore.
         if (node && node.nodeType === Node.TEXT_NODE) node = node.parentElement;
         
         // Ensure selection is inside editor
         if (editorRef.current && node && editorRef.current.contains(node)) {
              const computed = window.getComputedStyle(node as HTMLElement);
-             // Clean up font string (remove quotes, handle stacks)
              let font = computed.fontFamily.split(',')[0].trim().replace(/['"]/g, '');
              
-             // Only update if user is not actively typing in the box
+             // Check for mixed selection manually if range is large? 
+             // For performance, we stick to anchor node or queryCommandValue result
+             
              if (document.activeElement !== inputRef.current) {
                  setCurrentFont(font);
                  setInputValue(font);
+                 setIsMixed(false);
              }
         }
     };
 
-    // Listen to multiple events for responsiveness
     document.addEventListener('selectionchange', handleSelectionChange);
     document.addEventListener('mouseup', handleSelectionChange);
     document.addEventListener('keyup', handleSelectionChange);
@@ -63,6 +78,7 @@ export const FontFamilyTool: React.FC = () => {
       applyAdvancedStyle({ fontFamily: font });
       setInputValue(font);
       setCurrentFont(font);
+      setIsMixed(false);
       closeMenu();
   };
 
@@ -77,15 +93,12 @@ export const FontFamilyTool: React.FC = () => {
                 ref={inputRef}
                 type="text"
                 value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
+                placeholder={isMixed ? "" : undefined}
+                onChange={(e) => { setInputValue(e.target.value); setIsMixed(false); }}
                 onKeyDown={handleKeyDown}
-                onFocus={() => {
-                    // Optional: Select all on focus for quick replacement
-                    inputRef.current?.select();
-                }}
+                onFocus={() => inputRef.current?.select()}
                 onBlur={() => {
-                    // Revert to actual font if typed value wasn't applied
-                    setInputValue(currentFont);
+                    if (!isMixed) setInputValue(currentFont);
                 }}
                 className="w-full h-full px-1.5 text-[11px] outline-none text-slate-800 font-medium bg-transparent leading-tight"
             />
@@ -107,11 +120,11 @@ export const FontFamilyTool: React.FC = () => {
                         key={font}
                         onMouseDown={(e) => e.preventDefault()}
                         onClick={() => handleSelect(font)}
-                        className={`w-full text-left px-3 py-1.5 hover:bg-blue-50 hover:text-blue-700 text-xs transition-colors flex items-center group rounded-sm ${currentFont === font ? 'bg-blue-50 text-blue-700 font-semibold' : 'text-slate-700'}`}
+                        className={`w-full text-left px-3 py-1.5 hover:bg-blue-50 hover:text-blue-700 text-xs transition-colors flex items-center group rounded-sm ${currentFont === font && !isMixed ? 'bg-blue-50 text-blue-700 font-semibold' : 'text-slate-700'}`}
                         style={{ fontFamily: font }}
                     >
                         {font}
-                        {currentFont === font && <Check size={12} className="ml-auto text-blue-600"/>}
+                        {currentFont === font && !isMixed && <Check size={12} className="ml-auto text-blue-600"/>}
                     </button>
                 ))}
             </div>

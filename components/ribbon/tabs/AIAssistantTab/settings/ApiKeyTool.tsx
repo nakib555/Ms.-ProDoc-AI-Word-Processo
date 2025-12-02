@@ -1,6 +1,11 @@
 
-import React, { useState, useEffect } from 'react';
-import { Key, CheckCircle2, AlertTriangle, X, Loader2, Save, ExternalLink, Cpu, ChevronRight, RefreshCw } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
+import { 
+  Key, CheckCircle2, AlertTriangle, X, Loader2, Save, ExternalLink, 
+  Cpu, ChevronRight, RefreshCw, ChevronDown, Zap, Star, Sparkles, Check,
+  Feather
+} from 'lucide-react';
 import { RibbonButton } from '../../../common/RibbonButton';
 import { GoogleGenAI } from "@google/genai";
 
@@ -10,6 +15,155 @@ const DEFAULT_MODELS = [
     { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash' },
     { id: 'gemini-2.0-flash-lite-preview-02-05', name: 'Gemini 2.0 Flash Lite' },
 ];
+
+const ModelBadge = ({ type }: { type: 'pro' | 'flash' | 'lite' | 'preview' | 'experimental' }) => {
+    const styles = {
+        pro: "bg-indigo-100 text-indigo-700 border-indigo-200",
+        flash: "bg-amber-100 text-amber-700 border-amber-200",
+        lite: "bg-green-100 text-green-700 border-green-200",
+        preview: "bg-slate-100 text-slate-600 border-slate-200",
+        experimental: "bg-purple-100 text-purple-700 border-purple-200",
+    };
+    
+    const icons = {
+        pro: <Star size={8} className="fill-current" />,
+        flash: <Zap size={8} className="fill-current" />,
+        lite: <Feather size={8} />,
+        preview: null,
+        experimental: <Sparkles size={8} />,
+    };
+
+    const labels = {
+        pro: "Pro",
+        flash: "Flash",
+        lite: "Lite",
+        preview: "Preview",
+        experimental: "Exp",
+    };
+
+    return (
+        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full border flex items-center gap-1 uppercase tracking-wide ${styles[type]}`}>
+            {icons[type]} {labels[type]}
+        </span>
+    );
+};
+
+const RichModelSelect = ({ value, onChange, options, disabled }: any) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const [position, setPosition] = useState({ top: 0, left: 0, width: 0 });
+    const triggerRef = useRef<HTMLButtonElement>(null);
+
+    const updatePosition = () => {
+        if (triggerRef.current) {
+            const rect = triggerRef.current.getBoundingClientRect();
+            setPosition({
+                top: rect.bottom + 4,
+                left: rect.left,
+                width: rect.width
+            });
+        }
+    };
+
+    useEffect(() => {
+        if (isOpen) {
+            updatePosition();
+            window.addEventListener('scroll', updatePosition, true);
+            window.addEventListener('resize', updatePosition);
+            
+            const handleClickOutside = (e: MouseEvent) => {
+                // Handled by backdrop
+            };
+            
+            return () => {
+                window.removeEventListener('scroll', updatePosition, true);
+                window.removeEventListener('resize', updatePosition);
+            };
+        }
+    }, [isOpen]);
+
+    const selectedOption = options.find((o: any) => o.id === value) || options[0];
+
+    const getTraits = (id: string) => {
+        const lower = id.toLowerCase();
+        return {
+            isPro: lower.includes('pro') || lower.includes('ultra'),
+            isFlash: lower.includes('flash'),
+            isLite: lower.includes('lite') || lower.includes('nano'),
+            isPreview: lower.includes('preview'),
+            isExperimental: lower.includes('experimental'),
+        };
+    };
+
+    return (
+        <>
+            <button
+                ref={triggerRef}
+                onClick={() => !disabled && setIsOpen(!isOpen)}
+                className={`w-full flex items-center justify-between bg-white border rounded-xl px-3 py-2.5 text-sm outline-none transition-all shadow-sm group text-left ${isOpen ? 'border-blue-500 ring-2 ring-blue-100' : 'border-slate-300 hover:border-blue-400'} ${disabled ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}
+            >
+                <div className="flex items-center gap-3 overflow-hidden">
+                    <div className={`p-1.5 rounded-lg shrink-0 ${getTraits(selectedOption?.id || '').isFlash ? 'bg-amber-100 text-amber-600' : 'bg-indigo-100 text-indigo-600'}`}>
+                        {getTraits(selectedOption?.id || '').isFlash ? <Zap size={16} className="fill-current"/> : <Cpu size={16}/>}
+                    </div>
+                    <div className="flex flex-col min-w-0">
+                        <span className="font-semibold text-slate-700 truncate block">{selectedOption?.name || value}</span>
+                        <span className="text-[10px] text-slate-400 font-mono truncate block">{selectedOption?.id || value}</span>
+                    </div>
+                </div>
+                <ChevronDown size={16} className={`text-slate-400 transition-transform duration-200 shrink-0 ${isOpen ? 'rotate-180' : ''}`} />
+            </button>
+
+            {isOpen && createPortal(
+                <>
+                    <div className="fixed inset-0 z-[9998]" onClick={() => setIsOpen(false)} />
+                    <div 
+                        className="fixed z-[9999] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-100 flex flex-col"
+                        style={{ 
+                            top: position.top, 
+                            left: position.left, 
+                            width: position.width,
+                            maxHeight: 'min(300px, 50vh)' 
+                        }}
+                    >
+                        <div className="overflow-y-auto p-1 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700">
+                            {options.map((option: any) => {
+                                const traits = getTraits(option.id);
+                                const isSelected = option.id === value;
+                                return (
+                                    <button
+                                        key={option.id}
+                                        onClick={() => { onChange(option.id); setIsOpen(false); }}
+                                        className={`w-full flex items-start gap-3 p-2 rounded-lg transition-colors text-left group ${isSelected ? 'bg-blue-50 dark:bg-blue-900/20' : 'hover:bg-slate-50 dark:hover:bg-slate-800'}`}
+                                    >
+                                        <div className={`mt-0.5 p-1.5 rounded-md shrink-0 ${traits.isFlash ? 'text-amber-600 bg-amber-50' : 'text-indigo-600 bg-indigo-50'} ${isSelected ? 'ring-1 ring-inset ring-black/5' : ''}`}>
+                                            {traits.isFlash ? <Zap size={14} className="fill-current"/> : <Cpu size={14}/>}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+                                                <span className={`text-xs font-bold truncate ${isSelected ? 'text-blue-700 dark:text-blue-300' : 'text-slate-700 dark:text-slate-200'}`}>
+                                                    {option.name}
+                                                </span>
+                                                {traits.isPro && <ModelBadge type="pro" />}
+                                                {traits.isFlash && <ModelBadge type="flash" />}
+                                            </div>
+                                            <div className="flex items-center gap-2 flex-wrap">
+                                                <span className="text-[10px] text-slate-400 font-mono truncate">{option.id}</span>
+                                                {traits.isLite && <ModelBadge type="lite" />}
+                                                {traits.isPreview && <ModelBadge type="preview" />}
+                                            </div>
+                                        </div>
+                                        {isSelected && <Check size={14} className="text-blue-600 mt-1 shrink-0" />}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+                </>,
+                document.body
+            )}
+        </>
+    );
+};
 
 export const ApiKeyTool: React.FC = () => {
   const [hasKey, setHasKey] = useState(false);
@@ -213,19 +367,13 @@ export const ApiKeyTool: React.FC = () => {
                                     <RefreshCw size={10} className={loadingModels ? "animate-spin" : ""} /> Refresh List
                                 </button>
                             </div>
-                            <div className="relative group">
-                                <Cpu size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-hover:text-blue-500 transition-colors" />
-                                <select 
-                                    value={selectedModel}
-                                    onChange={(e) => setSelectedModel(e.target.value)}
-                                    className="w-full bg-white border border-slate-300 rounded-lg pl-10 pr-8 py-2.5 text-sm text-slate-700 outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all appearance-none cursor-pointer hover:border-blue-400 shadow-sm"
-                                >
-                                    {availableModels.map(model => (
-                                        <option key={model.id} value={model.id}>{model.name}</option>
-                                    ))}
-                                </select>
-                                <ChevronRight className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 rotate-90 pointer-events-none" size={14} />
-                            </div>
+                            
+                            <RichModelSelect 
+                                value={selectedModel}
+                                onChange={setSelectedModel}
+                                options={availableModels}
+                                disabled={loadingModels}
+                            />
                         </div>
 
                         <div className="flex items-center justify-between pt-1">

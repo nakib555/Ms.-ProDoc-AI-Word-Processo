@@ -1,8 +1,21 @@
 
 import { PageConfig } from '../types';
+import { ptToPx } from './textUtils';
 
 // Helper to convert camelCase to kebab-case
 const camelToKebab = (str: string) => str.replace(/[A-Z]/g, letter => `-${letter.toLowerCase()}`);
+
+// Helper to resolve numeric font sizes specifically (Numbers = Points -> Pixels)
+const resolveFontSize = (val: string | number | undefined | null): string => {
+    if (val === undefined || val === null) return '';
+    if (typeof val === 'number') {
+        // Assume number input for font size is Points (PT), convert to PX
+        const px = ptToPx(val);
+        // Round to 2 decimals for cleaner CSS
+        return `${parseFloat(px.toFixed(2))}px`;
+    }
+    return val;
+};
 
 // Helper to resolve units (numbers become px, strings stay as is)
 const resolveUnit = (val: string | number | undefined | null): string => {
@@ -16,8 +29,14 @@ const styleToString = (style: any): string => {
   if (!style) return '';
   return Object.entries(style).map(([k, v]) => {
     const key = camelToKebab(k);
+    
+    // Special handling for font-size to convert PT to PX if it's a raw number
+    if (key.includes('font-size') && typeof v === 'number') {
+        return `${key}: ${resolveFontSize(v)}`;
+    }
+
     // Add units if missing for common numeric properties
-    const val = (typeof v === 'number' && ['width', 'height', 'font-size', 'margin', 'padding', 'border-width', 'top', 'bottom', 'left', 'right', 'spacing', 'letter-spacing', 'indent'].some(p => key.includes(p))) 
+    const val = (typeof v === 'number' && ['width', 'height', 'margin', 'padding', 'border-width', 'top', 'bottom', 'left', 'right', 'spacing', 'letter-spacing', 'indent'].some(p => key.includes(p))) 
       ? `${v}px` 
       : v;
     
@@ -117,7 +136,10 @@ const renderInlineContent = (contentItems: any): string => {
     if (item.color) styles.push(`color: ${item.color}`);
     if (item.highlight) styles.push(`background-color: ${item.highlight}`);
     if (item.fontFamily) styles.push(`font-family: "${item.fontFamily}"`);
-    if (item.fontSize) styles.push(`font-size: ${resolveUnit(item.fontSize)}`);
+    
+    // Use special resolution for font size
+    if (item.fontSize) styles.push(`font-size: ${resolveFontSize(item.fontSize)}`);
+    
     if (item.letterSpacing) styles.push(`letter-spacing: ${resolveUnit(item.letterSpacing)}`);
     if (item.textShadow) styles.push(`text-shadow: ${item.textShadow}`);
     
