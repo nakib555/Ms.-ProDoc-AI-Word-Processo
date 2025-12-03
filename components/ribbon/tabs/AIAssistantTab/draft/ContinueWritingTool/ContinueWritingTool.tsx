@@ -1,29 +1,21 @@
 
-import React, { Suspense, useTransition } from 'react';
+import React from 'react';
 import { PenTool, Sparkles, FileText, Feather, Activity, BookOpen, Loader2, ChevronDown } from 'lucide-react';
 import { useAIAssistantTab } from '../../AIAssistantTabContext';
 import { useAI } from '../../../../../../hooks/useAI';
 import { MenuPortal } from '../../../../common/MenuPortal';
-
-// Lazy load PredictiveBuilder
-const PredictiveBuilder = React.lazy(() => 
-  import('./PredictiveBuilder/PredictiveBuilder')
-    .then(m => ({ default: m.PredictiveBuilder }))
-);
+import { PredictiveBuilder } from './PredictiveBuilder/PredictiveBuilder';
 
 export const ContinueWritingTool: React.FC = () => {
   const { performAIAction } = useAI();
   const { activeMenu, menuPos, closeMenu, toggleMenu, registerTrigger } = useAIAssistantTab();
-  const [isPending, startTransition] = useTransition();
   
   const menuId = 'continue_writing_options';
   const isActive = activeMenu === menuId;
 
   const handleToggle = (e: React.MouseEvent) => {
       e.stopPropagation();
-      startTransition(() => {
-          toggleMenu(menuId);
-      });
+      toggleMenu(menuId);
   };
 
   const handleContinue = (instruction?: string) => {
@@ -46,11 +38,7 @@ export const ContinueWritingTool: React.FC = () => {
           title="Continue Writing"
         >
           <div className="p-1 rounded-md group-hover:bg-white group-hover:shadow-sm transition-all mb-0.5">
-              {isPending ? (
-                  <Loader2 className="w-4 h-4 text-blue-600 animate-spin" /> 
-              ) : (
-                  <PenTool className={`w-4 h-4 ${isActive ? 'text-blue-600' : 'text-slate-500 group-hover:text-blue-600'}`} strokeWidth={1.5} />
-              )}
+              <PenTool className={`w-4 h-4 ${isActive ? 'text-blue-600' : 'text-slate-500 group-hover:text-blue-600'}`} strokeWidth={1.5} />
           </div>
           <div className="flex items-center justify-center w-full px-0.5">
               <span className="text-[10px] font-medium leading-tight text-center text-slate-500 group-hover:text-blue-700">Continue Writing</span>
@@ -94,15 +82,8 @@ export const ContinueWritingTool: React.FC = () => {
                      </div>
                  </div>
 
-                 {/* Predictive Builder Section with Suspense */}
-                 <Suspense fallback={
-                    <div className="flex flex-col items-center justify-center h-40 gap-2 text-slate-400">
-                        <Loader2 className="animate-spin" size={20} />
-                        <span className="text-xs">Loading templates...</span>
-                    </div>
-                 }>
-                    <PredictiveBuilder onSelect={handlePredictiveSelect} />
-                 </Suspense>
+                 {/* Predictive Builder Section */}
+                 <PredictiveBuilder onSelect={handlePredictiveSelect} />
              </div>
         </MenuPortal>
     </>

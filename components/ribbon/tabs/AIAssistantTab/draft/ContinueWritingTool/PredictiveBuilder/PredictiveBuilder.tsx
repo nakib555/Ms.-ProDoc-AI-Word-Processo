@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo, useDeferredValue, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useDeferredValue } from 'react';
 import { 
   FileText, Feather, Activity, BookOpen, Mail, Video, LayoutTemplate, 
   Search, ChevronRight, ChevronDown, Code, Database, Server, Cpu, Settings, 
@@ -9,47 +9,80 @@ import {
   Receipt, Building2, ShieldAlert, Hammer, Map, Plane, Leaf, Recycle, Wind, 
   TreeDeciduous, Factory, Wrench, Mountain, Camera, Utensils, Trophy, Dumbbell,
   Brain, Tv, Radio, HeartHandshake, Film, Gamepad2, Scissors, Lightbulb, GitBranch,
-  History, Palette, Globe, Library, Microscope, ShoppingBag, Heart, Rocket, Loader2,
-  Sparkles
+  History, Palette, Globe, Library, Microscope, ShoppingBag, Heart, Rocket, Sparkles
 } from 'lucide-react';
 
-// Dynamic Import Map for Categories
-const CATEGORY_LOADERS: Record<string, () => Promise<{l: string, f: string}[]>> = {
-    "Technology & Innovation": () => import('./TechnologyAndInnovation').then(m => m.TECHNOLOGY_INNOVATION),
-    "Cultural Studies & Humanities": () => import('./CulturalStudiesAndHumanities').then(m => m.CULTURAL_HUMANITIES),
-    "Research & Academic": () => import('./ResearchAndAcademic').then(m => m.RESEARCH_ACADEMIC),
-    "Science & Research Documentation": () => import('./ScienceAndResearchDocumentation').then(m => m.SCIENCE_RESEARCH_DOCUMENTATION),
-    "Historical Research": () => import('./HistoricalResearch').then(m => m.HISTORICAL_RESEARCH),
-    "Technical & Engineering": () => import('./TechnicalAndEngineering').then(m => m.TECHNICAL_ENGINEERING),
-    "Business & Management": () => import('./BusinessAndManagement').then(m => m.BUSINESS_MANAGEMENT),
-    "Business & Entrepreneurship": () => import('./BusinessAndEntrepreneurship').then(m => m.BUSINESS_ENTREPRENEURSHIP),
-    "Creative & Media": () => import('./CreativeAndMedia').then(m => m.CREATIVE_MEDIA),
-    "Media & Journalism": () => import('./MediaAndJournalism').then(m => m.MEDIA_JOURNALISM),
-    "Science Fiction & Fantasy": () => import('./ScienceFictionAndFantasy').then(m => m.SCIFI_FANTASY),
-    "Arts & Performing Arts": () => import('./ArtsAndPerformingArts').then(m => m.ARTS_PERFORMING_ARTS),
-    "Education & Teaching": () => import('./EducationAndTeaching').then(m => m.EDUCATION_TEACHING),
-    "Legal & Regulatory": () => import('./LegalAndRegulatory').then(m => m.LEGAL_REGULATORY),
-    "Legal & Compliance": () => import('./LegalAndCompliance').then(m => m.LEGAL_COMPLIANCE),
-    "Healthcare & Medical": () => import('./HealthcareAndMedical').then(m => m.HEALTHCARE_MEDICAL),
-    "Health & Wellness": () => import('./HealthAndWellness').then(m => m.HEALTH_WELLNESS),
-    "Finance & Accounting": () => import('./FinanceAndAccounting').then(m => m.FINANCE_ACCOUNTING),
-    "Government & Policy": () => import('./GovernmentAndPolicy').then(m => m.GOVERNMENT_POLICY),
-    "Philanthropy & NGOs": () => import('./PhilanthropyAndNGOs').then(m => m.PHILANTHROPY_NGOS),
-    "Architecture & Construction": () => import('./ArchitectureAndConstruction').then(m => m.ARCHITECTURE_CONSTRUCTION),
-    "Travel & Tourism": () => import('./TravelAndTourism').then(m => m.TRAVEL_TOURISM),
-    "Travel & Tourism Innovations": () => import('./TravelAndTourismInnovations').then(m => m.TRAVEL_TOURISM_INNOVATIONS),
-    "Environmental Science & Sustainability": () => import('./EnvironmentalScienceAndSustainability').then(m => m.ENVIRONMENTAL_SUSTAINABILITY),
-    "Food & Recipe": () => import('./FoodAndRecipe').then(m => m.FOOD_RECIPE),
-    "Fashion & Lifestyle": () => import('./FashionAndLifestyle').then(m => m.FASHION_LIFESTYLE),
-    "Sports & Fitness": () => import('./SportsAndFitness').then(m => m.SPORTS_FITNESS),
-    "Sports & Recreation": () => import('./SportsAndRecreation').then(m => m.SPORTS_RECREATION),
-    "Entertainment & Media": () => import('./EntertainmentAndMedia').then(m => m.ENTERTAINMENT_MEDIA),
-    "Psychology & Mental Health": () => import('./PsychologyAndMentalHealth').then(m => m.PSYCHOLOGY_MENTAL_HEALTH),
-    "DIY & How-To": () => import('./DIYAndHowTo').then(m => m.DIY_HOW_TO),
-    "Gaming & eSports": () => import('./GamingAndEsports').then(m => m.GAMING_ESPORTS)
+// Static Imports for Data Categories
+import { TECHNOLOGY_INNOVATION } from './TechnologyAndInnovation';
+import { CULTURAL_HUMANITIES } from './CulturalStudiesAndHumanities';
+import { RESEARCH_ACADEMIC } from './ResearchAndAcademic';
+import { SCIENCE_RESEARCH_DOCUMENTATION } from './ScienceAndResearchDocumentation';
+import { HISTORICAL_RESEARCH } from './HistoricalResearch';
+import { TECHNICAL_ENGINEERING } from './TechnicalAndEngineering';
+import { BUSINESS_MANAGEMENT } from './BusinessAndManagement';
+import { BUSINESS_ENTREPRENEURSHIP } from './BusinessAndEntrepreneurship';
+import { CREATIVE_MEDIA } from './CreativeAndMedia';
+import { MEDIA_JOURNALISM } from './MediaAndJournalism';
+import { SCIFI_FANTASY } from './ScienceFictionAndFantasy';
+import { ARTS_PERFORMING_ARTS } from './ArtsAndPerformingArts';
+import { EDUCATION_TEACHING } from './EducationAndTeaching';
+import { LEGAL_REGULATORY } from './LegalAndRegulatory';
+import { LEGAL_COMPLIANCE } from './LegalAndCompliance';
+import { HEALTHCARE_MEDICAL } from './HealthcareAndMedical';
+import { HEALTH_WELLNESS } from './HealthAndWellness';
+import { FINANCE_ACCOUNTING } from './FinanceAndAccounting';
+import { GOVERNMENT_POLICY } from './GovernmentAndPolicy';
+import { PHILANTHROPY_NGOS } from './PhilanthropyAndNGOs';
+import { ARCHITECTURE_CONSTRUCTION } from './ArchitectureAndConstruction';
+import { TRAVEL_TOURISM } from './TravelAndTourism';
+import { TRAVEL_TOURISM_INNOVATIONS } from './TravelAndTourismInnovations';
+import { ENVIRONMENTAL_SUSTAINABILITY } from './EnvironmentalScienceAndSustainability';
+import { FOOD_RECIPE } from './FoodAndRecipe';
+import { FASHION_LIFESTYLE } from './FashionAndLifestyle';
+import { SPORTS_FITNESS } from './SportsAndFitness';
+import { SPORTS_RECREATION } from './SportsAndRecreation';
+import { ENTERTAINMENT_MEDIA } from './EntertainmentAndMedia';
+import { PSYCHOLOGY_MENTAL_HEALTH } from './PsychologyAndMentalHealth';
+import { DIY_HOW_TO } from './DIYAndHowTo';
+import { GAMING_ESPORTS } from './GamingAndEsports';
+
+// Category Data Map
+const CATEGORIES_DATA: Record<string, {l: string, f: string}[]> = {
+    "Technology & Innovation": TECHNOLOGY_INNOVATION,
+    "Cultural Studies & Humanities": CULTURAL_HUMANITIES,
+    "Research & Academic": RESEARCH_ACADEMIC,
+    "Science & Research Documentation": SCIENCE_RESEARCH_DOCUMENTATION,
+    "Historical Research": HISTORICAL_RESEARCH,
+    "Technical & Engineering": TECHNICAL_ENGINEERING,
+    "Business & Management": BUSINESS_MANAGEMENT,
+    "Business & Entrepreneurship": BUSINESS_ENTREPRENEURSHIP,
+    "Creative & Media": CREATIVE_MEDIA,
+    "Media & Journalism": MEDIA_JOURNALISM,
+    "Science Fiction & Fantasy": SCIFI_FANTASY,
+    "Arts & Performing Arts": ARTS_PERFORMING_ARTS,
+    "Education & Teaching": EDUCATION_TEACHING,
+    "Legal & Regulatory": LEGAL_REGULATORY,
+    "Legal & Compliance": LEGAL_COMPLIANCE,
+    "Healthcare & Medical": HEALTHCARE_MEDICAL,
+    "Health & Wellness": HEALTH_WELLNESS,
+    "Finance & Accounting": FINANCE_ACCOUNTING,
+    "Government & Policy": GOVERNMENT_POLICY,
+    "Philanthropy & NGOs": PHILANTHROPY_NGOS,
+    "Architecture & Construction": ARCHITECTURE_CONSTRUCTION,
+    "Travel & Tourism": TRAVEL_TOURISM,
+    "Travel & Tourism Innovations": TRAVEL_TOURISM_INNOVATIONS,
+    "Environmental Science & Sustainability": ENVIRONMENTAL_SUSTAINABILITY,
+    "Food & Recipe": FOOD_RECIPE,
+    "Fashion & Lifestyle": FASHION_LIFESTYLE,
+    "Sports & Fitness": SPORTS_FITNESS,
+    "Sports & Recreation": SPORTS_RECREATION,
+    "Entertainment & Media": ENTERTAINMENT_MEDIA,
+    "Psychology & Mental Health": PSYCHOLOGY_MENTAL_HEALTH,
+    "DIY & How-To": DIY_HOW_TO,
+    "Gaming & eSports": GAMING_ESPORTS
 };
 
-const CATEGORY_NAMES = Object.keys(CATEGORY_LOADERS).sort();
+const CATEGORY_NAMES = Object.keys(CATEGORIES_DATA).sort();
 
 const getIconForOption = (label: string) => {
   const l = label.toLowerCase();
@@ -186,10 +219,6 @@ const Box = (props: any) => (
     </svg>
 );
 
-const SparklesIcon = (props: any) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width={props.size || 24} height={props.size || 24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={props.className}><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M9 5H5"/><path d="M19 19v2"/><path d="M21 21h-2"/></svg>
-);
-
 interface PredictiveBuilderProps {
     onSelect: (item: { l: string, f: string }) => void;
 }
@@ -198,77 +227,6 @@ export const PredictiveBuilder: React.FC<PredictiveBuilderProps> = ({ onSelect }
   const [searchTerm, setSearchTerm] = useState('');
   const deferredSearchTerm = useDeferredValue(searchTerm);
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
-  const [loadedData, setLoadedData] = useState<Record<string, {l: string, f: string}[]>>({});
-  const [loadingStates, setLoadingStates] = useState<Record<string, boolean>>({});
-
-  // --- Search Handling (Loads all on search interaction) ---
-  useEffect(() => {
-    if (deferredSearchTerm && deferredSearchTerm.length > 1) {
-       // If searching, assume user wants to see all matching options.
-       // We must load all data to filter it.
-       // Note: This might be slightly heavy but ensures search works.
-       // To optimize, we only load if not already loaded.
-       const loadAll = async () => {
-           const pending = CATEGORY_NAMES.filter(name => !loadedData[name] && !loadingStates[name]);
-           if (pending.length === 0) return;
-
-           setLoadingStates(prev => {
-               const next = {...prev};
-               pending.forEach(name => next[name] = true);
-               return next;
-           });
-
-           const results = await Promise.allSettled(pending.map(name => 
-               CATEGORY_LOADERS[name]().then(data => ({ name, data }))
-           ));
-
-           const newLoadedData = {...loadedData};
-           const newLoadingStates = {...loadingStates};
-           
-           results.forEach(res => {
-               if (res.status === 'fulfilled') {
-                   newLoadedData[res.value.name] = res.value.data;
-                   newLoadingStates[res.value.name] = false;
-               } else {
-                   // reset loading state on fail so we can retry later if needed
-                   // but realistically just mark false
-                   // We don't have the name easily here if rejected, so let's iterate pending
-                   // Simplify: Just iterate pending and update state.
-               }
-           });
-           
-           // Clean up loading states
-           pending.forEach(name => newLoadingStates[name] = false);
-           
-           setLoadedData(newLoadedData);
-           setLoadingStates(newLoadingStates);
-       };
-       
-       loadAll();
-    }
-  }, [deferredSearchTerm, loadedData, loadingStates]);
-
-  // --- Expansion Handling (Lazy Load on Click) ---
-  const handleToggleCategory = async (category: string) => {
-      if (expandedCategory === category) {
-          setExpandedCategory(null);
-          return;
-      }
-
-      setExpandedCategory(category);
-
-      if (!loadedData[category] && !loadingStates[category]) {
-          setLoadingStates(prev => ({...prev, [category]: true}));
-          try {
-              const data = await CATEGORY_LOADERS[category]();
-              setLoadedData(prev => ({...prev, [category]: data}));
-          } catch (error) {
-              console.error(`Failed to load category: ${category}`, error);
-          } finally {
-              setLoadingStates(prev => ({...prev, [category]: false}));
-          }
-      }
-  };
 
   // --- Filtering Logic ---
   const filteredItems = useMemo(() => {
@@ -276,7 +234,7 @@ export const PredictiveBuilder: React.FC<PredictiveBuilderProps> = ({ onSelect }
     const lowerSearch = deferredSearchTerm.toLowerCase();
     const results: { l: string, f: string, category: string }[] = [];
     
-    Object.entries(loadedData).forEach(([category, items]) => {
+    Object.entries(CATEGORIES_DATA).forEach(([category, items]) => {
       if (items && Array.isArray(items)) {
           items.forEach(item => {
             if (item.l.toLowerCase().includes(lowerSearch)) {
@@ -285,14 +243,14 @@ export const PredictiveBuilder: React.FC<PredictiveBuilderProps> = ({ onSelect }
           });
       }
     });
-    // Optimization: Limit results to prevent massive re-renders during typing
     return results.slice(0, 50);
-  }, [deferredSearchTerm, loadedData]);
+  }, [deferredSearchTerm]);
 
-  // Calculate total items (approximate based on loaded + estimate for unloaded)
-  // We'll just show loaded count or "+" if loading
-  const totalCount = Object.values(loadedData).reduce((acc, curr: any) => acc + curr.length, 0);
-  const hasUnloaded = CATEGORY_NAMES.length > Object.keys(loadedData).length;
+  const totalCount = Object.values(CATEGORIES_DATA).reduce((acc, curr) => acc + curr.length, 0);
+
+  const handleToggleCategory = (category: string) => {
+      setExpandedCategory(prev => prev === category ? null : category);
+  };
 
   return (
      <div className="flex flex-col flex-1 min-h-0 bg-slate-50/50">
@@ -302,7 +260,7 @@ export const PredictiveBuilder: React.FC<PredictiveBuilderProps> = ({ onSelect }
                      <LayoutTemplate size={10}/> Predictive Builder
                  </div>
                  <span className="text-[9px] bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded-full font-mono">
-                    {totalCount}{hasUnloaded ? '+' : ''}
+                    {totalCount}
                  </span>
              </div>
              <div className="relative group">
@@ -345,15 +303,8 @@ export const PredictiveBuilder: React.FC<PredictiveBuilderProps> = ({ onSelect }
                              );
                          })
                      ) : (
-                         <div className="py-8 text-center text-slate-400 text-xs flex flex-col items-center gap-2">
-                             {Object.values(loadingStates).some(Boolean) ? (
-                                 <>
-                                    <Loader2 className="animate-spin" size={16}/>
-                                    <span>Searching templates...</span>
-                                 </>
-                             ) : (
-                                 <span>No templates found for "{deferredSearchTerm}"</span>
-                             )}
+                         <div className="py-8 text-center text-slate-400 text-xs">
+                             <span>No templates found for "{deferredSearchTerm}"</span>
                          </div>
                      )}
                  </div>
@@ -361,8 +312,7 @@ export const PredictiveBuilder: React.FC<PredictiveBuilderProps> = ({ onSelect }
                  <div className="space-y-1">
                      {CATEGORY_NAMES.map((category) => {
                          const isExpanded = expandedCategory === category;
-                         const items = loadedData[category];
-                         const isLoading = loadingStates[category];
+                         const items = CATEGORIES_DATA[category];
 
                          return (
                              <div key={category} className="rounded-lg overflow-hidden border border-slate-100 bg-white transition-colors hover:border-blue-200/50">
@@ -372,13 +322,9 @@ export const PredictiveBuilder: React.FC<PredictiveBuilderProps> = ({ onSelect }
                                  >
                                      {category}
                                      <div className="flex items-center gap-2">
-                                         {isLoading ? (
-                                             <Loader2 size={10} className="animate-spin text-slate-400"/>
-                                         ) : (
-                                             <span className={`text-[9px] px-1.5 rounded transition-colors ${isExpanded ? 'bg-blue-100 text-blue-600' : 'text-slate-400 bg-slate-100'}`}>
-                                                 {items ? items.length : '+'}
-                                             </span>
-                                         )}
+                                         <span className={`text-[9px] px-1.5 rounded transition-colors ${isExpanded ? 'bg-blue-100 text-blue-600' : 'text-slate-400 bg-slate-100'}`}>
+                                             {items.length}
+                                         </span>
                                          <ChevronDown size={12} className={`text-slate-400 transition-transform duration-300 ease-in-out ${isExpanded ? 'rotate-180 text-blue-500' : ''}`}/>
                                      </div>
                                  </button>
@@ -389,20 +335,13 @@ export const PredictiveBuilder: React.FC<PredictiveBuilderProps> = ({ onSelect }
                                  >
                                     <div className="overflow-hidden min-h-0">
                                         <div className="bg-slate-50/50 p-1 space-y-0.5 max-h-[200px] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-200">
-                                            {isLoading && !items && (
-                                                <div className="p-4 text-center text-slate-400 text-xs flex items-center justify-center gap-2">
-                                                    <Loader2 className="animate-spin" size={14} /> Loading...
-                                                </div>
-                                            )}
-                                            
-                                            {items && items.map((item, idx) => {
+                                            {items.map((item, idx) => {
                                                 const Icon = getIconForOption(item.l);
                                                 return (
                                                     <button 
                                                         key={idx} 
                                                         onClick={() => onSelect(item)}
-                                                        className="w-full text-left px-3 py-1.5 hover:bg-white hover:shadow-sm rounded border border-transparent hover:border-slate-100 transition-all group animate-in fade-in slide-in-from-top-1 duration-300"
-                                                        style={{ animationDelay: `${Math.min(idx * 20, 300)}ms` }}
+                                                        className="w-full text-left px-3 py-1.5 hover:bg-white hover:shadow-sm rounded border border-transparent hover:border-slate-100 transition-all group"
                                                     >
                                                         <div className="text-xs text-slate-600 group-hover:text-blue-700 font-medium flex items-center gap-2">
                                                             <Icon size={12} className="text-slate-400 group-hover:text-blue-500 flex-shrink-0 transition-colors" />
