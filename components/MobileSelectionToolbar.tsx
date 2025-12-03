@@ -47,7 +47,7 @@ export const MobileSelectionToolbar: React.FC = () => {
     const navBtnClass = "flex items-center justify-center w-9 h-9 rounded-full bg-slate-100/50 dark:bg-slate-700/50 hover:bg-white dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 shadow-sm border border-slate-200/50 dark:border-slate-600 active:scale-90 transition-all touch-manipulation active:bg-blue-50 dark:active:bg-blue-900/30 active:text-blue-600 dark:active:text-blue-400";
 
     return (
-        <div className="fixed bottom-14 left-1/2 -translate-x-1/2 z-[40] flex items-center gap-2 px-3 py-2 rounded-full bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-white/50 dark:border-slate-700/50 ring-1 ring-black/5 animate-in slide-in-from-bottom-10 fade-in duration-300 select-none">
+        <div className="fixed bottom-14 left-1/2 -translate-x-1/2 z-[15] flex items-center gap-2 px-3 py-2 rounded-full bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-white/50 dark:border-slate-700/50 ring-1 ring-black/5 animate-in slide-in-from-bottom-10 fade-in duration-300 select-none">
             
             {/* Selection Toggle (Shift Behavior) */}
             <button 
