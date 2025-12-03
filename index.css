@@ -73,6 +73,25 @@
   color: inherit;
 }
 
+/* --- Placeholder for First Line --- */
+/* Uses :has() to target the first paragraph if it only contains a BR (empty state) */
+.prodoc-editor > p:first-child:has(br:only-child)::before {
+  content: "first";
+  color: #94a3b8; /* slate-400 */
+  position: absolute;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* Fallback for purely empty p (if no BR present) */
+.prodoc-editor > p:first-child:empty::before {
+  content: "first";
+  color: #94a3b8;
+  position: absolute;
+  pointer-events: none;
+  user-select: none;
+}
+
 /* --- Page Break Visuals --- */
 .prodoc-page-break {
   height: 0;

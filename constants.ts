@@ -23,20 +23,7 @@ export const TABS = [
   RibbonTab.AI_ASSISTANT
 ];
 
-export const DEFAULT_CONTENT = `
-<h1 style="text-align: center;">Welcome to ProDoc AI</h1>
-<p>This is a modern, web-based rich text editor demonstrating the power of React and Tailwind CSS.</p>
-<p><br></p>
-<h3>Key Features:</h3>
-<ul>
-  <li><strong>Rich Text Editing:</strong> Format text with familiar tools.</li>
-  <li><strong>Modern Interface:</strong> Ribbon-style toolbar and clean design.</li>
-  <li><strong>AI Powered:</strong> Integrated Gemini AI for writing assistance.</li>
-  <li><strong>Responsive:</strong> Works on desktop and tablets.</li>
-</ul>
-<p><br></p>
-<p>Try selecting this text and using the <strong>AI Assistant</strong> tab to summarize or rewrite it!</p>
-`;
+export const DEFAULT_CONTENT = `<p><br></p>`;
 
 // Layout Constants
 export const PAGE_MARGIN_PADDING = 24;

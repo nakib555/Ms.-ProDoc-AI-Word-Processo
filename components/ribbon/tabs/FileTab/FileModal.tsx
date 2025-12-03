@@ -49,9 +49,9 @@ export const FileModal: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center sm:p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200" onClick={closeModal}>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200" onClick={closeModal}>
       <div 
-         className="bg-white w-full h-[92dvh] sm:h-auto sm:max-h-[85vh] rounded-t-2xl sm:rounded-xl shadow-2xl sm:max-w-5xl flex flex-col animate-in slide-in-from-bottom-4 sm:zoom-in-95 duration-200 border-t sm:border border-white/20 overflow-hidden"
+         className="bg-white w-full h-[75vh] sm:h-auto sm:max-h-[85vh] rounded-2xl sm:rounded-xl shadow-2xl sm:max-w-5xl flex flex-col animate-in zoom-in-95 duration-200 border border-white/20 overflow-hidden"
          onClick={e => e.stopPropagation()}
       >
         {/* Modal Header */}
