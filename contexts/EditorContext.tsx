@@ -12,6 +12,11 @@ interface PageDimensions {
 
 export type AIState = 'idle' | 'thinking' | 'writing';
 
+export interface SelectionAction {
+  label?: string;
+  onComplete: () => void;
+}
+
 interface EditorContextType {
   content: string;
   setContent: (content: string) => void;
@@ -76,6 +81,10 @@ interface EditorContextType {
   selectionMode: boolean;
   setSelectionMode: React.Dispatch<React.SetStateAction<boolean>>;
   hasActiveSelection: boolean;
+  
+  // Selection Action (Deferred operation)
+  selectionAction: SelectionAction | null;
+  setSelectionAction: React.Dispatch<React.SetStateAction<SelectionAction | null>>;
 }
 
 const EditorContext = createContext<EditorContextType | undefined>(undefined);
@@ -113,6 +122,7 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [isKeyboardLocked, setIsKeyboardLocked] = useState(false);
   const [selectionMode, setSelectionMode] = useState(false);
   const [hasActiveSelection, setHasActiveSelection] = useState(false);
+  const [selectionAction, setSelectionAction] = useState<SelectionAction | null>(null);
 
   const [pageConfig, setPageConfig] = useState<PageConfig>({
     size: 'Letter',
@@ -534,7 +544,9 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setIsKeyboardLocked,
     selectionMode,
     setSelectionMode,
-    hasActiveSelection
+    hasActiveSelection,
+    selectionAction,
+    setSelectionAction
   }), [
     content,
     wordCount,
@@ -572,7 +584,8 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     footerContent,
     isKeyboardLocked,
     selectionMode,
-    hasActiveSelection
+    hasActiveSelection,
+    selectionAction
   ]);
 
   return (

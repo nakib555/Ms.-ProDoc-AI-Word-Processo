@@ -16,7 +16,7 @@ const LANGUAGES = [
 export const TranslateTool: React.FC = () => {
   const { activeMenu, menuPos, closeMenu } = useAIAssistantTab();
   const { performAIAction, isProcessing } = useAI();
-  const { editorRef } = useEditor();
+  const { editorRef, setSelectionMode, setSelectionAction, setIsKeyboardLocked } = useEditor();
   
   const [targetLang, setTargetLang] = useState('Spanish');
   const [isLangOpen, setIsLangOpen] = useState(false);
@@ -32,15 +32,23 @@ export const TranslateTool: React.FC = () => {
 
   const handleTranslate = (scope: 'selection' | 'document') => {
     if (scope === 'selection') {
-        const selection = window.getSelection();
-        if (!selection || selection.isCollapsed || selection.toString().trim().length === 0) {
-            alert("Please select text to translate first.");
-            return;
-        }
-        
-        const prompt = `Translate to ${targetLang}.`;
-        // Use type assertion if needed, or ensuring prompt.ts handles it (it does)
-        performAIAction('translate_content' as any, prompt, { mode: 'insert' }); 
+        // Start Selection Mode for Translation
+        setSelectionMode(true);
+        setIsKeyboardLocked(true);
+        setSelectionAction({
+            label: 'Translate Selection',
+            onComplete: () => {
+                const selection = window.getSelection();
+                if (!selection || selection.isCollapsed || selection.toString().trim().length === 0) {
+                    alert("Please select text to translate first.");
+                    return;
+                }
+                
+                const prompt = `Translate to ${targetLang}.`;
+                performAIAction('translate_content' as any, prompt, { mode: 'insert' });
+            }
+        });
+        closeMenu();
     } 
     else if (scope === 'document') {
         if (!editorRef.current || !editorRef.current.innerText.trim()) {
@@ -51,10 +59,9 @@ export const TranslateTool: React.FC = () => {
         if (window.confirm(`Translate entire document to ${targetLang}? This may take a moment for large documents.`)) {
             const prompt = `Translate the entire document content to ${targetLang}.`;
             performAIAction('translate_content' as any, prompt, { mode: 'replace' });
+            closeMenu();
         }
     }
-    
-    closeMenu();
   };
 
   return (
@@ -118,7 +125,7 @@ export const TranslateTool: React.FC = () => {
                         <div className="text-left flex-1">
                             <div className="text-xs font-bold text-slate-800 dark:text-slate-100 mb-0.5">Translate Selection</div>
                             <div className="text-[10px] text-slate-500 dark:text-slate-400 leading-tight">
-                                Convert selected text to {targetLang}.
+                                Select text on screen to translate to {targetLang}.
                             </div>
                         </div>
                         <div className="self-center opacity-0 group-hover:opacity-100 transition-opacity text-indigo-500">

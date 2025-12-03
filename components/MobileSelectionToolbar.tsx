@@ -1,13 +1,15 @@
 
 import React, { useState, useEffect } from 'react';
-import { MousePointer2, ArrowLeft, ArrowUp, ArrowDown, ArrowRight, X } from 'lucide-react';
+import { MousePointer2, ArrowLeft, ArrowUp, ArrowDown, ArrowRight, X, Check } from 'lucide-react';
 import { useEditor } from '../contexts/EditorContext';
 
 export const MobileSelectionToolbar: React.FC = () => {
     const { 
         selectionMode,
         setSelectionMode,
-        setIsKeyboardLocked
+        setIsKeyboardLocked,
+        selectionAction,
+        setSelectionAction
     } = useEditor();
     
     // Local state for "Extend" mode (Shift key behavior)
@@ -18,8 +20,9 @@ export const MobileSelectionToolbar: React.FC = () => {
         if (!selectionMode) {
             setIsExtending(false);
             window.getSelection()?.removeAllRanges();
+            setSelectionAction(null);
         }
-    }, [selectionMode]);
+    }, [selectionMode, setSelectionAction]);
 
     if (!selectionMode) return null;
 
@@ -40,6 +43,15 @@ export const MobileSelectionToolbar: React.FC = () => {
             } catch (err) {
                 console.warn("Cursor movement not supported", err);
             }
+        }
+    };
+
+    const handleAction = () => {
+        if (selectionAction) {
+            selectionAction.onComplete();
+            setSelectionAction(null);
+            setSelectionMode(false);
+            setIsKeyboardLocked(false);
         }
     };
 
@@ -100,12 +112,27 @@ export const MobileSelectionToolbar: React.FC = () => {
             </div>
 
             <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-0.5"></div>
+            
+            {/* Action Button (if set) */}
+            {selectionAction && (
+                <>
+                    <button 
+                        onClick={handleAction}
+                        className="flex items-center justify-center w-10 h-10 rounded-full bg-green-500 hover:bg-green-600 text-white shadow-md shadow-green-500/30 transition-colors active:scale-95 border border-green-600"
+                        title={selectionAction.label || "Done"}
+                    >
+                        <Check size={18} strokeWidth={3} />
+                    </button>
+                    <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-0.5"></div>
+                </>
+            )}
 
             {/* Close Button */}
             <button 
                 onClick={() => {
                     setSelectionMode(false);
                     setIsKeyboardLocked(false);
+                    setSelectionAction(null);
                 }}
                 className="p-2 text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-colors"
             >
