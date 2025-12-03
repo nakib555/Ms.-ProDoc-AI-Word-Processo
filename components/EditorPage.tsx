@@ -745,7 +745,7 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
                 transformOrigin: 'top left',
                 width: `${width}px`,
                 height: `${height}px`,
-                boxShadow: '0 0 0 1px #d1d5db, 0 10px 20px -5px rgba(0,0,0,0.15)',
+                boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06), 0 0 0 1px rgba(0,0,0,0.05)', // Refined realistic shadow
                 ...getBackgroundStyle()
             }}
             onMouseDown={handlePageClick}
@@ -764,9 +764,9 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
                 onDoubleClick={onHeaderDoubleClick}
                 onMouseDown={(e) => e.stopPropagation()} 
             >
-                <div className={`w-full h-full relative ${isHeaderFooterMode ? 'border-b-2 border-dashed border-blue-500' : 'hover:bg-slate-50/50'}`}>
+                <div className={`w-full h-full relative ${isHeaderFooterMode ? 'border-b-2 border-dashed border-indigo-500' : 'hover:bg-slate-50/50'}`}>
                     {isHeaderFooterMode && (
-                        <div className="header-footer-label" style={{ left: 0, bottom: -2, transform: 'translateY(100%)' }}>Header</div>
+                        <div className="header-footer-label bg-indigo-600 text-white" style={{ left: 0, bottom: -2, transform: 'translateY(100%)' }}>Header</div>
                     )}
                     <div 
                         ref={headerRef}
@@ -845,9 +845,9 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
                 onDoubleClick={onFooterDoubleClick}
                 onMouseDown={(e) => e.stopPropagation()} 
             >
-                 <div className={`w-full h-full relative flex flex-col justify-end ${isHeaderFooterMode ? 'border-t-2 border-dashed border-blue-500' : 'hover:bg-slate-50/50'}`}>
+                 <div className={`w-full h-full relative flex flex-col justify-end ${isHeaderFooterMode ? 'border-t-2 border-dashed border-indigo-500' : 'hover:bg-slate-50/50'}`}>
                     {isHeaderFooterMode && (
-                        <div className="header-footer-label footer-tag" style={{ left: 0, top: -2, transform: 'translateY(-100%)' }}>Footer</div>
+                        <div className="header-footer-label footer-tag bg-indigo-600 text-white" style={{ left: 0, top: -2, transform: 'translateY(-100%)' }}>Footer</div>
                     )}
                     <div 
                         ref={footerRef}

@@ -16,7 +16,7 @@ export const PrintLayoutTool: React.FC = () => {
             icon={FileText} 
             label="Print Layout" 
             onClick={() => !isAIProcessing && setViewMode('print')} 
-            className={viewMode === 'print' ? 'bg-slate-100 text-blue-700' : ''}
+            className={viewMode === 'print' ? 'bg-indigo-100 text-indigo-700' : ''}
         />
     </div>
   );
@@ -435,11 +435,11 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
   const isVertical = pageMovement === 'vertical';
 
   return (
-    <div className="w-full h-full flex flex-col relative bg-[#E3E5E8] dark:bg-slate-900 transition-colors duration-300">
+    <div className="w-full h-full flex flex-col relative bg-[#f1f5f9] dark:bg-slate-950 transition-colors duration-300">
        {showRuler && (
          <div 
             ref={rulerContainerRef}
-            className="w-full overflow-hidden bg-[#F0F0F0] border-b border-slate-300 z-20 shrink-0 flex justify-center sticky top-0 shadow-sm"
+            className="w-full overflow-hidden bg-[#F8F9FA] border-b border-slate-200 z-20 shrink-0 flex justify-center sticky top-0 shadow-sm"
             style={{ height: '25px' }}
             onMouseDown={(e) => e.preventDefault()}
          >

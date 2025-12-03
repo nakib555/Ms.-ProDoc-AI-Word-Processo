@@ -4,22 +4,26 @@ import { RibbonTab } from '../types';
 import { RibbonTabBar } from './ribbon/RibbonTabBar';
 import { Loader2 } from 'lucide-react';
 
+// Helper for safe lazy loading
+const safeLazy = (importPromise: Promise<any>, name: string) => 
+    React.lazy(() => importPromise.then(m => ({ default: m[name] || (() => <div className="p-2 text-xs text-red-500">Failed to load {name}</div>) })));
+
 // Lazy Load Tabs
-const HomeTab = React.lazy(() => import('./ribbon/tabs/HomeTab/HomeTab').then(m => ({ default: m.HomeTab })));
-const InsertTab = React.lazy(() => import('./ribbon/tabs/InsertTab/InsertTab').then(m => ({ default: m.InsertTab })));
-const ViewTab = React.lazy(() => import('./ribbon/tabs/ViewTab/ViewTab').then(m => ({ default: m.ViewTab })));
-const FileTab = React.lazy(() => import('./ribbon/tabs/FileTab/FileTab').then(m => ({ default: m.FileTab })));
-const LayoutTab = React.lazy(() => import('./ribbon/tabs/LayoutTab/LayoutTab').then(m => ({ default: m.LayoutTab })));
-const ReferencesTab = React.lazy(() => import('./ribbon/tabs/ReferencesTab/ReferencesTab').then(m => ({ default: m.ReferencesTab })));
-const MailingsTab = React.lazy(() => import('./ribbon/tabs/MailingsTab/MailingsTab').then(m => ({ default: m.MailingsTab })));
-const AIAssistantTab = React.lazy(() => import('./ribbon/tabs/AIAssistantTab/AIAssistantTab').then(m => ({ default: m.AIAssistantTab })));
-const DrawTab = React.lazy(() => import('./ribbon/tabs/DrawTab/DrawTab').then(m => ({ default: m.DrawTab })));
-const DesignTab = React.lazy(() => import('./ribbon/tabs/DesignTab/DesignTab').then(m => ({ default: m.DesignTab })));
-const ReviewTab = React.lazy(() => import('./ribbon/tabs/ReviewTab/ReviewTab').then(m => ({ default: m.ReviewTab })));
-const TableDesignTab = React.lazy(() => import('./ribbon/tabs/InsertTab/tables/tabledesign_subTab/tabledesign').then(m => ({ default: m.TableDesignTab })));
-const TableLayoutTab = React.lazy(() => import('./ribbon/tabs/InsertTab/tables/tablelayout_subTab/tablelayout').then(m => ({ default: m.TableLayoutTab })));
-const EquationTab = React.lazy(() => import('./ribbon/tabs/InsertTab/symbols/equation_subTab/EquationTab').then(m => ({ default: m.EquationTab })));
-const HeaderFooterTab = React.lazy(() => import('./ribbon/tabs/HeaderFooterTab/HeaderFooterTab').then(m => ({ default: m.HeaderFooterTab })));
+const HomeTab = safeLazy(import('./ribbon/tabs/HomeTab/HomeTab'), 'HomeTab');
+const InsertTab = safeLazy(import('./ribbon/tabs/InsertTab/InsertTab'), 'InsertTab');
+const ViewTab = safeLazy(import('./ribbon/tabs/ViewTab/ViewTab'), 'ViewTab');
+const FileTab = safeLazy(import('./ribbon/tabs/FileTab/FileTab'), 'FileTab');
+const LayoutTab = safeLazy(import('./ribbon/tabs/LayoutTab/LayoutTab'), 'LayoutTab');
+const ReferencesTab = safeLazy(import('./ribbon/tabs/ReferencesTab/ReferencesTab'), 'ReferencesTab');
+const MailingsTab = safeLazy(import('./ribbon/tabs/MailingsTab/MailingsTab'), 'MailingsTab');
+const AIAssistantTab = safeLazy(import('./ribbon/tabs/AIAssistantTab/AIAssistantTab'), 'AIAssistantTab');
+const DrawTab = safeLazy(import('./ribbon/tabs/DrawTab/DrawTab'), 'DrawTab');
+const DesignTab = safeLazy(import('./ribbon/tabs/DesignTab/DesignTab'), 'DesignTab');
+const ReviewTab = safeLazy(import('./ribbon/tabs/ReviewTab/ReviewTab'), 'ReviewTab');
+const TableDesignTab = safeLazy(import('./ribbon/tabs/InsertTab/tables/tabledesign_subTab/tabledesign'), 'TableDesignTab');
+const TableLayoutTab = safeLazy(import('./ribbon/tabs/InsertTab/tables/tablelayout_subTab/tablelayout'), 'TableLayoutTab');
+const EquationTab = safeLazy(import('./ribbon/tabs/InsertTab/symbols/equation_subTab/EquationTab'), 'EquationTab');
+const HeaderFooterTab = safeLazy(import('./ribbon/tabs/HeaderFooterTab/HeaderFooterTab'), 'HeaderFooterTab');
 
 interface RibbonProps {
   activeTab: RibbonTab | null;

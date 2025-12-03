@@ -1,13 +1,39 @@
 
 import React, { useRef, useEffect, useLayoutEffect, useCallback, Suspense } from 'react';
 import { useEditor } from '../contexts/EditorContext';
-import AutoSizer from 'react-virtualized-auto-sizer';
+import * as AutoSizerPkg from 'react-virtualized-auto-sizer';
 import { Loader2 } from 'lucide-react';
 
-// Lazy Load Views
-const PrintLayoutView = React.lazy(() => import('./ribbon/tabs/ViewTab/views/PrintLayoutTool').then(m => ({ default: m.PrintLayoutView })));
-const WebLayoutView = React.lazy(() => import('./ribbon/tabs/ViewTab/views/WebLayoutTool').then(m => ({ default: m.WebLayoutView })));
-const ReadLayoutView = React.lazy(() => import('./ribbon/tabs/ViewTab/views/ReadLayoutView').then(m => ({ default: m.ReadLayoutView })));
+// Safely resolve AutoSizer from the package (handles ESM/CJS interop on CDNs)
+const AutoSizer = (AutoSizerPkg as any).default || AutoSizerPkg;
+
+// Lazy Load Views with safety check
+const PrintLayoutView = React.lazy(() => 
+  import('./ribbon/tabs/ViewTab/views/PrintLayoutView')
+    .then(m => ({ default: m.PrintLayoutView }))
+    .catch(err => {
+      console.error("Failed to load PrintLayoutView", err);
+      return { default: () => <div className="p-4 text-red-500">Error loading Print Layout. Please refresh.</div> };
+    })
+);
+
+const WebLayoutView = React.lazy(() => 
+  import('./ribbon/tabs/ViewTab/views/WebLayoutTool')
+    .then(m => ({ default: m.WebLayoutView }))
+    .catch(err => {
+      console.error("Failed to load WebLayoutView", err);
+      return { default: () => <div className="p-4 text-red-500">Error loading Web Layout. Please refresh.</div> };
+    })
+);
+
+const ReadLayoutView = React.lazy(() => 
+  import('./ribbon/tabs/ViewTab/views/ReadLayoutView')
+    .then(m => ({ default: m.ReadLayoutView }))
+    .catch(err => {
+      console.error("Failed to load ReadLayoutView", err);
+      return { default: () => <div className="p-4 text-red-500">Error loading Read Mode. Please refresh.</div> };
+    })
+);
 
 const ViewLoading = () => (
   <div className="flex flex-col items-center justify-center h-full w-full text-slate-400 gap-3">
@@ -135,7 +161,7 @@ const Editor: React.FC = () => {
   const isPrint = viewMode === 'print';
 
   return (
-    <div className={`flex-1 flex flex-col relative transition-colors duration-500 overflow-hidden ${isPrint ? 'bg-[#F8F9FA] dark:bg-slate-950' : 'bg-white dark:bg-slate-900'}`}
+    <div className={`flex-1 flex flex-col relative transition-colors duration-500 overflow-hidden ${isPrint ? 'bg-[#f1f5f9] dark:bg-slate-950' : 'bg-white dark:bg-slate-900'}`}
          style={!isPrint ? { backgroundColor: pageConfig.pageColor } : undefined}>
       
       <AutoSizer>
@@ -182,4 +208,4 @@ const Editor: React.FC = () => {
   );
 };
 
-export default React.memo(Editor);
+export default Editor;

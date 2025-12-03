@@ -23,7 +23,7 @@ export const DropdownToolBtn: React.FC<DropdownButtonProps> = React.memo(({
       onClick={(e) => { e.stopPropagation(); toggleMenu(id); }}
       className={`
         p-1 rounded-md flex items-center justify-center transition-all w-8 h-7 relative group
-        ${activeMenu === id ? 'bg-slate-200 dark:bg-slate-700 text-blue-700 dark:text-blue-400' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-blue-600 dark:hover:text-blue-400'}
+        ${activeMenu === id ? 'bg-indigo-100 dark:bg-slate-700 text-indigo-700 dark:text-indigo-400' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-indigo-600 dark:hover:text-indigo-400'}
         ${className || ''}
       `} 
       title={title}
@@ -55,7 +55,7 @@ export const ToolBtn: React.FC<{
     disabled={disabled} 
     className={`
       p-1 rounded-md flex items-center justify-center transition-all w-7 h-7 relative group
-      ${active ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-blue-600 dark:hover:text-blue-400'}
+      ${active ? 'bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-indigo-600 dark:hover:text-indigo-400'}
       ${disabled ? 'opacity-40 cursor-not-allowed hover:bg-transparent hover:text-slate-600 dark:hover:text-slate-300' : ''}
       ${className || ''}
     `} 

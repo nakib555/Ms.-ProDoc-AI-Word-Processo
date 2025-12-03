@@ -10,8 +10,15 @@ import { Loader2 } from 'lucide-react';
 import { EditorProvider, useEditor } from './contexts/EditorContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 
-// Lazy load the sidebar as it's a secondary feature
-const CopilotSidebar = React.lazy(() => import('./components/CopilotSidebar').then(m => ({ default: m.CopilotSidebar })));
+// Lazy load the sidebar as it's a secondary feature with safety check
+const CopilotSidebar = React.lazy(() => 
+  import('./components/CopilotSidebar')
+    .then(m => ({ default: m.CopilotSidebar }))
+    .catch(err => {
+      console.error("Failed to load CopilotSidebar", err);
+      return { default: () => null };
+    })
+);
 
 const AppContent: React.FC = () => {
   const [activeTab, setActiveTab] = useState<RibbonTab | null>(RibbonTab.HOME);

@@ -1,5 +1,5 @@
 
-import React, { useState, useRef, useEffect, useCallback, useLayoutEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useLayoutEffect, useMemo, createContext, useContext } from 'react';
 import { FileText } from 'lucide-react';
 import { FixedSizeList as List, ListChildComponentProps, VariableSizeList } from 'react-window';
 import { RibbonButton } from '../../../common/RibbonButton';
@@ -17,7 +17,7 @@ export const PrintLayoutTool: React.FC = () => {
         icon={FileText} 
         label="Print Layout" 
         onClick={() => setViewMode('print')} 
-        className={viewMode === 'print' ? 'bg-slate-100 text-blue-700' : ''}
+        className={viewMode === 'print' ? 'bg-indigo-100 text-indigo-700' : ''}
     />
   );
 };
@@ -33,6 +33,50 @@ interface PrintLayoutViewProps {
   showFormattingMarks: boolean;
   containerRef: (node: HTMLDivElement | null) => void;
 }
+
+// --- Layout Context for Virtual List Components ---
+const LayoutContext = createContext<{
+    listWidth: number;
+    rulerRef: React.RefObject<HTMLDivElement | null>;
+} | null>(null);
+
+// --- Static Inner Element ---
+const InnerElement = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(({ style, ...rest }, ref) => {
+    const ctx = useContext(LayoutContext);
+    const width = ctx ? ctx.listWidth : '100%';
+    return (
+        <div
+            ref={ref}
+            style={{
+                ...style,
+                width,
+                position: 'relative'
+            }}
+            {...rest}
+        />
+    );
+});
+
+// --- Static Outer Element ---
+const OuterElement = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>((props, ref) => {
+    const ctx = useContext(LayoutContext);
+    const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+        props.onScroll && props.onScroll(e);
+        if (ctx && ctx.rulerRef.current) {
+            ctx.rulerRef.current.scrollLeft = e.currentTarget.scrollLeft;
+        }
+    };
+    
+    return (
+        <div 
+            {...props} 
+            ref={ref} 
+            onScroll={handleScroll} 
+            style={{ ...props.style, overflowX: 'auto', overflowY: 'auto' }} 
+        />
+    );
+});
+
 
 const BLOCK_TAGS = ['P', 'DIV', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'LI', 'TR', 'BLOCKQUOTE', 'UL', 'OL', 'TABLE'];
 
@@ -511,16 +555,22 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
   // Get config for current page for ruler
   const activePageConfig = pagesData[currentPage - 1]?.config || pageConfig;
 
+  // Use Context to pass data to static components
+  const layoutContextValue = useMemo(() => ({
+      listWidth,
+      rulerRef: rulerContainerRef
+  }), [listWidth]);
+
   return (
     <div 
-      className="w-full h-full flex flex-col relative bg-[#E3E5E8] dark:bg-slate-900 transition-colors duration-300 touch-pan-x touch-pan-y"
+      className="w-full h-full flex flex-col relative bg-[#f1f5f9] dark:bg-slate-950 transition-colors duration-300 touch-pan-x touch-pan-y"
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
     >
        {showRuler && (
          <div 
             ref={rulerContainerRef}
-            className="w-full overflow-hidden bg-[#F0F0F0] border-b border-slate-300 z-20 shrink-0 sticky top-0 shadow-sm"
+            className="w-full overflow-hidden bg-[#f8fafc] border-b border-slate-200 z-20 shrink-0 sticky top-0 shadow-sm"
             style={{ height: '25px' }}
             onMouseDown={(e) => e.preventDefault()}
          >
@@ -533,36 +583,23 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
        )}
 
        {isVertical ? (
-           <VariableSizeList
-                ref={listRef}
-                height={height - (showRuler ? 25 : 0)}
-                itemCount={pagesData.length}
-                itemSize={getItemSize}
-                width={width}
-                className="scrollbar-thin scrollbar-thumb-slate-400 dark:scrollbar-thumb-slate-600 scrollbar-track-transparent"
-                itemData={itemData}
-                outerRef={containerRef}
-                onItemsRendered={handleItemsRendered}
-                outerElementType={React.forwardRef((props: any, ref: any) => (
-                    <div {...props} ref={ref} onScroll={(e: React.UIEvent<HTMLDivElement>) => {
-                        props.onScroll && props.onScroll(e);
-                        handleOuterScroll(e);
-                    }} style={{ ...props.style, overflowX: 'auto', overflowY: 'auto' }} />
-                ))}
-                innerElementType={React.forwardRef(({ style, ...rest }: any, ref: any) => (
-                    <div
-                        ref={ref}
-                        style={{
-                            ...style,
-                            width: listWidth, 
-                            position: 'relative'
-                        }}
-                        {...rest}
-                    />
-                ))}
-           >
-               {PageRow}
-           </VariableSizeList>
+           <LayoutContext.Provider value={layoutContextValue}>
+                <VariableSizeList
+                        ref={listRef}
+                        height={height - (showRuler ? 25 : 0)}
+                        itemCount={pagesData.length}
+                        itemSize={getItemSize}
+                        width={width}
+                        className="scrollbar-thin scrollbar-thumb-slate-400 dark:scrollbar-thumb-slate-600 scrollbar-track-transparent"
+                        itemData={itemData}
+                        outerRef={containerRef}
+                        onItemsRendered={handleItemsRendered}
+                        outerElementType={OuterElement}
+                        innerElementType={InnerElement}
+                >
+                    {PageRow}
+                </VariableSizeList>
+           </LayoutContext.Provider>
        ) : (
            <div 
               ref={containerRef}
