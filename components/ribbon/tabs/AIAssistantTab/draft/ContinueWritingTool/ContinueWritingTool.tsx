@@ -1,7 +1,6 @@
 
-import React, { Suspense } from 'react';
-import { PenTool, Sparkles, FileText, Feather, Activity, BookOpen, Loader2 } from 'lucide-react';
-import { DropdownRibbonButton } from '../../common/AITools';
+import React, { Suspense, useTransition } from 'react';
+import { PenTool, Sparkles, FileText, Feather, Activity, BookOpen, Loader2, ChevronDown } from 'lucide-react';
 import { useAIAssistantTab } from '../../AIAssistantTabContext';
 import { useAI } from '../../../../../../hooks/useAI';
 import { MenuPortal } from '../../../../common/MenuPortal';
@@ -14,9 +13,18 @@ const PredictiveBuilder = React.lazy(() =>
 
 export const ContinueWritingTool: React.FC = () => {
   const { performAIAction } = useAI();
-  const { activeMenu, menuPos, closeMenu } = useAIAssistantTab();
+  const { activeMenu, menuPos, closeMenu, toggleMenu, registerTrigger } = useAIAssistantTab();
+  const [isPending, startTransition] = useTransition();
   
   const menuId = 'continue_writing_options';
+  const isActive = activeMenu === menuId;
+
+  const handleToggle = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      startTransition(() => {
+          toggleMenu(menuId);
+      });
+  };
 
   const handleContinue = (instruction?: string) => {
       performAIAction('continue_writing', instruction);
@@ -30,12 +38,25 @@ export const ContinueWritingTool: React.FC = () => {
 
   return (
     <>
-        <DropdownRibbonButton 
-           id={menuId}
-           icon={PenTool} 
-           label="Continue Writing" 
-           hasArrow
-        />
+        <button
+          ref={(el) => registerTrigger(menuId, el)}
+          className={`flex flex-col items-center justify-center px-1 py-1 min-w-[52px] md:min-w-[60px] h-full rounded-lg transition-all duration-200 group relative text-slate-600 hover:text-blue-700 hover:bg-slate-50 flex-shrink-0 ${isActive ? 'bg-slate-100 text-blue-700 ring-1 ring-slate-200' : ''}`}
+          onClick={handleToggle}
+          onMouseDown={(e) => e.preventDefault()}
+          title="Continue Writing"
+        >
+          <div className="p-1 rounded-md group-hover:bg-white group-hover:shadow-sm transition-all mb-0.5">
+              {isPending ? (
+                  <Loader2 className="w-4 h-4 text-blue-600 animate-spin" /> 
+              ) : (
+                  <PenTool className={`w-4 h-4 ${isActive ? 'text-blue-600' : 'text-slate-500 group-hover:text-blue-600'}`} strokeWidth={1.5} />
+              )}
+          </div>
+          <div className="flex items-center justify-center w-full px-0.5">
+              <span className="text-[10px] font-medium leading-tight text-center text-slate-500 group-hover:text-blue-700">Continue Writing</span>
+              <ChevronDown size={8} className={`ml-0.5 text-slate-400 group-hover:text-blue-600 shrink-0 ${isActive ? 'rotate-180' : ''}`} />
+          </div>
+        </button>
 
         <MenuPortal id={menuId} activeMenu={activeMenu} menuPos={menuPos} closeMenu={closeMenu} width={340}>
              <div 

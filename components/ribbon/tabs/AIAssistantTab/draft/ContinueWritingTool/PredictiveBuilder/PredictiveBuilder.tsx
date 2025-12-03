@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useDeferredValue } from 'react';
 import { 
   FileText, Feather, Activity, BookOpen, Mail, Video, LayoutTemplate, 
   Search, ChevronRight, ChevronDown, Code, Database, Server, Cpu, Settings, 
@@ -225,11 +225,12 @@ interface PredictiveBuilderProps {
 
 export const PredictiveBuilder: React.FC<PredictiveBuilderProps> = ({ onSelect }) => {
   const [searchTerm, setSearchTerm] = useState('');
+  const deferredSearchTerm = useDeferredValue(searchTerm);
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
 
   const filteredItems = useMemo(() => {
-    if (!searchTerm) return null;
-    const lowerSearch = searchTerm.toLowerCase();
+    if (!deferredSearchTerm) return null;
+    const lowerSearch = deferredSearchTerm.toLowerCase();
     const results: { l: string, f: string, category: string }[] = [];
     
     Object.entries(PREDICTIVE_CATEGORIES).forEach(([category, items]) => {
@@ -241,8 +242,9 @@ export const PredictiveBuilder: React.FC<PredictiveBuilderProps> = ({ onSelect }
           });
       }
     });
-    return results;
-  }, [searchTerm]);
+    // Optimization: Limit results to prevent massive re-renders during typing
+    return results.slice(0, 50);
+  }, [deferredSearchTerm]);
 
   return (
      <div className="flex flex-col flex-1 min-h-0 bg-slate-50/50">
@@ -268,7 +270,7 @@ export const PredictiveBuilder: React.FC<PredictiveBuilderProps> = ({ onSelect }
          </div>
 
          <div className="overflow-y-auto scrollbar-thin scrollbar-thumb-slate-200 hover:scrollbar-thumb-slate-300 flex-1 px-2 pb-2">
-             {searchTerm ? (
+             {deferredSearchTerm ? (
                  <div className="space-y-0.5 animate-in fade-in slide-in-from-top-2 duration-200">
                      {filteredItems && filteredItems.length > 0 ? (
                          filteredItems.map((item, idx) => {
@@ -296,7 +298,7 @@ export const PredictiveBuilder: React.FC<PredictiveBuilderProps> = ({ onSelect }
                          })
                      ) : (
                          <div className="py-8 text-center text-slate-400 text-xs">
-                             No templates found for "{searchTerm}"
+                             No templates found for "{deferredSearchTerm}"
                          </div>
                      )}
                  </div>
@@ -318,28 +320,28 @@ export const PredictiveBuilder: React.FC<PredictiveBuilderProps> = ({ onSelect }
                                      </div>
                                  </button>
                                  
-                                 {isExpanded && (
-                                    <div className="animate-in slide-in-from-top-1 duration-200 overflow-hidden">
-                                         <div className="bg-slate-50/50 p-1 space-y-0.5 max-h-[200px] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-200">
-                                             {items.map((item, idx) => {
-                                                 const Icon = getIconForOption(item.l);
-                                                 return (
-                                                     <button 
+                                 <div className={`grid transition-all duration-300 ease-in-out ${isExpanded ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}>
+                                    <div className="overflow-hidden min-h-0">
+                                        <div className="bg-slate-50/50 p-1 space-y-0.5 max-h-[200px] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-200">
+                                            {items.map((item, idx) => {
+                                                const Icon = getIconForOption(item.l);
+                                                return (
+                                                    <button 
                                                         key={idx} 
                                                         onClick={() => onSelect(item)}
                                                         className="w-full text-left px-3 py-1.5 hover:bg-white hover:shadow-sm rounded border border-transparent hover:border-slate-100 transition-all group"
-                                                     >
-                                                         <div className="text-xs text-slate-600 group-hover:text-blue-700 font-medium flex items-center gap-2">
+                                                    >
+                                                        <div className="text-xs text-slate-600 group-hover:text-blue-700 font-medium flex items-center gap-2">
                                                             <Icon size={12} className="text-slate-400 group-hover:text-blue-500 flex-shrink-0 transition-colors" />
                                                             {item.l}
-                                                         </div>
-                                                         <div className="text-[10px] text-slate-400 truncate pl-5 group-hover:text-slate-500 transition-colors">{item.f}</div>
-                                                     </button>
-                                                 );
-                                             })}
-                                         </div>
+                                                        </div>
+                                                        <div className="text-[10px] text-slate-400 truncate pl-5 group-hover:text-slate-500 transition-colors">{item.f}</div>
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
                                     </div>
-                                 )}
+                                 </div>
                              </div>
                          );
                      })}
