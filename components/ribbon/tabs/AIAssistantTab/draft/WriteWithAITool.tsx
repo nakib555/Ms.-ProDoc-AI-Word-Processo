@@ -106,21 +106,31 @@ export const WriteWithAITool: React.FC = () => {
         />
 
         {isOpen && (
-            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setIsOpen(false)}>
-                {/* Dialog Container - Floating Center Modal */}
+            <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center md:p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setIsOpen(false)}>
+                {/* Dialog Container - Bottom Sheet on Mobile, Centered Modal on Desktop */}
                 <div 
                     className="
                         relative w-full bg-white dark:bg-slate-900 shadow-2xl flex flex-col overflow-hidden transition-all duration-300 z-20
-                        w-full max-w-2xl rounded-2xl border border-slate-200 dark:border-slate-700 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.3)]
-                        h-[85vh] md:h-auto md:max-h-[85vh]
-                        animate-in zoom-in-95 duration-200
+                        
+                        /* Mobile Styles: Bottom Sheet */
+                        h-[75vh] rounded-t-2xl border-t border-slate-200 dark:border-slate-700 
+                        animate-in slide-in-from-bottom-full duration-300 ease-out
+
+                        /* Desktop Styles: Centered Modal */
+                        md:h-auto md:max-h-[85vh] md:max-w-2xl md:rounded-2xl md:border md:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.3)]
+                        md:animate-in md:zoom-in-95
                     "
                     role="dialog"
                     aria-modal="true"
                     onClick={e => e.stopPropagation()}
                 >
+                    {/* Mobile Drag Handle */}
+                    <div className="md:hidden w-full flex justify-center pt-3 pb-1 cursor-grab bg-white dark:bg-slate-900 absolute top-0 z-30" onClick={() => setIsOpen(false)}>
+                        <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full"></div>
+                    </div>
+
                     {/* Header */}
-                    <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm sticky top-0 z-20 flex justify-between items-center shrink-0">
+                    <div className="px-6 py-4 md:pt-4 pt-8 border-b border-slate-100 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm sticky top-0 z-20 flex justify-between items-center shrink-0">
                         <div className="flex items-center gap-3.5">
                             <div className="p-2.5 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-2xl shadow-lg shadow-indigo-500/30 dark:shadow-indigo-900/20 text-white ring-2 ring-white dark:ring-slate-800">
                                 <Wand2 size={22} strokeWidth={2.5} />
