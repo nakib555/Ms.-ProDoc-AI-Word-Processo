@@ -148,11 +148,11 @@ export const WebLayoutView: React.FC<WebLayoutViewProps> = React.memo(({
              <div
                 key="editor-web"
                 ref={editorRef}
-                className={`prodoc-editor prodoc-editor-web w-full outline-none text-lg leading-loose text-slate-900 dark:text-slate-200 z-10 relative ${showFormattingMarks ? 'show-formatting-marks' : ''} ${isKeyboardLocked && !selectionMode ? 'cursor-default' : 'cursor-text'}`}
+                className={`prodoc-editor prodoc-editor-web w-full outline-none text-lg leading-loose text-slate-900 dark:text-slate-200 z-10 relative ${showFormattingMarks ? 'show-formatting-marks' : ''} ${selectionMode ? 'cursor-crosshair' : isKeyboardLocked ? 'cursor-default' : 'cursor-text'}`}
                 
                 // Key Change: Allow contentEditable so interactions work, but use inputMode="none" to suppress keyboard
                 contentEditable={true}
-                inputMode={isKeyboardLocked && !selectionMode ? "none" : "text"}
+                inputMode={isKeyboardLocked || selectionMode ? "none" : "text"}
                 
                 onInput={onInput}
                 onPaste={onPaste}

@@ -772,7 +772,7 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
                         ref={headerRef}
                         className={`prodoc-header w-full min-h-full outline-none ${isHeaderFooterEditable ? 'cursor-text pointer-events-auto' : 'cursor-default pointer-events-none'}`}
                         contentEditable={isHeaderFooterEditable}
-                        inputMode={isKeyboardLocked && !selectionMode ? "none" : "text"}
+                        inputMode={isKeyboardLocked || selectionMode ? "none" : "text"}
                         suppressContentEditableWarning
                         onInput={handleHeaderInput}
                         onFocus={() => setActiveEditingArea && setActiveEditingArea('header')}
@@ -808,7 +808,7 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
                     ref={editorRef}
                     className={`prodoc-editor w-full outline-none text-lg leading-loose break-words z-10 ${showFormattingMarks ? 'show-formatting-marks' : ''} ${isHeaderFooterMode ? 'pointer-events-none select-none' : ''}`}
                     contentEditable={isBodyEditable}
-                    inputMode={isKeyboardLocked && !selectionMode ? "none" : "text"}
+                    inputMode={isKeyboardLocked || selectionMode ? "none" : "text"}
                     
                     onInput={handleInput}
                     onKeyDown={handleKeyDown}
@@ -853,7 +853,7 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
                         ref={footerRef}
                         className={`prodoc-footer w-full min-h-full outline-none ${isHeaderFooterEditable ? 'cursor-text pointer-events-auto' : 'cursor-default pointer-events-none'}`}
                         contentEditable={isHeaderFooterEditable}
-                        inputMode={isKeyboardLocked && !selectionMode ? "none" : "text"}
+                        inputMode={isKeyboardLocked || selectionMode ? "none" : "text"}
                         suppressContentEditableWarning
                         onInput={handleFooterInput}
                         onFocus={() => setActiveEditingArea && setActiveEditingArea('footer')}
