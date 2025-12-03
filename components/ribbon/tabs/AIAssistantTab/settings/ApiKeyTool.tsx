@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { 
   Key, CheckCircle2, AlertTriangle, X, Loader2, Save, ExternalLink, 
@@ -64,15 +64,11 @@ const RichModelSelect = ({ value, onChange, options, disabled }: any) => {
         }
     };
 
-    useEffect(() => {
+    useLayoutEffect(() => {
         if (isOpen) {
             updatePosition();
             window.addEventListener('scroll', updatePosition, true);
             window.addEventListener('resize', updatePosition);
-            
-            const handleClickOutside = (e: MouseEvent) => {
-                // Handled by backdrop
-            };
             
             return () => {
                 window.removeEventListener('scroll', updatePosition, true);
@@ -98,7 +94,12 @@ const RichModelSelect = ({ value, onChange, options, disabled }: any) => {
         <>
             <button
                 ref={triggerRef}
-                onClick={() => !disabled && setIsOpen(!isOpen)}
+                onClick={() => {
+                    if (!disabled) {
+                        if (!isOpen) updatePosition();
+                        setIsOpen(!isOpen);
+                    }
+                }}
                 className={`w-full flex items-center justify-between bg-white border rounded-xl px-3 py-2.5 text-sm outline-none transition-all shadow-sm group text-left ${isOpen ? 'border-blue-500 ring-2 ring-blue-100' : 'border-slate-300 hover:border-blue-400'} ${disabled ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}
             >
                 <div className="flex items-center gap-3 overflow-hidden">
@@ -122,7 +123,8 @@ const RichModelSelect = ({ value, onChange, options, disabled }: any) => {
                             top: position.top, 
                             left: position.left, 
                             width: position.width,
-                            maxHeight: 'min(300px, 50vh)' 
+                            maxHeight: 'min(300px, 50vh)',
+                            opacity: position.top === 0 ? 0 : 1 // Prevent flash at 0,0
                         }}
                     >
                         <div className="overflow-y-auto p-1 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700">

@@ -57,7 +57,8 @@ const Editor: React.FC = () => {
   } = useEditor();
   
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const pendingScrollRef = useRef<{left: number, top: number} | null>(null);
+  // Store point relative to content for stable zooming
+  const pendingScrollRef = useRef<{ pointX: number, pointY: number, mouseX: number, mouseY: number } | null>(null);
   const prevZoomRef = useRef<number>(zoom);
 
   // Stable callback for ref registration
@@ -85,6 +86,22 @@ const Editor: React.FC = () => {
               // Current scale
               const scaleOld = zoom / 100;
               
+              // Find content start offset (to handle centered layouts like Print View)
+              // In Print Layout, pages are centered by flexbox, creating a variable left margin.
+              let contentOffsetLeft = 0;
+              let contentOffsetTop = 0;
+              
+              const firstPage = container.querySelector('.prodoc-page-wrapper') as HTMLElement;
+              if (firstPage) {
+                  contentOffsetLeft = firstPage.offsetLeft;
+                  contentOffsetTop = firstPage.offsetTop;
+              }
+              
+              // Calculate the point on the content (unscaled coordinates) under the mouse
+              // We subtract the offset to account for the flexbox centering margin
+              const pointX = (container.scrollLeft + mouseX - contentOffsetLeft) / scaleOld;
+              const pointY = (container.scrollTop + mouseY - contentOffsetTop) / scaleOld;
+              
               // Determine Zoom Direction and Step
               const direction = e.deltaY > 0 ? -1 : 1; 
               const zoomStep = 10; // 10% increments
@@ -93,24 +110,8 @@ const Editor: React.FC = () => {
               nextZoom = Math.max(10, Math.min(500, nextZoom));
 
               if (nextZoom !== zoom) {
-                  const scaleNew = nextZoom / 100;
-                  
-                  // Current Scroll Positions
-                  const scrollLeft = container.scrollLeft;
-                  const scrollTop = container.scrollTop;
-
-                  // Calculate the point on the content under the mouse cursor
-                  // Formula: ContentPoint = (ScrollPosition + MouseOffset) / OldScale
-                  const contentX = (scrollLeft + mouseX) / scaleOld;
-                  const contentY = (scrollTop + mouseY) / scaleOld;
-
-                  // Calculate new Scroll Positions to keep ContentPoint under MouseOffset
-                  // Formula: NewScroll = (ContentPoint * NewScale) - MouseOffset
-                  const newScrollLeft = (contentX * scaleNew) - mouseX;
-                  const newScrollTop = (contentY * scaleNew) - mouseY;
-
-                  // Store pending scroll to apply after render
-                  pendingScrollRef.current = { left: newScrollLeft, top: newScrollTop };
+                  // Store the target point and mouse position to restore after render
+                  pendingScrollRef.current = { pointX, pointY, mouseX, mouseY };
                   setZoom(nextZoom);
               }
           }
@@ -130,24 +131,38 @@ const Editor: React.FC = () => {
 
       if (pendingScrollRef.current) {
           // Case 1: Zoom to Cursor (initiated by Wheel)
-          container.scrollLeft = pendingScrollRef.current.left;
-          container.scrollTop = pendingScrollRef.current.top;
+          const { pointX, pointY, mouseX, mouseY } = pendingScrollRef.current;
+          const scaleNew = zoom / 100;
+          
+          // Recalculate content offsets after render (since layout/centering might have changed)
+          let newContentOffsetLeft = 0;
+          let newContentOffsetTop = 0;
+          
+          const firstPage = container.querySelector('.prodoc-page-wrapper') as HTMLElement;
+          if (firstPage) {
+              newContentOffsetLeft = firstPage.offsetLeft;
+              newContentOffsetTop = firstPage.offsetTop;
+          }
+
+          // Calculate new Scroll Positions to keep ContentPoint under MouseOffset
+          // Formula: Scroll = (Point * Scale) + Margin - Mouse
+          container.scrollLeft = (pointX * scaleNew) + newContentOffsetLeft - mouseX;
+          container.scrollTop = (pointY * scaleNew) + newContentOffsetTop - mouseY;
+          
           pendingScrollRef.current = null;
       } else if (prevZoomRef.current !== zoom) {
           // Case 2: Zoom to Center (initiated by UI/Keyboard)
+          // Simplistic center preservation
           const oldScale = prevZoomRef.current / 100;
           const newScale = zoom / 100;
           
-          // Get viewport dimensions
           const { clientWidth, clientHeight, scrollLeft, scrollTop } = container;
-          
-          // Calculate center of viewport relative to content (unscaled) using PREVIOUS state assumptions
-          // We assume scrollTop/Left are currently at the "old" position relative to top-left anchor 
-          // because browser scroll anchoring typically preserves top-left or we haven't painted yet.
           
           const centerX = scrollLeft + (clientWidth / 2);
           const centerY = scrollTop + (clientHeight / 2);
 
+          // Note: This simple formula assumes origin at 0,0. For perfect centering with flexbox
+          // we would need offsets too, but this is generally acceptable for button-based zoom.
           const contentCenterX = centerX / oldScale;
           const contentCenterY = centerY / oldScale;
 
