@@ -94,7 +94,7 @@ export const FontSizeTool: React.FC = () => {
     <>
         <div 
             ref={(el) => registerTrigger(menuId, el)}
-            className={`flex items-center border rounded-md h-[22px] w-12 bg-white transition-colors group relative mr-1 ${activeMenu === menuId ? 'border-blue-400 ring-1 ring-blue-100' : 'border-slate-300 hover:border-blue-300'}`}
+            className={`flex items-center border rounded-[2px] h-[22px] w-12 bg-white transition-colors group relative mr-1 ${activeMenu === menuId ? 'border-blue-400 ring-1 ring-blue-100' : 'border-slate-300 hover:border-blue-300'}`}
             title="Font Size (Points)"
         >
             <input 
@@ -105,12 +105,12 @@ export const FontSizeTool: React.FC = () => {
                 onKeyDown={handleKeyDown}
                 onFocus={() => inputRef.current?.select()}
                 onBlur={() => setInputValue(currentFontSize)}
-                className="w-full h-full px-1 text-[11px] outline-none text-slate-800 font-medium bg-transparent text-center leading-tight rounded-l-md"
+                className="w-full h-full px-1 text-[11px] outline-none text-slate-800 font-medium bg-transparent text-center leading-tight"
             />
             <button 
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={(e) => { e.stopPropagation(); toggleMenu(menuId); }}
-                className="h-full px-0.5 hover:bg-blue-50 border-l border-transparent group-hover:border-slate-200 flex items-center justify-center rounded-r-md"
+                className="h-full px-0.5 hover:bg-blue-50 border-l border-transparent group-hover:border-slate-200 flex items-center justify-center"
                 tabIndex={-1}
             >
                 <ChevronDown size={10} className="text-slate-500" strokeWidth={2.5} />

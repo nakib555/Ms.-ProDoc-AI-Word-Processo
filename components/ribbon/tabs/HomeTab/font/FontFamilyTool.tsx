@@ -86,7 +86,7 @@ export const FontFamilyTool: React.FC = () => {
     <>
         <div 
             ref={(el) => registerTrigger(menuId, el)}
-            className={`flex items-center border rounded-md h-[22px] w-32 bg-white transition-colors group relative mx-0.5 ${activeMenu === menuId ? 'border-blue-400 ring-1 ring-blue-100' : 'border-slate-300 hover:border-blue-300'}`}
+            className={`flex items-center border rounded-[2px] h-[22px] w-32 bg-white transition-colors group relative mx-0.5 ${activeMenu === menuId ? 'border-blue-400 ring-1 ring-blue-100' : 'border-slate-300 hover:border-blue-300'}`}
             title="Font Family (Ctrl+Shift+F)"
         >
             <input 
@@ -100,12 +100,12 @@ export const FontFamilyTool: React.FC = () => {
                 onBlur={() => {
                     if (!isMixed) setInputValue(currentFont);
                 }}
-                className="w-full h-full px-1.5 text-[11px] outline-none text-slate-800 font-medium bg-transparent leading-tight rounded-l-md"
+                className="w-full h-full px-1.5 text-[11px] outline-none text-slate-800 font-medium bg-transparent leading-tight"
             />
             <button 
                 onMouseDown={(e) => e.preventDefault()} 
                 onClick={(e) => { e.stopPropagation(); toggleMenu(menuId); }}
-                className="h-full px-0.5 hover:bg-blue-50 border-l border-transparent group-hover:border-slate-200 flex items-center justify-center rounded-r-md"
+                className="h-full px-0.5 hover:bg-blue-50 border-l border-transparent group-hover:border-slate-200 flex items-center justify-center"
                 tabIndex={-1}
             >
                 <ChevronDown size={10} className="text-slate-500" strokeWidth={2.5} />

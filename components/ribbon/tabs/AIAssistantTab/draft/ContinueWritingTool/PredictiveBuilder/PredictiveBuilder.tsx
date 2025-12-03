@@ -293,7 +293,7 @@ export const PredictiveBuilder: React.FC<PredictiveBuilderProps> = ({ onSelect }
 
          <div className="overflow-y-auto scrollbar-thin scrollbar-thumb-slate-200 hover:scrollbar-thumb-slate-300 flex-1 px-2 pb-2">
              {searchTerm ? (
-                 <div className="space-y-0.5">
+                 <div className="space-y-0.5 animate-in fade-in slide-in-from-top-2 duration-200">
                      {filteredItems && filteredItems.length > 0 ? (
                          filteredItems.map((item, idx) => {
                              const Icon = getIconForOption(item.l);
@@ -330,41 +330,42 @@ export const PredictiveBuilder: React.FC<PredictiveBuilderProps> = ({ onSelect }
                          if (!items) return null;
                          const isExpanded = expandedCategory === category;
                          return (
-                             <div key={category} className="rounded-lg overflow-hidden border border-slate-100 bg-white transition-all duration-200">
+                             <div key={category} className="rounded-lg overflow-hidden border border-slate-100 bg-white transition-colors hover:border-blue-200/50">
                                  <button 
                                     onClick={() => setExpandedCategory(isExpanded ? null : category)}
-                                    className={`w-full flex items-center justify-between px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors ${isExpanded ? 'bg-slate-50 border-b border-slate-100' : ''}`}
+                                    className={`w-full flex items-center justify-between px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors ${isExpanded ? 'bg-slate-50 border-b border-slate-100 text-blue-700' : ''}`}
                                  >
                                      {category}
                                      <div className="flex items-center gap-2">
-                                         <span className="text-[9px] text-slate-400 bg-slate-100 px-1.5 rounded">{items.length}</span>
-                                         <ChevronDown size={12} className={`text-slate-400 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}/>
+                                         <span className={`text-[9px] px-1.5 rounded transition-colors ${isExpanded ? 'bg-blue-100 text-blue-600' : 'text-slate-400 bg-slate-100'}`}>{items.length}</span>
+                                         <ChevronDown size={12} className={`text-slate-400 transition-transform duration-300 ease-in-out ${isExpanded ? 'rotate-180 text-blue-500' : ''}`}/>
                                      </div>
                                  </button>
                                  
                                  <div 
-                                    className={`grid transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${isExpanded ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}
+                                    className={`grid transition-[grid-template-rows,opacity] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${isExpanded ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}
                                  >
-                                     <div className="overflow-hidden min-h-0">
-                                        <div className="bg-slate-50/50 p-1 space-y-0.5 max-h-[200px] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-200">
-                                            {items.map((item, idx) => {
-                                                const Icon = getIconForOption(item.l);
-                                                return (
-                                                    <button 
+                                    <div className="overflow-hidden">
+                                         <div className="bg-slate-50/50 p-1 space-y-0.5 max-h-[200px] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-200">
+                                             {items.map((item, idx) => {
+                                                 const Icon = getIconForOption(item.l);
+                                                 return (
+                                                     <button 
                                                         key={idx} 
                                                         onClick={() => onSelect(item)}
-                                                        className="w-full text-left px-3 py-1.5 hover:bg-white hover:shadow-sm rounded border border-transparent hover:border-slate-100 transition-all group"
-                                                    >
-                                                        <div className="text-xs text-slate-600 group-hover:text-blue-700 font-medium flex items-center gap-2">
-                                                            <Icon size={12} className="text-slate-400 group-hover:text-blue-500 flex-shrink-0" />
+                                                        className="w-full text-left px-3 py-1.5 hover:bg-white hover:shadow-sm rounded border border-transparent hover:border-slate-100 transition-all group animate-in fade-in slide-in-from-top-1 duration-300 fill-mode-backwards"
+                                                        style={{ animationDelay: `${idx * 20}ms` }} 
+                                                     >
+                                                         <div className="text-xs text-slate-600 group-hover:text-blue-700 font-medium flex items-center gap-2">
+                                                            <Icon size={12} className="text-slate-400 group-hover:text-blue-500 flex-shrink-0 transition-colors" />
                                                             {item.l}
-                                                        </div>
-                                                        <div className="text-[10px] text-slate-400 truncate pl-5">{item.f}</div>
-                                                    </button>
-                                                );
-                                            })}
-                                        </div>
-                                     </div>
+                                                         </div>
+                                                         <div className="text-[10px] text-slate-400 truncate pl-5 group-hover:text-slate-500 transition-colors">{item.f}</div>
+                                                     </button>
+                                                 );
+                                             })}
+                                         </div>
+                                    </div>
                                  </div>
                              </div>
                          );
