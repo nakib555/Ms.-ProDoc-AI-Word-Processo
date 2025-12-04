@@ -4,7 +4,7 @@ import { LayoutTemplate, FileText, Feather, BookOpen, Loader2, ChevronDown, Zap,
 import { useAIAssistantTab } from '../../AIAssistantTabContext';
 import { useAI } from '../../../../../../hooks/useAI';
 import { MenuPortal } from '../../../../common/MenuPortal';
-import { ErrorBoundary } from '../../../../ErrorBoundary';
+import { ErrorBoundary } from '../../../../../ErrorBoundary';
 
 // Lazy load the PredictiveBuilder to reduce initial bundle size
 const PredictiveBuilder = React.lazy(() => 
