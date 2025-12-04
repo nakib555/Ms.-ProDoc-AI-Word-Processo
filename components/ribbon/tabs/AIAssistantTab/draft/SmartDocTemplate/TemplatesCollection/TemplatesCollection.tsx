@@ -10,7 +10,7 @@ import {
   TreeDeciduous, Factory, Wrench, Mountain, Camera, Utensils, Trophy, Dumbbell,
   Brain, Tv, Radio, HeartHandshake, Film, Gamepad2, Scissors, Lightbulb, GitBranch,
   History, Palette, Globe, Library, Microscope, ShoppingBag, Heart, Rocket, Loader2,
-  Sparkles
+  Sparkles, Zap
 } from 'lucide-react';
 import { generateAIContent } from '../../../../../../../services/geminiService';
 
@@ -225,9 +225,10 @@ const Box = (props: any) => (
 
 interface PredictiveBuilderProps {
     onSelect: (item: { l: string, f: string }) => void;
+    selectedTone?: string;
 }
 
-export const PredictiveBuilder: React.FC<PredictiveBuilderProps> = ({ onSelect }) => {
+export const PredictiveBuilder: React.FC<PredictiveBuilderProps> = ({ onSelect, selectedTone }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const deferredSearchTerm = useDeferredValue(searchTerm);
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
@@ -389,7 +390,15 @@ export const PredictiveBuilder: React.FC<PredictiveBuilderProps> = ({ onSelect }
              <div className="flex items-center justify-between mb-2">
                  <div className="flex items-center gap-2">
                      <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
-                         <LayoutTemplate size={10}/> Predictive Builder
+                         {selectedTone ? (
+                            <>
+                                <Zap size={10} className="text-amber-500 fill-amber-500"/> {selectedTone} Gallery
+                            </>
+                         ) : (
+                            <>
+                                <LayoutTemplate size={10}/> Template Collection
+                            </>
+                         )}
                      </div>
                      {/* AI Search Button */}
                      <button 
