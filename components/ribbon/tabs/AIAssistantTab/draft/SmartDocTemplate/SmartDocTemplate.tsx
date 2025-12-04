@@ -123,7 +123,7 @@ export const ContinueWritingTool: React.FC = () => {
           </div>
         </button>
 
-        <MenuPortal id={menuId} activeMenu={activeMenu} menuPos={menuPos} closeMenu={closeMenu} width={380}>
+        <MenuPortal id={menuId} activeMenu={activeMenu} menuPos={menuPos} closeMenu={closeMenu} width="min(380px, 95vw)">
              <div 
                 className="flex flex-col max-h-[70vh] md:max-h-[80vh] h-full overflow-hidden bg-white dark:bg-slate-900 shadow-2xl rounded-xl border border-slate-200 dark:border-slate-700"
                 onMouseDown={(e) => e.stopPropagation()}
