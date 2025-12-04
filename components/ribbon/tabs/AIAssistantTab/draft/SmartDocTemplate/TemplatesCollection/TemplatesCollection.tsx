@@ -452,18 +452,18 @@ export const PredictiveBuilder: React.FC<PredictiveBuilderProps> = ({ onSelect }
                                     onClick={() => onSelect(item)}
                                     className={`w-full text-left px-3 py-2 hover:shadow-sm border border-transparent rounded-md group transition-all ${isAIItem ? 'hover:bg-indigo-50/50 hover:border-indigo-100' : 'hover:bg-white hover:border-slate-100'}`}
                                  >
-                                     <div className="flex justify-between items-baseline">
-                                         <span className={`text-xs font-semibold flex items-center gap-2 ${isAIItem ? 'text-indigo-700' : 'text-slate-700 group-hover:text-blue-700'}`}>
+                                     <div className="flex justify-between items-baseline min-w-0">
+                                         <span className={`text-xs font-semibold flex items-center gap-2 truncate ${isAIItem ? 'text-indigo-700' : 'text-slate-700 group-hover:text-blue-700'}`}>
                                              <Icon size={12} className={`${isAIItem ? 'text-indigo-500' : 'text-slate-400 group-hover:text-blue-500'} flex-shrink-0`} />
-                                             {item.l}
+                                             <span className="truncate">{item.l}</span>
                                          </span>
-                                         <span className={`text-[9px] font-medium uppercase tracking-tight ${isAIItem ? 'text-indigo-400 bg-indigo-50 px-1 rounded' : 'text-slate-400'}`}>
+                                         <span className={`text-[9px] font-medium uppercase tracking-tight shrink-0 ml-2 ${isAIItem ? 'text-indigo-400 bg-indigo-50 px-1 rounded' : 'text-slate-400'}`}>
                                             {isAIItem ? 'AI' : item.category.split(' ')[0]}
                                          </span>
                                      </div>
                                      <div className={`text-[10px] mt-0.5 flex items-center gap-1 opacity-80 pl-5 ${isAIItem ? 'text-indigo-500' : 'text-slate-500'}`}>
                                          <span className="truncate">{item.f.split('→')[0].trim()}</span>
-                                         <ChevronRight size={8} />
+                                         <ChevronRight size={8} className="flex-shrink-0" />
                                          <span className={`truncate font-medium ${isAIItem ? 'text-indigo-600' : 'text-blue-600'}`}>
                                             {item.f.split('→')[1]?.trim() || 'Next Section'}
                                          </span>
@@ -497,8 +497,8 @@ export const PredictiveBuilder: React.FC<PredictiveBuilderProps> = ({ onSelect }
                                     onClick={() => handleToggleCategory(category)}
                                     className={`w-full flex items-center justify-between px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors ${isExpanded ? 'bg-slate-50 border-b border-slate-100 text-blue-700' : ''}`}
                                  >
-                                     {category}
-                                     <div className="flex items-center gap-2">
+                                     <span className="truncate mr-2">{category}</span>
+                                     <div className="flex items-center gap-2 shrink-0">
                                          {/* Always show count */}
                                          <span className={`text-[9px] px-1.5 rounded transition-colors ${isExpanded ? 'bg-blue-100 text-blue-600' : 'text-slate-400 bg-slate-100'}`}>
                                              {CATEGORY_COUNTS[category]}
@@ -528,9 +528,9 @@ export const PredictiveBuilder: React.FC<PredictiveBuilderProps> = ({ onSelect }
                                                         className="w-full text-left px-3 py-1.5 hover:bg-white hover:shadow-sm rounded border border-transparent hover:border-slate-100 transition-all group animate-in fade-in slide-in-from-top-1 duration-300"
                                                         style={{ animationDelay: `${Math.min(idx * 20, 300)}ms` }}
                                                     >
-                                                        <div className="text-xs text-slate-600 group-hover:text-blue-700 font-medium flex items-center gap-2">
+                                                        <div className="text-xs text-slate-600 group-hover:text-blue-700 font-medium flex items-center gap-2 min-w-0">
                                                             <Icon size={12} className="text-slate-400 group-hover:text-blue-500 flex-shrink-0 transition-colors" />
-                                                            {item.l}
+                                                            <span className="truncate">{item.l}</span>
                                                         </div>
                                                         <div className="text-[10px] text-slate-400 truncate pl-5 group-hover:text-slate-500 transition-colors">{item.f}</div>
                                                     </button>

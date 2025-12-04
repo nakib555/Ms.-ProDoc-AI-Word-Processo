@@ -168,8 +168,8 @@ export const ContinueWritingTool: React.FC = () => {
                                      : 'bg-slate-50 dark:bg-slate-800 border-transparent text-slate-600 dark:text-slate-300 hover:border-slate-200'
                                  }`}
                              >
-                                <tone.icon size={14} className={selectedStyle === tone.id ? 'text-current' : tone.color}/> 
-                                <span className={selectedStyle === tone.id ? 'text-current' : ''}>{tone.label}</span>
+                                <tone.icon size={14} className={`flex-shrink-0 ${selectedStyle === tone.id ? 'text-current' : tone.color}`}/> 
+                                <span className={`truncate ${selectedStyle === tone.id ? 'text-current' : ''}`}>{tone.label}</span>
                              </button>
                          ))}
                      </div>
