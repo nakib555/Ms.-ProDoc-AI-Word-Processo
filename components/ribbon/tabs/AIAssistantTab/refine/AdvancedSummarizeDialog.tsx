@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   X, FileText, List, AlignLeft, Hash, Zap, Globe, 
@@ -99,7 +98,7 @@ export const AdvancedSummarizeDialog: React.FC<AdvancedSummarizeDialogProps> = (
       // Robust JSON Extraction
       let cleanJson = response.trim();
       
-      const codeBlockMatch = cleanJson.match(/```(?:json)?([\s\S]*?)```/);
+      const codeBlockMatch = cleanJson.match(/```(?:json|json5)?([\s\S]*?)```/i);
       if (codeBlockMatch) {
           cleanJson = codeBlockMatch[1].trim();
       } else {
@@ -122,6 +121,17 @@ export const AdvancedSummarizeDialog: React.FC<AdvancedSummarizeDialogProps> = (
           if (!html) throw new Error("Empty HTML generated from JSON");
           setResult(html);
       } catch (parseError) {
+          // Attempt repair before giving up
+          try {
+             let fixed = cleanJson.replace(/\/\/.*$/gm, '');
+             fixed = fixed.replace(/,\s*([\]}])/g, '$1');
+             fixed = fixed.replace(/([{,])\s*([a-zA-Z0-9_]+)\s*:/g, '$1"$2":');
+             const repaired = JSON.parse(fixed);
+             const html = jsonToHtml(repaired);
+             setResult(html);
+             return;
+          } catch (e) {}
+
           console.error("JSON Parse Error", parseError);
           // Fallback HTML handling
           let fallbackHtml = response

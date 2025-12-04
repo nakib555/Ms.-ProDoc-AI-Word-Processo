@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   X, Maximize2, ListPlus, BookOpen, History, ListOrdered, 
@@ -80,11 +79,15 @@ export const AdvancedExpandDialog: React.FC<AdvancedExpandDialogProps> = ({
       const response = await generateAIContent('generate_content', '', prompt, 'gemini-3-pro-preview');
       
       let cleanJson = response.trim();
-      const codeBlockMatch = cleanJson.match(/```(?:json)?([\s\S]*?)```/);
+      const codeBlockMatch = cleanJson.match(/```(?:json|json5)?([\s\S]*?)```/i);
       if (codeBlockMatch) cleanJson = codeBlockMatch[1].trim();
       
-      if (cleanJson.indexOf('{') >= 0) cleanJson = cleanJson.substring(cleanJson.indexOf('{'));
-      if (cleanJson.lastIndexOf('}') !== -1) cleanJson = cleanJson.substring(0, cleanJson.lastIndexOf('}') + 1);
+      // Isolate JSON
+      const start = cleanJson.indexOf('{');
+      const end = cleanJson.lastIndexOf('}');
+      if (start !== -1 && end !== -1) {
+          cleanJson = cleanJson.substring(start, end + 1);
+      }
 
       try {
           const parsed = JSON.parse(cleanJson);
@@ -97,8 +100,17 @@ export const AdvancedExpandDialog: React.FC<AdvancedExpandDialogProps> = ({
           const html = jsonToHtml(parsed);
           setResult(html);
       } catch (e) {
-          console.error("JSON Parse Error", e);
-          setResult(`<p>${response.replace(/\n/g, '<br/>')}</p>`);
+          // Robust recovery for bad JSON
+          try {
+             let fixed = cleanJson.replace(/\/\/.*$/gm, '');
+             fixed = fixed.replace(/,\s*([\]}])/g, '$1');
+             fixed = fixed.replace(/([{,])\s*([a-zA-Z0-9_]+)\s*:/g, '$1"$2":');
+             const repaired = JSON.parse(fixed);
+             setResult(jsonToHtml(repaired));
+          } catch(e2) {
+             console.error("JSON Parse Error", e, e2);
+             setResult(`<p>${response.replace(/\n/g, '<br/>')}</p>`);
+          }
       }
     } catch (e) {
       console.error(e);

@@ -238,10 +238,6 @@ export const PRODOC_JSON_SCHEMA = `
           { "text": ", distinct borders, and padding. It is also indented 0.5 inches from both sides." }
         ]
       },
-
-      // ------------------------------------------------------------
-      // COMPREHENSIVE LISTS
-      // ------------------------------------------------------------
       {
         "type": "heading",
         "level": 2,
@@ -280,10 +276,6 @@ export const PRODOC_JSON_SCHEMA = `
           }
         ]
       },
-
-      // ------------------------------------------------------------
-      // COMPLEX TABLE
-      // ------------------------------------------------------------
       {
         "type": "heading",
         "level": 2,
@@ -319,10 +311,6 @@ export const PRODOC_JSON_SCHEMA = `
           }
         ]
       },
-
-      // ------------------------------------------------------------
-      // SECTION BREAK → LANDSCAPE
-      // ------------------------------------------------------------
       {
         "type": "sectionBreak",
         "id": "sec_break_landscape",
@@ -333,28 +321,21 @@ export const PRODOC_JSON_SCHEMA = `
           "margins": { "top": 0.5, "bottom": 0.5, "left": 0.5, "right": 0.5 }
         }
       },
-
       {
         "type": "heading",
         "level": 1,
         "style": { "textAlign": "center", "color": "#b91c1c" },
         "content": [{ "text": "LANDSCAPE ORIENTATION" }]
       },
-
       {
         "type": "paragraph",
         "content": [{ "text": "This page is formatted in Landscape mode to accommodate wide content." }]
       },
-
       {
         "type": "image",
         "src": "https://quickchart.io/chart?c={type:'bar',data:{labels:['Jan','Feb','Mar','Apr','May','Jun'],datasets:[{label:'Wide Data',data:[10,20,30,40,50,60]}]}}",
         "style": { "width": "600px", "height": "auto", "margin": "20px auto", "display": "block" }
       },
-
-      // ------------------------------------------------------------
-      // SECTION BREAK → LEGAL PAGE
-      // ------------------------------------------------------------
       {
         "type": "sectionBreak",
         "id": "sec_break_legal",
@@ -365,46 +346,40 @@ export const PRODOC_JSON_SCHEMA = `
           "margins": { "top": 1, "bottom": 1, "left": 1, "right": 1 }
         }
       },
-
       {
         "type": "heading",
         "level": 1,
         "style": { "textAlign": "center", "color": "#15803d" },
         "content": [{ "text": "LEGAL SIZE PAGE (8.5 x 14)" }]
       },
-
       {
         "type": "paragraph",
         "content": [{ "text": "We are now back to Portrait, but on Legal paper. Below is a mathematical model." }]
       },
-
       {
         "type": "equation",
         "latex": "f(x) = \\int_{-\\infty}^{\\infty} \\hat f(\\xi)\\,e^{2\\pi i \\xi x} \\,d\\xi",
         "style": { "displayMode": "block", "fontSize": "1.4em", "color": "#334155", "marginTop": "20px" }
       },
-
       {
         "type": "heading",
         "level": 2,
         "style": { "fontSize": 18, "bold": true, "marginTop": "20px" },
         "content": [{ "text": "Code Appendix" }]
       },
-
       {
         "type": "code",
         "language": "json",
         "content": "{\\n  \"status\": \"success\",\\n  \"data\": [1, 2, 3]\\n}",
         "style": { "backgroundColor": "#1e293b", "color": "#e2e8f0", "padding": "15px", "borderRadius": "5px", "fontFamily": "monospace" }
       }
-
-    ] // end blocks
-  } // end document
+    ]
+  }
 }
 `;
 
 export const MASTER_STYLE_GUIDE = `
-You are an AI document designer tasked with creating professional, master-grade, visually stunning Microsoft Word–style documents. 
+You are an AI document designer tasked with creating professional, master-grade, visually stunning Microsoft Word–style documents.
 Follow these styling instructions for ANY document:
 
 1. Page Layout & Flow:

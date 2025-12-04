@@ -1,7 +1,8 @@
+
 import { AIOperation, PageConfig } from '../types';
 import { generateAIContent, streamAIContent } from '../services/geminiService';
 import { useEditor } from '../contexts/EditorContext';
-import { jsonToHtml } from '../utils/documentConverter';
+import { jsonToHtml, safeJsonParse } from '../utils/documentConverter';
 
 export interface AIOptions {
   mode?: 'insert' | 'replace' | 'edit';
@@ -107,52 +108,14 @@ export const useAI = () => {
             
             setAiState('writing');
 
-            // Advanced JSON Extraction
-            jsonString = jsonString.trim();
-            
-            // Remove Markdown fences
-            const codeBlockMatch = jsonString.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
-            if (codeBlockMatch) jsonString = codeBlockMatch[1].trim();
-
-            // Isolate JSON object/array if surrounded by text
-            const startObj = jsonString.indexOf('{');
-            const startArr = jsonString.indexOf('[');
-            
-            let start = -1;
-            if (startObj !== -1 && startArr !== -1) start = Math.min(startObj, startArr);
-            else if (startObj !== -1) start = startObj;
-            else if (startArr !== -1) start = startArr;
-
-            if (start !== -1) {
-                const lastBrace = jsonString.lastIndexOf('}');
-                const lastBracket = jsonString.lastIndexOf(']');
-                const end = Math.max(lastBrace, lastBracket);
-                
-                if (end !== -1 && end > start) {
-                    jsonString = jsonString.substring(start, end + 1);
-                }
-            }
-
             let parsedData;
             try {
-                parsedData = JSON.parse(jsonString);
-            } catch (jsonError) {
-                console.error("JSON Parse Error:", jsonError);
-                // Attempt robust fix for common AI JSON errors
-                try {
-                    // Fix unquoted keys
-                    const fixed = jsonString.replace(/([{,])\s*([a-zA-Z0-9_]+)\s*:/g, '$1"$2":');
-                    parsedData = JSON.parse(fixed);
-                } catch(e2) {
-                     // Fallback: treat as text if simple
-                     if (!jsonString.includes('{')) {
-                         parsedData = { blocks: [{ type: 'paragraph', content: jsonString }] };
-                     } else {
-                         alert("The AI response was invalid. Please try again.");
-                         setAiState('idle');
-                         return;
-                     }
-                }
+                parsedData = safeJsonParse(jsonString);
+            } catch (e) {
+                console.error("JSON Parse Error:", e);
+                alert("The AI response structure was invalid. Please try again or refine your prompt.");
+                setAiState('idle');
+                return;
             }
 
             if (parsedData.error) {
@@ -166,7 +129,7 @@ export const useAI = () => {
                 
                 // Handle Document Settings
                 const docSettings = parsedData.document?.settings || {};
-                // Check for page_settings block too
+                // Check for page_settings block too (legacy support)
                 let blocks = parsedData.document?.blocks || parsedData.blocks || [];
                 if (!Array.isArray(blocks)) blocks = [];
 
@@ -195,11 +158,22 @@ export const useAI = () => {
                 }
 
                 // Handle Headers/Footers
-                if (parsedData.document?.header) setHeaderContent(jsonToHtml(parsedData.document.header));
-                else setHeaderContent('<div style="color: #94a3b8;">[Header]</div>');
+                const headers = parsedData.document?.headers || parsedData.document?.header;
+                if (headers) {
+                    // If headers is an object with 'default', use that. If it's an array (legacy/singular), use it directly.
+                    const defaultHeader = Array.isArray(headers) ? headers : (headers.default || headers.first);
+                    if (defaultHeader) setHeaderContent(jsonToHtml({ blocks: defaultHeader }));
+                } else {
+                    setHeaderContent('<div style="color: #94a3b8;">[Header]</div>');
+                }
 
-                if (parsedData.document?.footer) setFooterContent(jsonToHtml(parsedData.document.footer));
-                else setFooterContent('<div style="color: #94a3b8;">[Page <span class="page-number-placeholder">1</span>]</div>');
+                const footers = parsedData.document?.footers || parsedData.document?.footer;
+                if (footers) {
+                    const defaultFooter = Array.isArray(footers) ? footers : (footers.default || footers.first);
+                    if (defaultFooter) setFooterContent(jsonToHtml({ blocks: defaultFooter }));
+                } else {
+                    setFooterContent('<div style="color: #94a3b8;">[Page <span class="page-number-placeholder">1</span>]</div>');
+                }
 
                 // Render Body
                 const bodyHtml = jsonToHtml({ blocks });

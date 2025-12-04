@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   X, Check, Activity, Wand2, RefreshCw, ArrowRight, 
@@ -162,11 +161,32 @@ export const AdvancedGrammarDialog: React.FC<AdvancedGrammarDialogProps> = ({
       });
       
       let cleanJson = response.text || "{}";
-      if (cleanJson.startsWith('```')) {
-          cleanJson = cleanJson.replace(/^```(?:json)?\s*/, '').replace(/```\s*$/, '');
+      
+      // 1. Remove Markdown code blocks
+      cleanJson = cleanJson.trim().replace(/^```(?:json|json5)?\s*/i, '').replace(/```\s*$/, '');
+      
+      // 2. Isolate the JSON structure
+      const start = cleanJson.indexOf('{');
+      const end = cleanJson.lastIndexOf('}');
+      if (start !== -1 && end !== -1) {
+          cleanJson = cleanJson.substring(start, end + 1);
       }
       
-      const data = JSON.parse(cleanJson);
+      let data;
+      try {
+          data = JSON.parse(cleanJson);
+      } catch (jsonError) {
+          // Attempt repair
+          try {
+             let fixed = cleanJson.replace(/\/\/.*$/gm, '');
+             fixed = fixed.replace(/,\s*([\]}])/g, '$1');
+             fixed = fixed.replace(/([{,])\s*([a-zA-Z0-9_]+)\s*:/g, '$1"$2":');
+             data = JSON.parse(fixed);
+          } catch(e2) {
+             throw jsonError; // Original error usually clearer
+          }
+      }
+      
       if (data.error) {
           throw new Error(data.error);
       }
@@ -440,7 +460,8 @@ export const AdvancedGrammarDialog: React.FC<AdvancedGrammarDialogProps> = ({
             <div className="flex-1 overflow-hidden relative">
                 
                 {/* Input View */}
-                <div className={`flex flex-col w-full h-full transition-all duration-300 ${activeTab === 'input' ? 'relative opacity-100 z-10 translate-x-0' : 'absolute top-0 left-0 opacity-0 z-0 -translate-x-10 pointer-events-none'}`}>
+                <div className={`flex flex-col w-full h-full transition-all duration-300 ${activeTab === 'input' ? 'relative opacity-100 z-10 translate-x-0' : 'absolute top-0 left-0 opacity-0 z-0 -translate-x-10 pointer-events-none'}`}
+                >
                     <textarea 
                         value={text}
                         onChange={(e) => setText(e.target.value)}

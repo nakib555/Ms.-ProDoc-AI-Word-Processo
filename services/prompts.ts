@@ -34,7 +34,7 @@ export const getSystemPrompt = (operation: string, userPrompt?: string): string 
       return getMakeProfessionalPrompt();
 
     case "generate_content":
-      return getGenerateContentPrompt();
+      return getGenerateContentPrompt(userPrompt || '');
 
     case "edit_content":
       return getEditContentPrompt(userPrompt || '');

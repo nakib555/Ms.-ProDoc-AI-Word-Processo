@@ -351,3 +351,66 @@ export const jsonToHtml = (jsonData: any): string => {
 
   return blocks.map(renderBlock).join('');
 };
+
+/**
+ * Utility to clean JSON strings from LLM output (e.g. markdown fences)
+ */
+export const cleanJsonString = (input: string): string => {
+    let clean = input.trim();
+    // Remove Markdown fences
+    const match = clean.match(/```(?:json|json5)?\s*([\s\S]*?)\s*```/i);
+    if (match) clean = match[1].trim();
+    else {
+        clean = clean.replace(/^```(?:json|json5)?/i, '').replace(/```$/, '');
+    }
+    
+    // Isolate JSON object/array
+    const startObj = clean.indexOf('{');
+    const startArr = clean.indexOf('[');
+    let start = -1;
+    if (startObj !== -1 && startArr !== -1) start = Math.min(startObj, startArr);
+    else if (startObj !== -1) start = startObj;
+    else if (startArr !== -1) start = startArr;
+    
+    if (start !== -1) {
+        const isObj = clean[start] === '{';
+        const endChar = isObj ? '}' : ']';
+        const lastEnd = clean.lastIndexOf(endChar);
+        if (lastEnd !== -1 && lastEnd > start) {
+            clean = clean.substring(start, lastEnd + 1);
+        }
+    }
+    return clean;
+};
+
+/**
+ * Robustly parses a JSON string, attempting to fix common LLM errors.
+ */
+export const safeJsonParse = (input: string): any => {
+    const clean = cleanJsonString(input);
+    try {
+        return JSON.parse(clean);
+    } catch (e) {
+        // Attempt repair
+        try {
+            // Remove comments (single line and block)
+            let fixed = clean.replace(/\/\/.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '');
+            // Fix trailing commas
+            fixed = fixed.replace(/,\s*([}\]])/g, '$1');
+            // Fix unquoted keys
+            fixed = fixed.replace(/([{,])\s*([a-zA-Z0-9_]+)\s*:/g, '$1"$2":');
+            // Fix single quotes
+            if (!fixed.includes('"') && fixed.includes("'")) {
+                fixed = fixed.replace(/'/g, '"');
+            }
+            return JSON.parse(fixed);
+        } catch (e2) {
+            console.error("JSON Parse Error", e2);
+            // Fallback for when AI returns just text
+            if (!clean.includes('{') && !clean.includes('[')) {
+                 return { blocks: [{ type: 'paragraph', content: clean }] };
+            }
+            throw e;
+        }
+    }
+};

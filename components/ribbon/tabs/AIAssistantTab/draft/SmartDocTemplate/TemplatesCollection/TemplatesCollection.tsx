@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useDeferredValue, useEffect } from 'react';
 import { 
   FileText, Feather, Activity, BookOpen, Mail, Video, LayoutTemplate, 
@@ -302,20 +301,27 @@ export const PredictiveBuilder: React.FC<PredictiveBuilderProps> = ({ onSelect, 
         // Use generate_template_list to get simple JSON array, bypassing complex doc structure schema
         const response = await generateAIContent('generate_template_list' as AIOperation, '', prompt, 'gemini-3-pro-preview');
         
-        let clean = response.replace(/```json/g, '').replace(/```/g, '').trim();
-        const start = clean.indexOf('[');
-        const end = clean.lastIndexOf(']');
-        if (start !== -1 && end !== -1) {
-            clean = clean.substring(start, end + 1);
-        }
+        let clean = response.replace(/```(?:json)?\s*/g, '').replace(/```/g, '').trim();
         
+        // Fix trailing commas or unquoted keys using robust parsing logic
         try {
+           // Robust JSON cleanup
+           clean = clean.replace(/\/\/.*$/gm, ''); // Remove comments
+           clean = clean.replace(/,\s*([}\]])/g, '$1'); // Trailing commas
+           clean = clean.replace(/([{,])\s*([a-zA-Z0-9_]+)\s*:/g, '$1"$2":'); // Unquoted keys
+           
+           const start = clean.indexOf('[');
+           const end = clean.lastIndexOf(']');
+           if (start !== -1 && end !== -1) {
+               clean = clean.substring(start, end + 1);
+           }
+           
            const parsed = JSON.parse(clean);
            if (Array.isArray(parsed)) {
                setAiResults(parsed.map(x => ({...x, category: 'AI Generated'})));
            }
-        } catch (e) { 
-            console.warn("AI JSON Parse Error", e);
+        } catch (e) {
+             console.warn("AI JSON Parse Error", e);
         }
     } catch (err) {
         console.error("AI Generation failed", err);
