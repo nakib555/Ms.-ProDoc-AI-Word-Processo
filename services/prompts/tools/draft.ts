@@ -181,7 +181,6 @@ const BEAUTIFUL_STYLING_PROMPT = `
       content: text or structured array for lists/tables
     - Use placeholders exactly as specified, never replace with real content
     - Ensure all page breaks, margins, and section breaks are respected
-    - Your output must be JSON object and Only valid JSON is allowed
 `;
 
 export const getSmartDocPrompt = (request: string, flow: string, tone: string) => {
@@ -200,7 +199,6 @@ export const getSmartDocPrompt = (request: string, flow: string, tone: string) =
       OUTPUT: Return JSON compatible with ProDoc document schema (blocks with styles).
       
       ### ⚙️ OUTPUT SCHEMA
-      Your output must be JSON object and Only valid JSON is allowed. 
       ${PRODOC_JSON_SCHEMA}
     `;
 };

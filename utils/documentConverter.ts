@@ -35,6 +35,11 @@ const styleToString = (style: any): string => {
         return `${key}: ${resolveFontSize(v)}`;
     }
 
+    // Safety: Prevent extremely small line-heights that cause overlap
+    if (key === 'line-height' && typeof v === 'number' && v < 1.0) {
+         return `${key}: 1.2`; // Force a safe default
+    }
+
     // Add units if missing for common numeric properties
     const val = (typeof v === 'number' && ['width', 'height', 'margin', 'padding', 'border-width', 'top', 'bottom', 'left', 'right', 'spacing', 'letter-spacing', 'indent'].some(p => key.includes(p))) 
       ? `${v}px` 
@@ -161,8 +166,23 @@ const renderInlineContent = (contentItems: any): string => {
   }).join('');
 };
 
+// Dangerous styles that cause text overlap or layout breakage in flow content
+const BLOCKED_FLOW_STYLES = ['height', 'maxHeight', 'minHeight', 'position', 'top', 'left', 'right', 'bottom', 'float', 'clear'];
+
 export const renderBlock = (block: any): string => {
-    const baseStyle = block.style || {};
+    // Create a safe copy of styles
+    const baseStyle = block.style ? { ...block.style } : {};
+
+    // Sanitize layout properties for flow blocks (Paragraphs, Headings, Lists)
+    // This prevents the AI from setting fixed heights which causes text overlap
+    if (['heading', 'paragraph', 'list', 'blockquote'].includes(block.type)) {
+        BLOCKED_FLOW_STYLES.forEach(prop => {
+            delete baseStyle[prop];
+            // Also try to delete kebab-case versions just in case keys are different
+            delete baseStyle[camelToKebab(prop)];
+        });
+    }
+    
     let cssStr = styleToString(baseStyle);
     
     // Advanced Paragraph Styling
@@ -181,11 +201,15 @@ export const renderBlock = (block: any): string => {
         cssStr += '; ' + paraCss.join('; ');
     }
 
-    // Sanitize positioning to avoid layout breaks in editor flow
+    // Double-check sanitization for absolute positioning in CSS string
     if (['heading', 'paragraph', 'list', 'code', 'equation', 'blockquote'].includes(block.type)) {
         if (cssStr.includes('position: absolute') || cssStr.includes('position: fixed')) {
             cssStr = cssStr.replace(/position:\s*(absolute|fixed);?/g, '');
             cssStr = cssStr.replace(/(top|left|right|bottom):\s*[^;]+;?/g, '');
+        }
+        // Safety check for height again in case it slipped through via string concatenation
+        if (cssStr.includes('height:')) {
+            cssStr = cssStr.replace(/height:\s*[^;]+;?/g, '');
         }
     }
 
