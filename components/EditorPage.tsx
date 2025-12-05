@@ -1,5 +1,3 @@
-
-
 import React, { useRef, useLayoutEffect, useEffect } from 'react';
 import { PageConfig, EditingArea } from '../types';
 import { PAGE_SIZES } from '../constants';
@@ -724,8 +722,9 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
   }
 
   const margins = getMargins();
-  const gutterTop = config.gutterPosition === 'top' && !['mirrorMargins', 'bookFold'].includes(config.multiplePages || '') ? margins.gutterPx : 0;
-
+  // Ensure we don't double-add gutter if getMargins already handled it for 'top'
+  // margins.top from getMargins() already includes gutter if gutterPosition is 'top'.
+  
   const getVerticalAlignStyle = (): React.CSSProperties => {
       const style: React.CSSProperties = {
           display: 'flex',
@@ -804,9 +803,6 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
   const safeMaxHeaderHeight = (height - MIN_BODY_GAP) / 2;
   const safeMaxFooterHeight = (height - MIN_BODY_GAP) / 2;
 
-  const bodyWidth = width - margins.left - margins.right;
-  const bodyHeight = height - margins.top - margins.bottom - gutterTop;
-
   // Determine effective contentEditable state - Keep true to allow selection, use inputMode="none" for read-only feel
   const isBodyEditable = true; 
   const isHeaderFooterEditable = true;
@@ -834,17 +830,23 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
                 transformOrigin: 'top left',
                 width: `${width}px`,
                 height: `${height}px`,
-                boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06), 0 0 0 1px rgba(0,0,0,0.05)', 
+                boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06), 0 0 0 1px rgba(0,0,0,0.05)',
+                // Simulating Physical Page using Padding Box Model
+                paddingTop: `${margins.top}px`,
+                paddingBottom: `${margins.bottom}px`,
+                paddingLeft: `${margins.left}px`,
+                paddingRight: `${margins.right}px`,
+                boxSizing: 'border-box',
                 ...getBackgroundStyle()
             }}
             onMouseDown={handlePageClick}
         >
-            {/* Header Area */}
+            {/* Header Area - Absolute over padding */}
             <div 
                 className={`absolute left-0 right-0 z-30 ${isHeaderFooterMode ? 'z-50' : ''}`}
                 style={{ 
                     top: 0, 
-                    minHeight: `${margins.top}px`, 
+                    height: `${margins.top}px`,
                     maxHeight: `${safeMaxHeaderHeight}px`,
                     paddingTop: `${visualHeaderDist}px`, 
                     paddingLeft: `${margins.left}px`,
@@ -879,14 +881,10 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
                  </div>
             )}
 
-            {/* Body Container (Writable Area) */}
+            {/* Body Container (Writable Area) - Relative to flow naturally within padding */}
             <div 
-                className={`absolute overflow-hidden transition-opacity duration-300 ${isHeaderFooterMode ? 'opacity-50' : 'opacity-100'}`}
+                className={`relative w-full h-full overflow-hidden transition-opacity duration-300 ${isHeaderFooterMode ? 'opacity-50' : 'opacity-100'}`}
                 style={{ 
-                    top: `${margins.top + gutterTop}px`,
-                    left: `${margins.left}px`,
-                    width: `${bodyWidth}px`,
-                    height: `${bodyHeight}px`,
                     ...getVerticalAlignStyle()
                 }}
                 onDoubleClick={onBodyDoubleClick}
@@ -920,12 +918,12 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
                 />
             </div>
 
-            {/* Footer Area */}
+            {/* Footer Area - Absolute over padding */}
             <div 
                 className={`absolute left-0 right-0 z-30 ${isHeaderFooterMode ? 'z-50' : ''}`}
                 style={{
                     bottom: 0,
-                    minHeight: `${margins.bottom}px`, 
+                    height: `${margins.bottom}px`, 
                     maxHeight: `${safeMaxFooterHeight}px`,
                     paddingBottom: `${visualFooterDist}px`, 
                     paddingLeft: `${margins.left}px`,

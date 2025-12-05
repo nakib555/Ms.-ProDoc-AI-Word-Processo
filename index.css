@@ -111,6 +111,7 @@
   transition-duration: 0.4s;
   transition-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
   will-change: transform, width, height;
+  box-sizing: border-box; /* Ensure padding is included in width/height calculations */
 }
 
 /* --- Smart Selection Mode (Mobile) --- */

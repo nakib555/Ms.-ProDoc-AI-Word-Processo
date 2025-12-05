@@ -145,6 +145,7 @@ const PrintSelect = ({ label, value, onChange, options, icon: Icon, disabled, cl
 };
 
 // --- Helper to render page content consistently ---
+// Note: This renders the PREVIEW (React components). The actual print uses generatePrintHTML.
 const getVerticalAlignStyle = (align: string): React.CSSProperties => {
   const style: React.CSSProperties = { display: 'flex', flexDirection: 'column' };
   let justifyContent: 'center' | 'flex-end' | 'space-between' | 'flex-start' = 'flex-start';
@@ -176,12 +177,16 @@ const renderPageContent = (
         gutter: (cfg.margins.gutter || 0) * 96
     };
     
+    // Gutter handling: If top, it adds to top. If left, it adds to left.
+    // EditorPage logic: getMargins handles this. Here we replicate simple logic.
+    if (cfg.gutterPosition === 'top' && !['mirrorMargins', 'bookFold'].includes(cfg.multiplePages || '')) {
+         margins.top += margins.gutter;
+    } else {
+         margins.left += margins.gutter;
+    }
+    
     const headerDistPx = (cfg.headerDistance || 0.5) * 96;
     const footerDistPx = (cfg.footerDistance || 0.5) * 96;
-    const gutterTop = cfg.gutterPosition === 'top' && !['mirrorMargins', 'bookFold'].includes(cfg.multiplePages || '') ? margins.gutter : 0;
-
-    const bodyWidth = widthPt - margins.left - margins.right;
-    const bodyHeight = heightPt - margins.top - margins.bottom - gutterTop;
 
     const currentFooter = (footerContent || '').replace(/\[Page \d+\]/g, `[Page ${index + 1}]`)
                         .replace(/<span class="page-number-placeholder">.*?<\/span>/g, `${index + 1}`);
@@ -206,14 +211,20 @@ const renderPageContent = (
                     width: widthPt,
                     height: heightPt,
                     transform: `scale(${scale})`,
+                    // New Box Model
+                    paddingTop: `${margins.top}px`,
+                    paddingBottom: `${margins.bottom}px`,
+                    paddingLeft: `${margins.left}px`,
+                    paddingRight: `${margins.right}px`,
+                    boxSizing: 'border-box'
                 }}
             >
-                {/* Header Area */}
+                {/* Header Area - Absolute */}
                 <div 
                     className="absolute left-0 right-0 z-30"
                     style={{ 
                         top: 0, 
-                        minHeight: `${margins.top}px`, 
+                        height: `${margins.top}px`, // Fixed height to margin
                         paddingTop: `${headerDistPx}px`, 
                         paddingLeft: `${margins.left}px`, 
                         paddingRight: `${margins.right}px` 
@@ -225,19 +236,15 @@ const renderPageContent = (
                     />
                 </div>
                 
-                {/* Body Content */}
+                {/* Body Content - Relative Flow */}
                 <div 
-                    className="absolute overflow-hidden"
+                    className="relative w-full h-full overflow-hidden z-10"
                     style={{ 
-                        top: `${margins.top + gutterTop}px`,
-                        left: `${margins.left}px`,
-                        width: `${bodyWidth}px`,
-                        height: `${bodyHeight}px`,
                         ...verticalAlignStyle
                     }}
                 >
                     <div 
-                        className="prodoc-editor w-full h-full outline-none text-lg leading-loose break-words z-10"
+                        className="prodoc-editor w-full h-full outline-none text-lg leading-loose break-words"
                         style={{
                             fontFamily: 'Calibri, Inter, sans-serif',
                             color: '#000000',
@@ -247,12 +254,12 @@ const renderPageContent = (
                     />
                 </div>
 
-                {/* Footer Area */}
+                {/* Footer Area - Absolute */}
                 <div 
                     className="absolute left-0 right-0 z-30"
                     style={{ 
                         bottom: 0, 
-                        minHeight: `${margins.bottom}px`, 
+                        height: `${margins.bottom}px`, 
                         paddingBottom: `${footerDistPx}px`, 
                         paddingLeft: `${margins.left}px`, 
                         paddingRight: `${margins.right}px`,
@@ -657,14 +664,21 @@ export const PrintModal: React.FC = () => {
             margin: 0 auto; 
             page-break-after: always; 
             background: white;
-            box-sizing: border-box;
+            box-sizing: border-box; /* Padding creates margins */
         }
         .print-page:last-child { page-break-after: auto; }
 
         .print-header, .print-footer { position: absolute; left: 0; right: 0; overflow: hidden; z-index: 10; }
         .print-header { top: 0; }
         .print-footer { bottom: 0; }
-        .print-content { position: absolute; overflow: hidden; z-index: 5; }
+        
+        .print-content { 
+            position: relative;
+            width: 100%;
+            height: 100%;
+            overflow: hidden; 
+            z-index: 5; 
+        }
         
         /* Matching EditorPage Styles */
         .prodoc-editor { 
@@ -702,6 +716,15 @@ export const PrintModal: React.FC = () => {
         const mr = cfg.margins.right * 96;
         const hd = (cfg.headerDistance || 0.5) * 96;
         const fd = (cfg.footerDistance || 0.5) * 96;
+        
+        // Gutter adjustment for padding
+        let paddingTop = mt;
+        let paddingLeft = ml;
+        if (cfg.gutterPosition === 'top' && !['mirrorMargins', 'bookFold'].includes(cfg.multiplePages || '')) {
+             paddingTop += (cfg.margins.gutter || 0) * 96;
+        } else {
+             paddingLeft += (cfg.margins.gutter || 0) * 96;
+        }
 
         const currentFooter = (footerContent || '').replace(/\[Page \d+\]/g, `[Page ${index + 1}]`).replace(/<span class="page-number-placeholder">.*?<\/span>/g, `${index + 1}`);
         
@@ -711,16 +734,16 @@ export const PrintModal: React.FC = () => {
         else if (cfg.verticalAlign === 'justify') verticalAlignStyle = "display: flex; flex-direction: column; justify-content: space-between;";
 
         return `
-            <div class="print-page" style="width: ${widthPt}px; height: ${heightPt}px;">
-                <div class="print-header" style="min-height: ${mt}px; padding-top: ${hd}px; padding-left: ${ml}px; padding-right: ${mr}px;">
+            <div class="print-page" style="width: ${widthPt}px; height: ${heightPt}px; padding: ${paddingTop}px ${mr}px ${mb}px ${paddingLeft}px;">
+                <div class="print-header" style="height: ${mt}px; top: 0; left: 0; right: 0; padding-top: ${hd}px; padding-left: ${paddingLeft}px; padding-right: ${mr}px;">
                     <div class="prodoc-header">${headerContent || ''}</div>
                 </div>
                 
-                <div class="print-content" style="top: ${mt}px; bottom: ${mb}px; left: ${ml}px; right: ${mr}px; ${verticalAlignStyle}">
+                <div class="print-content" style="${verticalAlignStyle}">
                     <div class="prodoc-editor" style="min-height: 100%; ${cfg.verticalAlign === 'justify' ? 'flex: 1 1 auto;' : ''}">${page.html}</div>
                 </div>
 
-                <div class="print-footer" style="min-height: ${mb}px; padding-bottom: ${fd}px; padding-left: ${ml}px; padding-right: ${mr}px; display: flex; flex-direction: column; justify-content: flex-end;">
+                <div class="print-footer" style="height: ${mb}px; bottom: 0; left: 0; right: 0; padding-bottom: ${fd}px; padding-left: ${paddingLeft}px; padding-right: ${mr}px; display: flex; flex-direction: column; justify-content: flex-end;">
                     <div class="prodoc-footer">${currentFooter}</div>
                 </div>
             </div>
