@@ -13,6 +13,8 @@ import { PAGE_SIZES, MARGIN_PRESETS, PAPER_FORMATS } from '../../../../../consta
 import { PageConfig, MarginPreset } from '../../../../../types';
 // @ts-ignore
 import { Previewer } from 'pagedjs';
+// @ts-ignore
+import html2pdf from 'html2pdf.js';
 
 // --- Shared UI Components ---
 
@@ -403,7 +405,7 @@ const MobilePrintPreview: React.FC<{
                     disabled={isPreparing}
                     className="w-14 h-14 bg-blue-600 text-white rounded-full shadow-[0_8px_20px_rgba(37,99,235,0.4)] flex items-center justify-center hover:bg-blue-700 active:scale-90 transition-all border-2 border-white/20 backdrop-blur-sm"
                  >
-                    {isPreparing ? <Loader2 size={24} className="animate-spin"/> : <Printer size={24} />}
+                    {isPreparing ? <Loader2 size={24} className="animate-spin"/> : <Download size={24} />}
                  </button>
              </div>
         </div>
@@ -477,7 +479,7 @@ const PrintSettingsPanel: React.FC<{
                         label="Destination"
                         value="default"
                         onChange={() => {}}
-                        options={[{ value: 'default', label: 'Save as PDF / Default Printer' }]}
+                        options={[{ value: 'default', label: 'Save as PDF' }]}
                         icon={Printer}
                         disabled
                     />
@@ -547,8 +549,8 @@ const PrintSettingsPanel: React.FC<{
                         disabled={isPreparing}
                         className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-base shadow-lg shadow-blue-200/50 dark:shadow-none transition-all flex items-center justify-center gap-3 disabled:opacity-70 active:scale-[0.98]"
                     >
-                        {isPreparing ? <Loader2 className="animate-spin" size={20}/> : <Printer size={20}/>}
-                        <span>{isPreparing ? 'Preparing...' : 'Print / Save as PDF'}</span>
+                        {isPreparing ? <Loader2 className="animate-spin" size={20}/> : <Download size={20}/>}
+                        <span>{isPreparing ? 'Generating PDF...' : 'Download PDF'}</span>
                     </button>
                 </div>
             )}
@@ -585,15 +587,19 @@ export const PrintModal: React.FC = () => {
     return () => clearTimeout(timer);
   }, [content, localConfig]);
 
-  // Paged.js Print Implementation
-  const handlePagedJsPrint = async () => {
+  // PDF Download Implementation using html2pdf via Paged.js output
+  const handleDownloadPDF = async () => {
       setIsPreparingPrint(true);
 
       try {
           // 1. Create container for Paged.js and hide everything else
           const printContainer = document.createElement('div');
           printContainer.id = 'paged-print-container';
-          document.body.classList.add('printing-mode');
+          printContainer.style.position = 'absolute';
+          printContainer.style.top = '0';
+          printContainer.style.left = '0';
+          // Ensure it is not visible but renderable by html2canvas
+          printContainer.style.zIndex = '-1000'; 
           document.body.appendChild(printContainer);
 
           // 2. Generate CSS for Paged.js based on localConfig
@@ -604,9 +610,6 @@ export const PrintModal: React.FC = () => {
           if (size === 'Custom' && localConfig.customWidth && localConfig.customHeight) {
               sizeStr = `${localConfig.customWidth}in ${localConfig.customHeight}in`;
           } else {
-              // If it's a standard size, Paged.js usually recognizes it, but we can be explicit if needed.
-              // Using ID from constants which are standard names (Letter, A4, etc.)
-              // Add orientation
               sizeStr = `${size} ${orientation}`;
           }
 
@@ -654,17 +657,18 @@ export const PrintModal: React.FC = () => {
               
               /* Force breaks */
               .prodoc-page-break { break-after: page; height: 0; margin: 0; border: none; }
+              
+              /* Clean up Paged.js artifacts for PDF capture */
+              .pagedjs_page {
+                 box-shadow: none !important;
+                 margin: 0 !important;
+              }
           `;
 
           // 3. Clean up Header/Footer HTML
           let cleanHeader = headerContent.replace('[Header]', '');
-          let cleanFooter = footerContent; // Page numbers are handled by Paged.js via CSS counters usually, but here we inject HTML.
-          // Paged.js doesn't auto-increment HTML content in running elements easily for each page unless using CSS counters.
-          // Simple fix: If footer has a page number placeholder, use CSS counter
+          let cleanFooter = footerContent; 
           if (cleanFooter.includes('page-number-placeholder')) {
-               // Replace the span content with CSS counter
-               // Note: 'content: counter(page)' works in CSS content property, not easily inside HTML structure unless using ::after
-               // We'll try a CSS approach for the placeholder span.
                cleanFooter = cleanFooter.replace(/<span class="page-number-placeholder">.*?<\/span>/g, '<span class="pagedjs-page-number"></span>');
           }
 
@@ -687,9 +691,6 @@ export const PrintModal: React.FC = () => {
           // 5. Run Previewer
           const previewer = new Previewer();
           
-          // We pass the CSS as a style element in the "stylesheets" array or just inject it?
-          // Previewer accepts an array of stylesheet URLs or style elements.
-          // We'll create a temporary style element.
           const styleEl = document.createElement('style');
           styleEl.innerHTML = css + pageNumCss;
           document.head.appendChild(styleEl);
@@ -697,23 +698,34 @@ export const PrintModal: React.FC = () => {
           // This renders the paginated content into printContainer
           await previewer.preview(htmlContent, [], printContainer);
 
-          // 6. Trigger Print
-          window.print();
-
-          // 7. Cleanup happens in finally block, but we should wait for print dialog to close?
-          // Browser behavior varies. We'll cleanup immediately after the blocking call returns (or async).
+          // 6. Generate PDF from the Paged.js container
+          const opt = {
+              margin: 0,
+              filename: `${documentTitle || 'document'}.pdf`,
+              image: { type: 'jpeg', quality: 0.98 },
+              html2canvas: { 
+                  scale: 2, 
+                  useCORS: true,
+                  logging: false,
+                  windowWidth: printContainer.scrollWidth
+              },
+              jsPDF: { 
+                  unit: 'in', 
+                  format: localConfig.size === 'Custom' ? [localConfig.customWidth, localConfig.customHeight] : localConfig.size.toLowerCase(), 
+                  orientation: localConfig.orientation 
+              }
+          };
           
-          // Remove style element
+          await html2pdf().set(opt).from(printContainer).save();
+
+          // 7. Cleanup
           if(document.head.contains(styleEl)) document.head.removeChild(styleEl);
+          document.body.removeChild(printContainer);
 
       } catch (e) {
-          console.error("Paged.js Print Error:", e);
-          alert("Failed to prepare print layout.");
+          console.error("PDF Generation Error:", e);
+          alert("Failed to generate PDF.");
       } finally {
-          // Remove container and class
-          document.body.classList.remove('printing-mode');
-          const container = document.getElementById('paged-print-container');
-          if (container) container.remove();
           setIsPreparingPrint(false);
       }
   };
@@ -763,8 +775,7 @@ export const PrintModal: React.FC = () => {
                 setLocalConfig={setLocalConfig}
                 copies={copies}
                 setCopies={setCopies}
-                onPrint={handlePagedJsPrint}
-                onDownload={handlePagedJsPrint} // Reuse print logic for PDF download via browser
+                onPrint={handleDownloadPDF}
                 isPreparing={isPreparingPrint}
                 closeModal={closeModal}
                 isMobile={isMobile}
@@ -781,7 +792,7 @@ export const PrintModal: React.FC = () => {
                     headerContent={headerContent}
                     footerContent={footerContent}
                     isPreparing={isPreparingPrint}
-                    onPrint={handlePagedJsPrint}
+                    onPrint={handleDownloadPDF}
                     isVisible={mobileTab === 'preview'}
                 />
             ) : (
