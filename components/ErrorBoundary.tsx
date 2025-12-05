@@ -1,4 +1,4 @@
-import React, { Component, ErrorInfo, ReactNode } from 'react';
+import React, { ErrorInfo, ReactNode } from 'react';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
 
 interface ErrorBoundaryProps {
@@ -11,7 +11,7 @@ interface ErrorBoundaryState {
   error: Error | null;
 }
 
-export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
   public state: ErrorBoundaryState = {
     hasError: false,
     error: null
@@ -26,9 +26,12 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   }
 
   public render() {
-    if (this.state.hasError) {
-      if (this.props.fallback) {
-        return this.props.fallback;
+    const { hasError, error } = this.state;
+    const { fallback, children } = this.props;
+
+    if (hasError) {
+      if (fallback) {
+        return fallback;
       }
 
       return (
@@ -36,7 +39,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
           <AlertTriangle className="w-10 h-10 text-red-500 mb-3" />
           <h2 className="text-lg font-bold text-red-700 dark:text-red-300 mb-2">Something went wrong</h2>
           <p className="text-sm text-red-600 dark:text-red-400 mb-4 max-w-md">
-            {this.state.error?.message || "An unexpected error occurred while rendering this component."}
+            {error?.message || "An unexpected error occurred while rendering this component."}
           </p>
           <button 
             onClick={() => window.location.reload()} 
@@ -48,6 +51,6 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
       );
     }
 
-    return this.props.children;
+    return children;
   }
 }

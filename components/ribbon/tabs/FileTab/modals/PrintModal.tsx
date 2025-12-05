@@ -513,125 +513,131 @@ export const PrintModal: React.FC = () => {
   const handlePrint = () => {
     setIsPreparingPrint(true);
     
-    // Use setTimeout to allow UI update (spinner) before heavy lifting
-    setTimeout(() => {
-        // Create a hidden iframe
-        const iframe = document.createElement('iframe');
-        
-        // Important for mobile: Make iframe technically "visible" but hidden from view.
-        // Display:none or visibility:hidden often prevents printing in mobile browsers.
-        iframe.style.position = 'fixed';
-        iframe.style.right = '0';
-        iframe.style.bottom = '0';
-        iframe.style.width = '1px';
-        iframe.style.height = '1px';
-        iframe.style.border = '0';
-        iframe.style.opacity = '0.01';
-        iframe.style.pointerEvents = 'none';
-        iframe.style.zIndex = '-1';
-        
-        document.body.appendChild(iframe);
-        
-        const doc = iframe.contentWindow?.document;
-        if (!doc) {
-             alert("Printing failed: Could not create print context.");
-             setIsPreparingPrint(false);
-             document.body.removeChild(iframe);
-             return;
-        }
-
-        const htmlContent = `
-          <!DOCTYPE html>
-          <html lang="en">
-          <head>
-            <meta charset="UTF-8">
-            <title>${documentTitle || 'Document'}</title>
-            <style>
-                @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Serif:ital,wght@0,400;0,700;1,400&display=swap');
-                @page { margin: 0; size: auto; }
-                body { margin: 0; padding: 0; background: white; font-family: 'Calibri', 'Inter', sans-serif; -webkit-print-color-adjust: exact; }
-                .print-page { position: relative; overflow: hidden; margin: 0 auto; page-break-after: always; }
-                .print-header, .print-footer { position: absolute; left: 0; right: 0; overflow: hidden; z-index: 10; }
-                .print-header { top: 0; }
-                .print-footer { bottom: 0; }
-                .print-content { position: absolute; overflow: hidden; z-index: 5; }
-                .prodoc-editor { font-size: 11pt; line-height: 1.5; white-space: pre-wrap; word-wrap: break-word; }
-                img { max-width: 100%; }
-                table { border-collapse: collapse; width: 100%; }
-                td, th { border: 1px solid #000; padding: 4px 8px; vertical-align: top; }
-                .equation-handle, .equation-dropdown { display: none; }
-            </style>
-          </head>
-          <body>
-            ${previewPages.map((page, index) => {
-                const cfg = page.config;
-                const baseSize = PAGE_SIZES[cfg.size as string] || PAGE_SIZES['Letter'];
-                let widthPt = cfg.orientation === 'landscape' ? baseSize.height : baseSize.width;
-                let heightPt = cfg.orientation === 'landscape' ? baseSize.width : baseSize.height;
-                
-                const mt = cfg.margins.top * 96;
-                const mb = cfg.margins.bottom * 96;
-                const ml = cfg.margins.left * 96;
-                const mr = cfg.margins.right * 96;
-                const hd = (cfg.headerDistance || 0.5) * 96;
-                const fd = (cfg.footerDistance || 0.5) * 96;
-
-                const currentHeader = (headerContent || '').replace(/<div/g, '<div style="height:100%; display:flex; align-items:flex-end;"');
-                const currentFooter = (footerContent || '').replace(/\[Page \d+\]/g, `[Page ${index + 1}]`).replace(/<span class="page-number-placeholder">.*?<\/span>/g, `${index + 1}`);
-
-                return `
-                    <div class="print-page" style="width: ${widthPt}px; height: ${heightPt}px;">
-                        <div class="print-header" style="height: ${mt}px; padding-top: ${hd}px; padding-left: ${ml}px; padding-right: ${mr}px;">
-                            <div style="width: 100%; height: 100%;">${headerContent ? currentHeader : ''}</div>
-                        </div>
-                        <div class="print-content" style="top: ${mt}px; bottom: ${mb}px; left: ${ml}px; right: ${mr}px;">
-                            <div class="prodoc-editor">${page.html}</div>
-                        </div>
-                        <div class="print-footer" style="height: ${mb}px; padding-bottom: ${fd}px; padding-left: ${ml}px; padding-right: ${mr}px; display: flex; flex-direction: column; justify-content: flex-end;">
-                            <div style="width: 100%;">${currentFooter}</div>
-                        </div>
-                    </div>
-                `;
-            }).join('')}
-          </body>
-          </html>
-        `;
-
-        doc.open();
-        doc.write(htmlContent);
-        doc.close();
-
-        const performPrint = () => {
-            try {
-                iframe.contentWindow?.focus();
-                iframe.contentWindow?.print();
-            } catch (e) {
-                console.error("Print error", e);
-                alert("Problem printing the page. Please try again.");
-            } finally {
-                setIsPreparingPrint(false);
-                // Remove iframe after a delay to allow print dialog to take over.
-                // Mobile browsers can be slow to hand off to the print service.
-                setTimeout(() => {
-                    if (document.body.contains(iframe)) {
-                        document.body.removeChild(iframe);
-                    }
-                }, 5000);
+    // Prepare HTML Content
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>${documentTitle || 'Document'}</title>
+        <style>
+            @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Serif:ital,wght@0,400;0,700;1,400&display=swap');
+            @page { margin: 0; size: auto; }
+            body { margin: 0; padding: 0; background: white; font-family: 'Calibri', 'Inter', sans-serif; -webkit-print-color-adjust: exact; }
+            .print-page { position: relative; overflow: hidden; margin: 0 auto; page-break-after: always; }
+            .print-header, .print-footer { position: absolute; left: 0; right: 0; overflow: hidden; z-index: 10; }
+            .print-header { top: 0; }
+            .print-footer { bottom: 0; }
+            .print-content { position: absolute; overflow: hidden; z-index: 5; }
+            .prodoc-editor { font-size: 11pt; line-height: 1.5; white-space: pre-wrap; word-wrap: break-word; }
+            img { max-width: 100%; }
+            table { border-collapse: collapse; width: 100%; }
+            td, th { border: 1px solid #000; padding: 4px 8px; vertical-align: top; }
+            .equation-handle, .equation-dropdown { display: none; }
+            
+            @media print {
+                body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             }
-        };
+        </style>
+      </head>
+      <body>
+        ${previewPages.map((page, index) => {
+            const cfg = page.config;
+            const baseSize = PAGE_SIZES[cfg.size as string] || PAGE_SIZES['Letter'];
+            let widthPt = cfg.orientation === 'landscape' ? baseSize.height : baseSize.width;
+            let heightPt = cfg.orientation === 'landscape' ? baseSize.width : baseSize.height;
+            
+            const mt = cfg.margins.top * 96;
+            const mb = cfg.margins.bottom * 96;
+            const ml = cfg.margins.left * 96;
+            const mr = cfg.margins.right * 96;
+            const hd = (cfg.headerDistance || 0.5) * 96;
+            const fd = (cfg.footerDistance || 0.5) * 96;
 
-        // Wait for resources (images, fonts) to load before printing.
-        // Mobile browsers sometimes need a slight extra delay even after load.
-        if (iframe.contentWindow) {
-             iframe.onload = () => setTimeout(performPrint, 500);
-             // Fallback if onload doesn't fire quickly
-             setTimeout(() => {
-                 if (isPreparingPrint) performPrint();
-             }, 2000);
-        } else {
-             setTimeout(performPrint, 1000);
-        }
-    }, 100);
+            const currentHeader = (headerContent || '').replace(/<div/g, '<div style="height:100%; display:flex; align-items:flex-end;"');
+            const currentFooter = (footerContent || '').replace(/\[Page \d+\]/g, `[Page ${index + 1}]`).replace(/<span class="page-number-placeholder">.*?<\/span>/g, `${index + 1}`);
+
+            return `
+                <div class="print-page" style="width: ${widthPt}px; height: ${heightPt}px;">
+                    <div class="print-header" style="height: ${mt}px; padding-top: ${hd}px; padding-left: ${ml}px; padding-right: ${mr}px;">
+                        <div style="width: 100%; height: 100%;">${headerContent ? currentHeader : ''}</div>
+                    </div>
+                    <div class="print-content" style="top: ${mt}px; bottom: ${mb}px; left: ${ml}px; right: ${mr}px;">
+                        <div class="prodoc-editor">${page.html}</div>
+                    </div>
+                    <div class="print-footer" style="height: ${mb}px; padding-bottom: ${fd}px; padding-left: ${ml}px; padding-right: ${mr}px; display: flex; flex-direction: column; justify-content: flex-end;">
+                        <div style="width: 100%;">${currentFooter}</div>
+                    </div>
+                </div>
+            `;
+        }).join('')}
+        ${isMobile ? `
+            <script>
+                window.onload = function() {
+                    window.print();
+                };
+            </script>
+        ` : ''}
+      </body>
+      </html>
+    `;
+
+    if (isMobile) {
+         // Mobile: Open new window directly to avoid popup blocking logic associated with timeouts
+         const printWindow = window.open('', '_blank');
+         if (printWindow) {
+             printWindow.document.open();
+             printWindow.document.write(htmlContent);
+             printWindow.document.close();
+             setIsPreparingPrint(false);
+             // Focus is good practice
+             printWindow.focus();
+         } else {
+             alert("Popup blocked. Please allow popups to print.");
+             setIsPreparingPrint(false);
+         }
+    } else {
+         // Desktop: Use hidden iframe to keep user in context
+         const iframe = document.createElement('iframe');
+         iframe.style.position = 'fixed';
+         iframe.style.right = '0';
+         iframe.style.bottom = '0';
+         iframe.style.width = '1px';
+         iframe.style.height = '1px';
+         iframe.style.border = '0';
+         iframe.style.opacity = '0.01';
+         iframe.style.pointerEvents = 'none';
+         iframe.style.zIndex = '-1';
+         
+         document.body.appendChild(iframe);
+         
+         const doc = iframe.contentWindow?.document;
+         if (doc) {
+             doc.open();
+             doc.write(htmlContent);
+             doc.close();
+             
+             iframe.onload = () => {
+                 try {
+                     iframe.contentWindow?.focus();
+                     iframe.contentWindow?.print();
+                 } catch (e) {
+                     console.error(e);
+                 } finally {
+                     setIsPreparingPrint(false);
+                     // Cleanup after delay
+                     setTimeout(() => {
+                         if (document.body.contains(iframe)) {
+                             document.body.removeChild(iframe);
+                         }
+                     }, 2000);
+                 }
+             };
+         } else {
+             setIsPreparingPrint(false);
+         }
+    }
   };
 
   return (
