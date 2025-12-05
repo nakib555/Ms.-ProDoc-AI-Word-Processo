@@ -1,3 +1,4 @@
+
 import React, { useLayoutEffect, useState, useRef, useEffect } from 'react';
 import ReactDOM from 'react-dom';
 
@@ -22,7 +23,7 @@ export const MenuPortal: React.FC<MenuPortalProps> = ({
 }) => {
   const isOpen = activeMenu === id;
   const menuRef = useRef<HTMLDivElement>(null);
-  const [position, setPosition] = useState<{top: number, left: number} | null>(null);
+  const [position, setPosition] = useState<{top: number, left: number, maxHeight?: string} | null>(null);
 
   // Helper to calculate position ensuring it stays on screen
   const calculatePosition = React.useCallback(() => {
@@ -43,14 +44,15 @@ export const MenuPortal: React.FC<MenuPortalProps> = ({
         return; // No anchor
     }
 
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    let maxHeightStr = '80vh';
+
     // 2. Adjust for viewport boundaries
     if (menuRef.current) {
         const menuRect = menuRef.current.getBoundingClientRect();
-        const viewportWidth = window.innerWidth;
-        const viewportHeight = window.innerHeight;
         
         // Horizontal Constraint (Right Edge)
-        // If menu goes off-screen right, align it to the right or shift left
         if (left + menuRect.width > viewportWidth - 10) {
               left = viewportWidth - menuRect.width - 10;
         }
@@ -58,17 +60,29 @@ export const MenuPortal: React.FC<MenuPortalProps> = ({
         // Horizontal Constraint (Left Edge)
         if (left < 10) left = 10;
 
-        // Vertical Constraint (Bottom Edge) -- optional, usually menus scroll
-        // But we can ensure max-height fits
+        // Vertical Constraint (Bottom Edge)
+        // If menu goes off-screen bottom, constrain height
+        const availableHeight = viewportHeight - top - 10;
+        
+        // If very little space below (< 200px) and more space above, consider flipping (if trigger height known)
+        // Without trigger height, we can't safely flip above. 
+        // Assuming ribbon menus drop down, we just constrain height to fit remaining viewport.
+        if (availableHeight < 150) {
+             // Fallback: If excessively small, maybe we allow overlap or force a min height with scroll
+             // But standard behavior is scroll within available
+             maxHeightStr = `${Math.max(150, availableHeight)}px`;
+        } else {
+             // Cap at available height or 80vh, whichever is smaller
+             maxHeightStr = `min(80vh, ${availableHeight}px)`;
+        }
     }
     
-    setPosition({ top, left });
+    setPosition({ top, left, maxHeight: maxHeightStr });
   }, [isOpen, triggerElement, menuPos]);
 
   // Use layout effect to measure and position before paint to avoid flickering
   useLayoutEffect(() => {
     if (isOpen) {
-       // Initial calculation
        calculatePosition();
     }
   }, [isOpen, calculatePosition, width, children]);
@@ -78,16 +92,14 @@ export const MenuPortal: React.FC<MenuPortalProps> = ({
      if (!isOpen) return;
      
      const handleEvent = (e: Event) => {
-         // Ignore scroll events originating from inside the menu to prevent re-renders interrupting scroll
          if (e.type === 'scroll' && menuRef.current && menuRef.current.contains(e.target as Node)) {
              return;
          }
-         // Use requestAnimationFrame for smoother performance on scroll
          requestAnimationFrame(calculatePosition);
      };
 
      window.addEventListener('resize', handleEvent);
-     window.addEventListener('scroll', handleEvent, true); // Capture phase for all scrolling containers
+     window.addEventListener('scroll', handleEvent, true);
 
      return () => {
          window.removeEventListener('resize', handleEvent);
@@ -100,12 +112,11 @@ export const MenuPortal: React.FC<MenuPortalProps> = ({
   const style: React.CSSProperties = {
       position: 'fixed',
       width: typeof width === 'number' ? `${width}px` : width,
-      maxHeight: '80vh',
+      maxHeight: position?.maxHeight || '80vh',
       overflowY: 'auto',
       zIndex: 9999,
       top: position ? position.top : (menuPos?.top || 0),
       left: position ? position.left : (menuPos?.left || 0),
-      // Prevent interaction until positioned to avoid accidental clicks during layout shift
       opacity: position ? 1 : 0, 
       pointerEvents: position ? 'auto' : 'none',
       transition: 'opacity 0.1s ease-out'

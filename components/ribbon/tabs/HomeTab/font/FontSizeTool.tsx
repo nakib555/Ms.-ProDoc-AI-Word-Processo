@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { ChevronDown, Plus, Minus } from 'lucide-react';
+import { ChevronDown, AArrowUp, AArrowDown } from 'lucide-react';
 import { useEditor } from '../../../../../contexts/EditorContext';
 import { useHomeTab } from '../HomeTabContext';
 import { MenuPortal } from '../../../common/MenuPortal';
@@ -135,21 +135,18 @@ export const FontSizeTool: React.FC = () => {
         <div className="w-[1px] h-4 bg-slate-200 mx-1" />
             
         <ToolBtn 
-            icon={Plus} 
+            icon={AArrowUp} 
             onClick={handleGrow} 
             title="Increase Font Size (Ctrl+>)" 
             className="text-slate-700" 
         />
-        <div className="text-[8px] absolute top-0.5 left-[55%] pointer-events-none">A</div> {/* Visual "Big A" */}
 
         <ToolBtn 
-            icon={Minus} 
+            icon={AArrowDown} 
             onClick={handleShrink} 
             title="Decrease Font Size (Ctrl+<)" 
             className="text-slate-700" 
         />
-        <div className="text-[6px] absolute top-1 left-[85%] pointer-events-none">A</div> {/* Visual "Small A" */}
-
     </>
   );
 };

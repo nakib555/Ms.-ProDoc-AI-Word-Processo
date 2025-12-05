@@ -1,5 +1,5 @@
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { ChevronDown, Check } from 'lucide-react';
 import { PageConfig, ApplyToType } from '../../../../../../types';
@@ -27,35 +27,57 @@ export const CompactInput = ({ label, value, onChange, suffix = '"' }: any) => (
 
 export const CompactSelect = ({ label, value, onChange, options, disabled = false }: any) => {
     const [isOpen, setIsOpen] = useState(false);
-    const [layout, setLayout] = useState<any>({ top: 0, left: 0, width: 0, maxHeight: 240 });
+    const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({});
+    const [animateClass, setAnimateClass] = useState('');
     const buttonRef = useRef<HTMLButtonElement>(null);
 
     const updateLayout = () => {
         if (buttonRef.current) {
             const rect = buttonRef.current.getBoundingClientRect();
             const viewportHeight = window.innerHeight;
-            const spaceBelow = viewportHeight - rect.bottom - 8;
-            const spaceAbove = rect.top - 8;
+            const viewportWidth = window.innerWidth;
+            const margin = 8;
             
-            const neededHeight = Math.min(options.length * 32 + 8, 240);
+            const availableSpaceBelow = viewportHeight - rect.bottom - margin;
+            const availableSpaceAbove = rect.top - margin;
             
-            if (spaceBelow >= neededHeight || spaceBelow > spaceAbove) {
-                setLayout({
-                    top: rect.bottom + 4,
-                    left: rect.left,
-                    width: rect.width,
-                    maxHeight: Math.min(240, spaceBelow),
-                    isUpwards: false
-                });
+            // Calculate estimated height: ~32px per item + ~10px padding
+            const contentHeight = options.length * 32 + 10;
+            const idealMaxHeight = 280; 
+
+            // Determine vertical position and height
+            let top: number | string = rect.bottom + 4;
+            let bottom: number | string = 'auto';
+            let maxHeight = Math.min(contentHeight, idealMaxHeight);
+            let animation = 'slide-in-from-top-1 origin-top';
+
+            // If not enough space below, check above
+            if (availableSpaceBelow < maxHeight && availableSpaceAbove > availableSpaceBelow) {
+                 top = 'auto';
+                 bottom = viewportHeight - rect.top + 4;
+                 // Constrain max height to available space above if needed
+                 maxHeight = Math.min(contentHeight, availableSpaceAbove, idealMaxHeight);
+                 animation = 'slide-in-from-bottom-1 origin-bottom';
             } else {
-                setLayout({
-                    bottom: viewportHeight - rect.top + 4,
-                    left: rect.left,
-                    width: rect.width,
-                    maxHeight: Math.min(240, spaceAbove),
-                    isUpwards: true
-                });
+                 // Constrain max height to available space below if needed
+                 maxHeight = Math.min(maxHeight, availableSpaceBelow);
             }
+
+            // Determine Horizontal Position (prevent overflow)
+            let left = rect.left;
+            if (left + rect.width > viewportWidth - margin) {
+                left = viewportWidth - rect.width - margin;
+            }
+            if (left < margin) left = margin;
+
+            setDropdownStyle({
+                top,
+                bottom,
+                left,
+                width: rect.width,
+                maxHeight: Math.max(100, maxHeight) // Ensure at least some visibility
+            });
+            setAnimateClass(animation);
         }
     };
 
@@ -64,15 +86,16 @@ export const CompactSelect = ({ label, value, onChange, options, disabled = fals
         if (disabled) return;
         
         if (!isOpen) {
-            updateLayout();
             setIsOpen(true);
+            // Layout will be updated by effect
         } else {
             setIsOpen(false);
         }
     };
 
-    useEffect(() => {
+    useLayoutEffect(() => {
         if (isOpen) {
+            updateLayout();
             window.addEventListener('resize', updateLayout);
             window.addEventListener('scroll', updateLayout, true);
         }
@@ -80,7 +103,7 @@ export const CompactSelect = ({ label, value, onChange, options, disabled = fals
             window.removeEventListener('resize', updateLayout);
             window.removeEventListener('scroll', updateLayout, true);
         };
-    }, [isOpen]);
+    }, [isOpen, options.length]);
 
     return (
         <div className={`flex flex-col gap-1.5 ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
@@ -99,14 +122,8 @@ export const CompactSelect = ({ label, value, onChange, options, disabled = fals
                 <>
                     <div className="fixed inset-0 z-[9998]" onClick={() => setIsOpen(false)} />
                     <div 
-                        className={`fixed z-[9999] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl overflow-y-auto scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-600 animate-in fade-in duration-100 flex flex-col py-1 ${layout.isUpwards ? 'slide-in-from-bottom-1 origin-bottom' : 'slide-in-from-top-1 origin-top'}`}
-                        style={{ 
-                            top: layout.top, 
-                            bottom: layout.bottom,
-                            left: layout.left, 
-                            width: layout.width,
-                            maxHeight: layout.maxHeight
-                        }}
+                        className={`fixed z-[9999] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl overflow-y-auto scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-600 animate-in fade-in duration-100 flex flex-col py-1 ${animateClass}`}
+                        style={dropdownStyle}
                     >
                         {options.map((opt: any) => (
                             <button

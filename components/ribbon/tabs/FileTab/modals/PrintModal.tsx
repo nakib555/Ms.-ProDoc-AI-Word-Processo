@@ -16,34 +16,82 @@ import { PageConfig, MarginPreset } from '../../../../../types';
 const PrintSelect = ({ label, value, onChange, options, icon: Icon, disabled, className = "" }: any) => {
     const [isOpen, setIsOpen] = useState(false);
     const triggerRef = useRef<HTMLButtonElement>(null);
-    const [coords, setCoords] = useState({ top: 0, left: 0, width: 0 });
+    const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({});
+    const [animateClass, setAnimateClass] = useState('');
+
+    const updateLayout = () => {
+        if (triggerRef.current) {
+            const rect = triggerRef.current.getBoundingClientRect();
+            const viewportHeight = window.innerHeight;
+            const viewportWidth = window.innerWidth;
+            const margin = 8;
+
+            const availableSpaceBelow = viewportHeight - rect.bottom - margin;
+            const availableSpaceAbove = rect.top - margin;
+            
+            // Estimate height: ~40px per item + padding
+            const contentHeight = options.length * 40 + 16;
+            const idealMaxHeight = 300;
+
+            let top: number | string = rect.bottom + 4;
+            let bottom: number | string = 'auto';
+            let maxHeight = Math.min(contentHeight, idealMaxHeight);
+            let animation = 'zoom-in-95 origin-top';
+
+            // Flip logic: if tight below but space above, flip up
+            if (availableSpaceBelow < 220 && availableSpaceAbove > availableSpaceBelow) {
+                top = 'auto';
+                bottom = viewportHeight - rect.top + 4;
+                maxHeight = Math.min(contentHeight, availableSpaceAbove, idealMaxHeight);
+                animation = 'zoom-in-95 origin-bottom';
+            } else {
+                // Cap max height to available space below
+                maxHeight = Math.min(maxHeight, Math.max(150, availableSpaceBelow));
+            }
+
+            // Horizontal constraint
+            let left = rect.left;
+            if (left + rect.width > viewportWidth - margin) {
+                left = viewportWidth - rect.width - margin;
+            }
+            if (left < margin) left = margin;
+
+            setDropdownStyle({
+                top,
+                bottom,
+                left,
+                width: rect.width,
+                maxHeight,
+                opacity: 1 // Make visible after position calc
+            });
+            setAnimateClass(animation);
+        }
+    };
+
+    useLayoutEffect(() => {
+        if (isOpen) {
+            updateLayout();
+            window.addEventListener('scroll', updateLayout, true); 
+            window.addEventListener('resize', updateLayout);
+            return () => {
+                window.removeEventListener('scroll', updateLayout, true);
+                window.removeEventListener('resize', updateLayout);
+            };
+        }
+    }, [isOpen, options.length]);
 
     const toggle = (e: React.MouseEvent) => {
         e.stopPropagation();
         if (disabled) return;
-        
-        if (!isOpen && triggerRef.current) {
-            const rect = triggerRef.current.getBoundingClientRect();
-            setCoords({
-                top: rect.bottom + 4,
-                left: rect.left,
-                width: rect.width
-            });
-        }
         setIsOpen(!isOpen);
     };
 
+    const close = () => setIsOpen(false);
+
     useEffect(() => {
         if (!isOpen) return;
-        const close = () => setIsOpen(false);
-        window.addEventListener('scroll', close, true); 
-        window.addEventListener('resize', close);
         window.addEventListener('click', close);
-        return () => {
-            window.removeEventListener('scroll', close, true);
-            window.removeEventListener('resize', close);
-            window.removeEventListener('click', close);
-        };
+        return () => window.removeEventListener('click', close);
     }, [isOpen]);
 
     const selectedLabel = options.find((o: any) => o.value === value)?.label || value;
@@ -68,12 +116,10 @@ const PrintSelect = ({ label, value, onChange, options, icon: Icon, disabled, cl
 
             {isOpen && createPortal(
                 <div 
-                    className="fixed z-[9999] bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 overflow-hidden animate-in fade-in zoom-in-95 duration-100 flex flex-col"
+                    className={`fixed z-[9999] bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 overflow-hidden animate-in fade-in duration-100 flex flex-col ${animateClass}`}
                     style={{ 
-                        top: coords.top, 
-                        left: coords.left, 
-                        width: coords.width,
-                        maxHeight: '300px'
+                        ...dropdownStyle,
+                        opacity: dropdownStyle.top || dropdownStyle.bottom ? 1 : 0
                     }}
                     onClick={(e) => e.stopPropagation()}
                 >

@@ -50,32 +50,69 @@ const ModelBadge = ({ type }: { type: 'pro' | 'flash' | 'lite' | 'preview' | 'ex
 
 const RichModelSelect = ({ value, onChange, options, disabled }: any) => {
     const [isOpen, setIsOpen] = useState(false);
-    const [position, setPosition] = useState({ top: 0, left: 0, width: 0 });
+    const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({});
+    const [animateClass, setAnimateClass] = useState('');
     const triggerRef = useRef<HTMLButtonElement>(null);
 
-    const updatePosition = () => {
+    const updateLayout = () => {
         if (triggerRef.current) {
             const rect = triggerRef.current.getBoundingClientRect();
-            setPosition({
-                top: rect.bottom + 4,
-                left: rect.left,
-                width: rect.width
+            const viewportHeight = window.innerHeight;
+            const viewportWidth = window.innerWidth;
+            const margin = 8;
+            
+            const availableSpaceBelow = viewportHeight - rect.bottom - margin;
+            const availableSpaceAbove = rect.top - margin;
+            
+            // Approximate height: ~60px per item + padding
+            const contentHeight = options.length * 60 + 16;
+            const idealMaxHeight = 350;
+
+            let top: number | string = rect.bottom + 4;
+            let bottom: number | string = 'auto';
+            let maxHeight = Math.min(contentHeight, idealMaxHeight);
+            let animation = 'zoom-in-95 origin-top';
+
+            // Flip upwards if space is constrained below but better above
+            if (availableSpaceBelow < maxHeight && availableSpaceAbove > availableSpaceBelow) {
+                 top = 'auto';
+                 bottom = viewportHeight - rect.top + 4;
+                 maxHeight = Math.min(contentHeight, availableSpaceAbove, idealMaxHeight);
+                 animation = 'zoom-in-95 origin-bottom';
+            } else {
+                 maxHeight = Math.min(maxHeight, availableSpaceBelow);
+            }
+
+            // Horizontal bounds
+            let left = rect.left;
+            if (left + rect.width > viewportWidth - margin) {
+                left = viewportWidth - rect.width - margin;
+            }
+            if (left < margin) left = margin;
+
+            setDropdownStyle({
+                top,
+                bottom,
+                left,
+                width: rect.width,
+                maxHeight,
+                opacity: 1
             });
+            setAnimateClass(animation);
         }
     };
 
     useLayoutEffect(() => {
         if (isOpen) {
-            updatePosition();
-            window.addEventListener('scroll', updatePosition, true);
-            window.addEventListener('resize', updatePosition);
-            
+            updateLayout();
+            window.addEventListener('scroll', updateLayout, true);
+            window.addEventListener('resize', updateLayout);
             return () => {
-                window.removeEventListener('scroll', updatePosition, true);
-                window.removeEventListener('resize', updatePosition);
+                window.removeEventListener('scroll', updateLayout, true);
+                window.removeEventListener('resize', updateLayout);
             };
         }
-    }, [isOpen]);
+    }, [isOpen, options.length]);
 
     const selectedOption = options.find((o: any) => o.id === value) || options[0];
 
@@ -96,7 +133,6 @@ const RichModelSelect = ({ value, onChange, options, disabled }: any) => {
                 ref={triggerRef}
                 onClick={() => {
                     if (!disabled) {
-                        if (!isOpen) updatePosition();
                         setIsOpen(!isOpen);
                     }
                 }}
@@ -118,13 +154,10 @@ const RichModelSelect = ({ value, onChange, options, disabled }: any) => {
                 <>
                     <div className="fixed inset-0 z-[9998]" onClick={() => setIsOpen(false)} />
                     <div 
-                        className="fixed z-[9999] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-100 flex flex-col"
+                        className={`fixed z-[9999] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl overflow-hidden animate-in fade-in duration-100 flex flex-col ${animateClass}`}
                         style={{ 
-                            top: position.top, 
-                            left: position.left, 
-                            width: position.width,
-                            maxHeight: '30vh', // Restrict height for mobile friendliness
-                            opacity: position.top === 0 ? 0 : 1 // Prevent flash at 0,0
+                           ...dropdownStyle,
+                           opacity: dropdownStyle.top || dropdownStyle.bottom ? 1 : 0 // Hide until positioned
                         }}
                     >
                         <div className="overflow-y-auto p-1 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700">
