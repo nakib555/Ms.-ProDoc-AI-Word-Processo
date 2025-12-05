@@ -14,7 +14,8 @@
     "@google/genai": "^1.30.0",
     "lucide-react": "^0.554.0",
     "react-virtualized-auto-sizer": "^1.0.24",
-    "html2pdf.js": "^0.10.1"
+    "html2pdf.js": "^0.10.1",
+    "pagedjs": "^0.4.3"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",
