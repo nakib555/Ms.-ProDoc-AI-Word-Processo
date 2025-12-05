@@ -64,6 +64,7 @@ class PageFrame {
       this.marginLeft += gutterPx;
     }
 
+    // Precision calculation for body dimensions
     this.bodyWidth = Math.max(0, this.width - (this.marginLeft + this.marginRight));
     this.bodyHeight = Math.max(0, this.height - (this.marginTop + this.marginBottom));
   }
@@ -77,7 +78,8 @@ class LayoutSandbox {
 
   constructor() {
     this.el = document.createElement('div');
-    this.el.className = 'prodoc-editor text-lg leading-loose text-slate-900'; 
+    this.el.className = 'prodoc-editor'; 
+    // EXACT match of editor CSS to ensure 1:1 measurement
     this.el.style.position = 'absolute';
     this.el.style.visibility = 'hidden';
     this.el.style.height = 'auto';
@@ -85,10 +87,15 @@ class LayoutSandbox {
     this.el.style.left = '-10000px';
     this.el.style.padding = '0';
     this.el.style.margin = '0';
+    // Font styles must match EditorPage styles
     this.el.style.fontFamily = 'Calibri, Inter, sans-serif';
+    this.el.style.fontSize = '11pt';
+    this.el.style.lineHeight = '1.5';
+    this.el.style.color = '#000000';
     this.el.style.wordWrap = 'break-word';
     this.el.style.overflowWrap = 'break-word';
     this.el.style.whiteSpace = 'pre-wrap';
+    this.el.style.boxSizing = 'border-box';
     
     document.body.appendChild(this.el);
   }
@@ -318,7 +325,8 @@ export const paginateContent = (html: string, initialConfig: PageConfig): Pagina
       // Measure
       const nodeH = sandbox.measure(node);
 
-      if (currentH + nodeH > currentFrame.bodyHeight + 0.5) {
+      // Margin of error for float precision
+      if (currentH + nodeH > currentFrame.bodyHeight + 1) {
           const remainingSpace = Math.max(0, currentFrame.bodyHeight - currentH);
           
           const split = splitBlock(node, remainingSpace, sandbox);
