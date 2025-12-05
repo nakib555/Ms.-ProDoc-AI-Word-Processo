@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect, useMemo, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { 
@@ -31,7 +32,6 @@ const PrintSelect = ({ label, value, onChange, options, icon: Icon, disabled, cl
             const availableSpaceBelow = viewportHeight - rect.bottom - margin;
             const availableSpaceAbove = rect.top - margin;
             
-            // Estimate height: ~40px per item + padding
             const contentHeight = options.length * 40 + 16;
             const idealMaxHeight = 300;
 
@@ -40,18 +40,15 @@ const PrintSelect = ({ label, value, onChange, options, icon: Icon, disabled, cl
             let maxHeight = Math.min(contentHeight, idealMaxHeight);
             let animation = 'zoom-in-95 origin-top';
 
-            // Flip logic: if tight below but space above, flip up
             if (availableSpaceBelow < 220 && availableSpaceAbove > availableSpaceBelow) {
                 top = 'auto';
                 bottom = viewportHeight - rect.top + 4;
                 maxHeight = Math.min(contentHeight, availableSpaceAbove, idealMaxHeight);
                 animation = 'zoom-in-95 origin-bottom';
             } else {
-                // Cap max height to available space below
                 maxHeight = Math.min(maxHeight, Math.max(150, availableSpaceBelow));
             }
 
-            // Horizontal constraint
             let left = rect.left;
             if (left + rect.width > viewportWidth - margin) {
                 left = viewportWidth - rect.width - margin;
@@ -64,7 +61,7 @@ const PrintSelect = ({ label, value, onChange, options, icon: Icon, disabled, cl
                 left,
                 width: rect.width,
                 maxHeight,
-                opacity: 1 // Make visible after position calc
+                opacity: 1
             });
             setAnimateClass(animation);
         }
@@ -145,7 +142,6 @@ const PrintSelect = ({ label, value, onChange, options, icon: Icon, disabled, cl
 };
 
 // --- Helper to render page content consistently ---
-// Note: This renders the PREVIEW (React components). The actual print uses generatePrintHTML.
 const getVerticalAlignStyle = (align: string): React.CSSProperties => {
   const style: React.CSSProperties = { display: 'flex', flexDirection: 'column' };
   let justifyContent: 'center' | 'flex-end' | 'space-between' | 'flex-start' = 'flex-start';
@@ -163,37 +159,52 @@ const renderPageContent = (
     scale: number
 ) => {
     const cfg = page.config;
-    const baseSize = PAGE_SIZES[cfg.size as string] || PAGE_SIZES['Letter'];
     
-    const widthPt = cfg.orientation === 'landscape' ? baseSize.height : baseSize.width;
-    const heightPt = cfg.orientation === 'landscape' ? baseSize.width : baseSize.height;
+    // Calculate dimensions in Inches
+    let widthIn = 0;
+    let heightIn = 0;
     
-    // Convert dimensions to pixels (96 DPI)
+    if (cfg.size === 'Custom' && cfg.customWidth && cfg.customHeight) {
+        widthIn = cfg.customWidth;
+        heightIn = cfg.customHeight;
+    } else {
+        const base = PAGE_SIZES[cfg.size as string] || PAGE_SIZES['Letter'];
+        widthIn = cfg.orientation === 'landscape' ? base.height / 96 : base.width / 96;
+        heightIn = cfg.orientation === 'landscape' ? base.width / 96 : base.height / 96;
+    }
+
+    // Margins in Inches
     const margins = {
-        top: cfg.margins.top * 96,
-        bottom: cfg.margins.bottom * 96,
-        left: cfg.margins.left * 96,
-        right: cfg.margins.right * 96,
-        gutter: (cfg.margins.gutter || 0) * 96
+        top: cfg.margins.top,
+        bottom: cfg.margins.bottom,
+        left: cfg.margins.left,
+        right: cfg.margins.right,
+        gutter: cfg.margins.gutter || 0
     };
     
-    // Gutter handling: If top, it adds to top. If left, it adds to left.
-    // EditorPage logic: getMargins handles this. Here we replicate simple logic.
     if (cfg.gutterPosition === 'top' && !['mirrorMargins', 'bookFold'].includes(cfg.multiplePages || '')) {
          margins.top += margins.gutter;
     } else {
          margins.left += margins.gutter;
     }
     
-    const headerDistPx = (cfg.headerDistance || 0.5) * 96;
-    const footerDistPx = (cfg.footerDistance || 0.5) * 96;
+    // Header/Footer Distances in Inches
+    const headerDistIn = cfg.headerDistance || 0.5;
+    const footerDistIn = cfg.footerDistance || 0.5;
 
-    const currentFooter = (footerContent || '').replace(/\[Page \d+\]/g, `[Page ${index + 1}]`)
-                        .replace(/<span class="page-number-placeholder">.*?<\/span>/g, `${index + 1}`);
+    // Placeholder Cleanup for Print/Preview
+    let printHeader = headerContent;
+    if (printHeader.includes('[Header]')) {
+        printHeader = printHeader.replace('[Header]', '');
+    }
+    
+    let printFooter = footerContent;
+    // Replace page number placeholder with actual index, but clean styling if it's default
+    printFooter = printFooter.replace(/\[Page \d+\]/g, `[Page ${index + 1}]`)
+                             .replace(/<span class="page-number-placeholder">.*?<\/span>/g, `${index + 1}`);
 
-    // We use a wrapper to reserve the space, and an inner div with transform to scale the content
-    const scaledWidth = widthPt * scale;
-    const scaledHeight = heightPt * scale;
+    const scaledWidth = widthIn * 96 * scale;
+    const scaledHeight = heightIn * 96 * scale;
     const verticalAlignStyle = getVerticalAlignStyle(cfg.verticalAlign);
 
     return (
@@ -208,14 +219,14 @@ const renderPageContent = (
             <div 
                 className="prodoc-page-sheet bg-white transition-transform duration-200 origin-top-left absolute top-0 left-0 overflow-hidden"
                 style={{
-                    width: widthPt,
-                    height: heightPt,
+                    width: `${widthIn}in`,
+                    height: `${heightIn}in`,
                     transform: `scale(${scale})`,
-                    // New Box Model
-                    paddingTop: `${margins.top}px`,
-                    paddingBottom: `${margins.bottom}px`,
-                    paddingLeft: `${margins.left}px`,
-                    paddingRight: `${margins.right}px`,
+                    // New Box Model using Physical Units
+                    paddingTop: `${margins.top}in`,
+                    paddingBottom: `${margins.bottom}in`,
+                    paddingLeft: `${margins.left}in`,
+                    paddingRight: `${margins.right}in`,
                     boxSizing: 'border-box'
                 }}
             >
@@ -224,24 +235,22 @@ const renderPageContent = (
                     className="absolute left-0 right-0 z-30"
                     style={{ 
                         top: 0, 
-                        height: `${margins.top}px`, // Fixed height to margin
-                        paddingTop: `${headerDistPx}px`, 
-                        paddingLeft: `${margins.left}px`, 
-                        paddingRight: `${margins.right}px` 
+                        height: `${margins.top}in`, 
+                        paddingTop: `${headerDistIn}in`, 
+                        paddingLeft: `${margins.left}in`, 
+                        paddingRight: `${margins.right}in` 
                     }}
                 >
                     <div 
                         className="prodoc-header w-full h-full"
-                        dangerouslySetInnerHTML={{__html: headerContent || ''}}
+                        dangerouslySetInnerHTML={{__html: printHeader || ''}}
                     />
                 </div>
                 
-                {/* Body Content - Relative Flow */}
+                {/* Body Content */}
                 <div 
                     className="relative w-full h-full overflow-hidden z-10"
-                    style={{ 
-                        ...verticalAlignStyle
-                    }}
+                    style={{ ...verticalAlignStyle }}
                 >
                     <div 
                         className="prodoc-editor w-full h-full outline-none text-lg leading-loose break-words"
@@ -259,10 +268,10 @@ const renderPageContent = (
                     className="absolute left-0 right-0 z-30"
                     style={{ 
                         bottom: 0, 
-                        height: `${margins.bottom}px`, 
-                        paddingBottom: `${footerDistPx}px`, 
-                        paddingLeft: `${margins.left}px`, 
-                        paddingRight: `${margins.right}px`,
+                        height: `${margins.bottom}in`, 
+                        paddingBottom: `${footerDistIn}in`, 
+                        paddingLeft: `${margins.left}in`, 
+                        paddingRight: `${margins.right}in`,
                         display: 'flex',
                         flexDirection: 'column',
                         justifyContent: 'flex-end'
@@ -270,7 +279,7 @@ const renderPageContent = (
                 >
                     <div 
                         className="prodoc-footer w-full"
-                        dangerouslySetInnerHTML={{__html: currentFooter}}
+                        dangerouslySetInnerHTML={{__html: printFooter}}
                     />
                 </div>
             </div>
@@ -298,12 +307,9 @@ const DesktopPrintPreview: React.FC<{
                 
                 const firstPageConfig = pages[0].config;
                 const baseSize = PAGE_SIZES[firstPageConfig.size as string] || PAGE_SIZES['Letter'];
+                const widthPx = firstPageConfig.orientation === 'landscape' ? baseSize.height : baseSize.width;
                 
-                const widthPt = firstPageConfig.orientation === 'landscape' ? baseSize.height : baseSize.width;
-                const docWidthPx = widthPt;
-                
-                // Desktop specific clamping
-                const newScale = Math.min(1.2, Math.max(0.5, availableWidth / docWidthPx));
+                const newScale = Math.min(1.2, Math.max(0.5, availableWidth / widthPx));
                 setScale(newScale);
             }
         };
@@ -342,7 +348,7 @@ const MobilePrintPreview: React.FC<{
     isVisible: boolean;
 }> = ({ pages, headerContent, footerContent, isPreparing, onPrint, onDownload, isVisible }) => {
     const containerRef = useRef<HTMLDivElement>(null);
-    const [scale, setScale] = useState(0); // Initialize at 0 to prevent flash
+    const [scale, setScale] = useState(0);
 
     useLayoutEffect(() => {
         if (!isVisible) return;
@@ -352,33 +358,25 @@ const MobilePrintPreview: React.FC<{
                 const containerWidth = containerRef.current.clientWidth;
                 if (containerWidth === 0) return;
 
-                const padding = 32; // Mobile padding (16px each side)
+                const padding = 32; 
                 const availableWidth = Math.max(0, containerWidth - padding);
                 
                 const firstPageConfig = pages[0].config;
                 const baseSize = PAGE_SIZES[firstPageConfig.size as string] || PAGE_SIZES['Letter'];
+                const widthPx = firstPageConfig.orientation === 'landscape' ? baseSize.height : baseSize.width;
+                const docWidthPx = widthPx || 816;
                 
-                const widthPt = firstPageConfig.orientation === 'landscape' ? baseSize.height : baseSize.width;
-                const docWidthPx = widthPt || 816; // Fallback width
-                
-                // Mobile specific clamping
                 const newScale = Math.min(0.85, availableWidth / docWidthPx);
                 if (newScale > 0) setScale(newScale);
             }
         };
 
-        // Immediate update
         updateScale();
-        
-        // Delayed updates to catch layout settling/transitions
         const t1 = setTimeout(updateScale, 50);
-        const t2 = setTimeout(updateScale, 300);
-        
         window.addEventListener('resize', updateScale);
         return () => {
             window.removeEventListener('resize', updateScale);
             clearTimeout(t1);
-            clearTimeout(t2);
         };
     }, [pages, isVisible]);
 
@@ -400,7 +398,6 @@ const MobilePrintPreview: React.FC<{
                  )}
             </div>
             
-            {/* Mobile Floating Action Buttons */}
             <div className="absolute bottom-6 right-6 z-30 flex flex-col gap-3">
                  <button 
                     onClick={onDownload}
@@ -444,27 +441,21 @@ const PrintSettingsPanel: React.FC<{
       });
     };
 
-    // Helper to format camelCase preset names to readable labels
     const formatPresetLabel = (preset: string) => {
-        // Handle common acronyms or specific cases
         if (preset === 'office2003') return 'Office 2003 Default';
         if (preset === 'apa') return 'APA Style';
         if (preset === 'mla') return 'MLA Style';
         if (preset === 'chicago') return 'Chicago Style';
-        
-        // Convert camelCase to Title Case with spaces
         const label = preset.replace(/([A-Z])/g, ' $1').trim();
         return label.charAt(0).toUpperCase() + label.slice(1) + " Margins";
     };
 
-    // Get real world dimensions for display
     const getDimensionsDisplay = () => {
         if (localConfig.size === 'Custom') {
              return `${localConfig.customWidth || 0} x ${localConfig.customHeight || 0} in`;
         }
         const format = PAPER_FORMATS.find(f => f.id === localConfig.size);
         if (format) {
-            // Swap if landscape
             if (localConfig.orientation === 'landscape') {
                 return `${format.height} x ${format.width}`;
             }
@@ -475,7 +466,6 @@ const PrintSettingsPanel: React.FC<{
 
     return (
         <div className="flex flex-col h-full bg-white dark:bg-slate-900">
-            {/* Desktop Header */}
             {!isMobile && (
                 <div className="flex items-center gap-3 px-6 py-5 border-b border-slate-100 dark:border-slate-800 shrink-0">
                      <button 
@@ -490,7 +480,6 @@ const PrintSettingsPanel: React.FC<{
                 </div>
             )}
 
-            {/* Scrollable Settings */}
             <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6 custom-scrollbar">
                 <div className="space-y-4">
                     <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Printer</h3>
@@ -558,11 +547,9 @@ const PrintSettingsPanel: React.FC<{
                     />
                 </div>
                 
-                {/* Mobile Spacer for FAB */}
                 {isMobile && <div className="h-20"></div>}
             </div>
 
-            {/* Desktop Footer Action */}
             {!isMobile && (
                 <div className="p-5 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 shrink-0 flex flex-col gap-3">
                     <button 
@@ -626,13 +613,11 @@ export const PrintModal: React.FC = () => {
         w = base.width / 96;
         h = base.height / 96;
     }
-    // Swap if landscape to get physical W x H
     return cfg.orientation === 'landscape' ? { w: h, h: w } : { w, h };
   };
 
   const generatePrintHTML = () => {
      const dims = getPageDimensionsInInches(localConfig);
-     // CSS @page rule strictly requires dimensions to force printer scaling
      const cssSize = `${dims.w}in ${dims.h}in`;
 
      const printStyles = `
@@ -652,19 +637,18 @@ export const PrintModal: React.FC = () => {
             }
             @page { 
                 size: ${cssSize}; 
-                margin: 0mm; /* Crucial for full bleed / exact alignment */
+                margin: 0mm; 
             }
             * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         }
         
-        /* Content Styles for both Print and PDF Generation */
         .print-page { 
             position: relative; 
             overflow: hidden; 
             margin: 0 auto; 
             page-break-after: always; 
             background: white;
-            box-sizing: border-box; /* Padding creates margins */
+            box-sizing: border-box;
         }
         .print-page:last-child { page-break-after: auto; }
 
@@ -680,7 +664,6 @@ export const PrintModal: React.FC = () => {
             z-index: 5; 
         }
         
-        /* Matching EditorPage Styles */
         .prodoc-editor { 
             font-size: 11pt; 
             line-height: 1.5; 
@@ -704,46 +687,56 @@ export const PrintModal: React.FC = () => {
         .equation-handle, .equation-dropdown { display: none !important; }
     `;
 
+    // Placeholder Cleaning Logic
+    let cleanHeader = headerContent;
+    if (cleanHeader.includes('[Header]')) {
+        cleanHeader = cleanHeader.replace('[Header]', '');
+    }
+
+    let cleanFooter = footerContent;
+    // Replace page placeholder with number, remove color style if needed
+    // Assuming page replacement is handled per page iteration below
+    
     const pagesHtml = previewPages.map((page, index) => {
         const cfg = page.config;
-        const baseSize = PAGE_SIZES[cfg.size as string] || PAGE_SIZES['Letter'];
-        let widthPt = cfg.orientation === 'landscape' ? baseSize.height : baseSize.width;
-        let heightPt = cfg.orientation === 'landscape' ? baseSize.width : baseSize.height;
         
-        const mt = cfg.margins.top * 96;
-        const mb = cfg.margins.bottom * 96;
-        const ml = cfg.margins.left * 96;
-        const mr = cfg.margins.right * 96;
-        const hd = (cfg.headerDistance || 0.5) * 96;
-        const fd = (cfg.footerDistance || 0.5) * 96;
+        // Dimensions & Margins in Inches
+        const dims = getPageDimensionsInInches(cfg);
+        const mt = cfg.margins.top;
+        const mb = cfg.margins.bottom;
+        const ml = cfg.margins.left;
+        const mr = cfg.margins.right;
+        const hd = cfg.headerDistance || 0.5;
+        const fd = cfg.footerDistance || 0.5;
         
-        // Gutter adjustment for padding
         let paddingTop = mt;
         let paddingLeft = ml;
         if (cfg.gutterPosition === 'top' && !['mirrorMargins', 'bookFold'].includes(cfg.multiplePages || '')) {
-             paddingTop += (cfg.margins.gutter || 0) * 96;
+             paddingTop += (cfg.margins.gutter || 0);
         } else {
-             paddingLeft += (cfg.margins.gutter || 0) * 96;
+             paddingLeft += (cfg.margins.gutter || 0);
         }
 
-        const currentFooter = (footerContent || '').replace(/\[Page \d+\]/g, `[Page ${index + 1}]`).replace(/<span class="page-number-placeholder">.*?<\/span>/g, `${index + 1}`);
+        const currentFooter = cleanFooter.replace(/\[Page \d+\]/g, `[Page ${index + 1}]`)
+                                         .replace(/<span class="page-number-placeholder">.*?<\/span>/g, `${index + 1}`);
         
         let verticalAlignStyle = "display: flex; flex-direction: column; justify-content: flex-start;";
         if (cfg.verticalAlign === 'center') verticalAlignStyle = "display: flex; flex-direction: column; justify-content: center;";
         else if (cfg.verticalAlign === 'bottom') verticalAlignStyle = "display: flex; flex-direction: column; justify-content: flex-end;";
         else if (cfg.verticalAlign === 'justify') verticalAlignStyle = "display: flex; flex-direction: column; justify-content: space-between;";
 
+        // Using physical units (in) directly in style strings
         return `
-            <div class="print-page" style="width: ${widthPt}px; height: ${heightPt}px; padding: ${paddingTop}px ${mr}px ${mb}px ${paddingLeft}px;">
-                <div class="print-header" style="height: ${mt}px; top: 0; left: 0; right: 0; padding-top: ${hd}px; padding-left: ${paddingLeft}px; padding-right: ${mr}px;">
-                    <div class="prodoc-header">${headerContent || ''}</div>
+            <div class="print-page" style="width: ${dims.w}in; height: ${dims.h}in; padding: ${paddingTop}in ${mr}in ${mb}in ${paddingLeft}in;">
+                <div class="print-header" style="height: ${mt}in; top: 0; left: 0; right: 0; padding-top: ${hd}in; padding-left: ${paddingLeft}in; padding-right: ${mr}in;">
+                    <div class="prodoc-header">${cleanHeader}</div>
                 </div>
                 
                 <div class="print-content" style="${verticalAlignStyle}">
                     <div class="prodoc-editor" style="min-height: 100%; ${cfg.verticalAlign === 'justify' ? 'flex: 1 1 auto;' : ''}">${page.html}</div>
                 </div>
 
-                <div class="print-footer" style="height: ${mb}px; bottom: 0; left: 0; right: 0; padding-bottom: ${fd}px; padding-left: ${paddingLeft}px; padding-right: ${mr}px; display: flex; flex-direction: column; justify-content: flex-end;">
+                <div class="print-footer" style="height: ${mb}in; bottom: 0; left: 0; right: 0; padding-bottom: ${fd}in; padding-left: ${paddingLeft}in; padding-right: ${mr}in; display: flex; flex-direction: column; justify-content: flex-end;">
                     <div class="prodoc-footer">${currentFooter}</div>
                 </div>
             </div>
@@ -795,11 +788,9 @@ export const PrintModal: React.FC = () => {
       const { html, styles } = generatePrintHTML();
       const dims = getPageDimensionsInInches(localConfig);
       
-      // Create a temporary container specifically for PDF generation
       const container = document.createElement('div');
       container.innerHTML = `<style>${styles} .print-page { margin: 0; overflow: hidden; }</style>${html}`;
       
-      // Configure html2pdf options with precise units
       const opt = {
         margin: 0,
         filename: `${documentTitle || 'document'}.pdf`,
@@ -813,10 +804,7 @@ export const PrintModal: React.FC = () => {
         },
         jsPDF: { 
             unit: 'in', 
-            // Explicitly set format to calculated inches [width, height]
             format: [dims.w, dims.h],
-            // Use portrait because we are providing WxH directly. 
-            // jsPDF will create a page of size WxH.
             orientation: 'portrait' 
         }
       };
@@ -836,7 +824,6 @@ export const PrintModal: React.FC = () => {
         className="flex flex-col md:flex-row w-full h-full bg-white dark:bg-slate-950 overflow-hidden md:rounded-2xl"
         onClick={(e) => e.stopPropagation()}
     >
-        {/* Mobile Header & Tabs */}
         {isMobile && (
             <div className="flex flex-col bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 shrink-0 z-30">
                 <div className="flex items-center justify-between px-4 py-3">
@@ -868,7 +855,6 @@ export const PrintModal: React.FC = () => {
             </div>
         )}
 
-        {/* Left Sidebar: Settings */}
         <div className={`
             w-full md:w-[360px] flex-col border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0 z-20 shadow-[4px_0_24px_rgba(0,0,0,0.02)] h-full
             ${isMobile ? (mobileTab === 'settings' ? 'flex' : 'hidden') : 'flex'}
@@ -886,7 +872,6 @@ export const PrintModal: React.FC = () => {
             />
         </div>
 
-        {/* Right Area: Preview */}
         <div className={`
             flex-1 bg-[#525659] dark:bg-slate-950 relative overflow-hidden flex flex-col
             ${isMobile ? (mobileTab === 'preview' ? 'flex' : 'hidden') : 'flex'}
