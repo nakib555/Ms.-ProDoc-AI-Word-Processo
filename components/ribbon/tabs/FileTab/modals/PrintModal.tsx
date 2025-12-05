@@ -12,7 +12,7 @@ import { paginateContent } from '../../../../../utils/layoutEngine';
 import { PAGE_SIZES, MARGIN_PRESETS, PAPER_FORMATS } from '../../../../../constants';
 import { PageConfig, MarginPreset } from '../../../../../types';
 // @ts-ignore
-import html2pdf from 'html2pdf.js';
+import { Previewer } from 'pagedjs';
 
 // --- Shared UI Components ---
 
@@ -199,7 +199,7 @@ const renderPageContent = (
     }
     
     let printFooter = footerContent;
-    // Replace page number placeholder with actual index, but clean styling if it's default
+    // Replace page number placeholder with actual index
     printFooter = printFooter.replace(/\[Page \d+\]/g, `[Page ${index + 1}]`)
                              .replace(/<span class="page-number-placeholder">.*?<\/span>/g, `${index + 1}`);
 
@@ -344,9 +344,8 @@ const MobilePrintPreview: React.FC<{
     footerContent: string;
     isPreparing: boolean;
     onPrint: () => void;
-    onDownload: () => void;
     isVisible: boolean;
-}> = ({ pages, headerContent, footerContent, isPreparing, onPrint, onDownload, isVisible }) => {
+}> = ({ pages, headerContent, footerContent, isPreparing, onPrint, isVisible }) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const [scale, setScale] = useState(0);
 
@@ -400,14 +399,6 @@ const MobilePrintPreview: React.FC<{
             
             <div className="absolute bottom-6 right-6 z-30 flex flex-col gap-3">
                  <button 
-                    onClick={onDownload}
-                    disabled={isPreparing}
-                    className="w-12 h-12 bg-white text-slate-700 rounded-full shadow-lg flex items-center justify-center hover:bg-slate-50 active:scale-90 transition-all border border-slate-200"
-                    title="Save as PDF"
-                 >
-                     <Download size={20} />
-                 </button>
-                 <button 
                     onClick={onPrint}
                     disabled={isPreparing}
                     className="w-14 h-14 bg-blue-600 text-white rounded-full shadow-[0_8px_20px_rgba(37,99,235,0.4)] flex items-center justify-center hover:bg-blue-700 active:scale-90 transition-all border-2 border-white/20 backdrop-blur-sm"
@@ -425,11 +416,10 @@ const PrintSettingsPanel: React.FC<{
     copies: number;
     setCopies: (c: number) => void;
     onPrint: () => void;
-    onDownload: () => void;
     isPreparing: boolean;
     closeModal: () => void;
     isMobile?: boolean;
-}> = ({ localConfig, setLocalConfig, copies, setCopies, onPrint, onDownload, isPreparing, closeModal, isMobile }) => {
+}> = ({ localConfig, setLocalConfig, copies, setCopies, onPrint, isPreparing, closeModal, isMobile }) => {
     
     const handleSettingChange = (key: keyof PageConfig | 'marginPreset', value: any) => {
       setLocalConfig(prev => {
@@ -558,15 +548,7 @@ const PrintSettingsPanel: React.FC<{
                         className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-base shadow-lg shadow-blue-200/50 dark:shadow-none transition-all flex items-center justify-center gap-3 disabled:opacity-70 active:scale-[0.98]"
                     >
                         {isPreparing ? <Loader2 className="animate-spin" size={20}/> : <Printer size={20}/>}
-                        <span>{isPreparing ? 'Preparing...' : 'Print'}</span>
-                    </button>
-                    <button 
-                        onClick={onDownload}
-                        disabled={isPreparing}
-                        className="w-full py-2.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 rounded-xl font-medium text-sm transition-all flex items-center justify-center gap-2 disabled:opacity-70 active:scale-[0.98]"
-                    >
-                        <Download size={16}/>
-                        <span>Save as PDF</span>
+                        <span>{isPreparing ? 'Preparing...' : 'Print / Save as PDF'}</span>
                     </button>
                 </div>
             )}
@@ -594,7 +576,7 @@ export const PrintModal: React.FC = () => {
       return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Update preview when settings change
+  // Update internal preview (using layoutEngine for fast feedback) when settings change
   useEffect(() => {
     const timer = setTimeout(() => {
         const result = paginateContent(content, localConfig);
@@ -603,218 +585,135 @@ export const PrintModal: React.FC = () => {
     return () => clearTimeout(timer);
   }, [content, localConfig]);
 
-  const getPageDimensionsInInches = (cfg: PageConfig) => {
-    let w = 0, h = 0;
-    if (cfg.size === 'Custom' && cfg.customWidth && cfg.customHeight) {
-        w = cfg.customWidth;
-        h = cfg.customHeight;
-    } else {
-        const base = PAGE_SIZES[cfg.size as string] || PAGE_SIZES['Letter'];
-        w = base.width / 96;
-        h = base.height / 96;
-    }
-    return cfg.orientation === 'landscape' ? { w: h, h: w } : { w, h };
-  };
-
-  const generatePrintHTML = () => {
-     const dims = getPageDimensionsInInches(localConfig);
-     const cssSize = `${dims.w}in ${dims.h}in`;
-
-     const printStyles = `
-        @media print {
-            body > *:not(#prodoc-print-container) { display: none !important; }
-            body { background: white; height: auto; overflow: visible; margin: 0; }
-            #prodoc-print-container { 
-                display: block !important; 
-                position: absolute !important; 
-                top: 0 !important; 
-                left: 0 !important; 
-                width: 100% !important;
-                margin: 0 !important;
-                padding: 0 !important;
-                background: white !important;
-                z-index: 2147483647 !important;
-            }
-            @page { 
-                size: ${cssSize}; 
-                margin: 0mm; 
-            }
-            * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-        }
-        
-        .print-page { 
-            position: relative; 
-            overflow: hidden; 
-            margin: 0 auto; 
-            page-break-after: always; 
-            background: white;
-            box-sizing: border-box;
-        }
-        .print-page:last-child { page-break-after: auto; }
-
-        .print-header, .print-footer { position: absolute; left: 0; right: 0; overflow: hidden; z-index: 10; }
-        .print-header { top: 0; }
-        .print-footer { bottom: 0; }
-        
-        .print-content { 
-            position: relative;
-            width: 100%;
-            height: 100%;
-            overflow: hidden; 
-            z-index: 5; 
-        }
-        
-        .prodoc-editor { 
-            font-size: 11pt; 
-            line-height: 1.5; 
-            white-space: pre-wrap; 
-            word-wrap: break-word; 
-            font-family: 'Calibri', 'Inter', sans-serif; 
-            color: black;
-        }
-        .prodoc-editor p { margin: 0; }
-        
-        .prodoc-header, .prodoc-footer {
-             width: 100%; 
-             min-height: 100%;
-             font-family: 'Inter', sans-serif;
-        }
-
-        img { max-width: 100%; }
-        table { border-collapse: collapse; width: 100%; }
-        td, th { border: 1px solid #000; padding: 4px 8px; vertical-align: top; }
-        
-        .equation-handle, .equation-dropdown { display: none !important; }
-    `;
-
-    // Placeholder Cleaning Logic
-    let cleanHeader = headerContent;
-    if (cleanHeader.includes('[Header]')) {
-        cleanHeader = cleanHeader.replace('[Header]', '');
-    }
-
-    let cleanFooter = footerContent;
-    // Replace page placeholder with number, remove color style if needed
-    // Assuming page replacement is handled per page iteration below
-    
-    const pagesHtml = previewPages.map((page, index) => {
-        const cfg = page.config;
-        
-        // Dimensions & Margins in Inches
-        const dims = getPageDimensionsInInches(cfg);
-        const mt = cfg.margins.top;
-        const mb = cfg.margins.bottom;
-        const ml = cfg.margins.left;
-        const mr = cfg.margins.right;
-        const hd = cfg.headerDistance || 0.5;
-        const fd = cfg.footerDistance || 0.5;
-        
-        let paddingTop = mt;
-        let paddingLeft = ml;
-        if (cfg.gutterPosition === 'top' && !['mirrorMargins', 'bookFold'].includes(cfg.multiplePages || '')) {
-             paddingTop += (cfg.margins.gutter || 0);
-        } else {
-             paddingLeft += (cfg.margins.gutter || 0);
-        }
-
-        const currentFooter = cleanFooter.replace(/\[Page \d+\]/g, `[Page ${index + 1}]`)
-                                         .replace(/<span class="page-number-placeholder">.*?<\/span>/g, `${index + 1}`);
-        
-        let verticalAlignStyle = "display: flex; flex-direction: column; justify-content: flex-start;";
-        if (cfg.verticalAlign === 'center') verticalAlignStyle = "display: flex; flex-direction: column; justify-content: center;";
-        else if (cfg.verticalAlign === 'bottom') verticalAlignStyle = "display: flex; flex-direction: column; justify-content: flex-end;";
-        else if (cfg.verticalAlign === 'justify') verticalAlignStyle = "display: flex; flex-direction: column; justify-content: space-between;";
-
-        // Using physical units (in) directly in style strings
-        return `
-            <div class="print-page" style="width: ${dims.w}in; height: ${dims.h}in; padding: ${paddingTop}in ${mr}in ${mb}in ${paddingLeft}in;">
-                <div class="print-header" style="height: ${mt}in; top: 0; left: 0; right: 0; padding-top: ${hd}in; padding-left: ${paddingLeft}in; padding-right: ${mr}in;">
-                    <div class="prodoc-header">${cleanHeader}</div>
-                </div>
-                
-                <div class="print-content" style="${verticalAlignStyle}">
-                    <div class="prodoc-editor" style="min-height: 100%; ${cfg.verticalAlign === 'justify' ? 'flex: 1 1 auto;' : ''}">${page.html}</div>
-                </div>
-
-                <div class="print-footer" style="height: ${mb}in; bottom: 0; left: 0; right: 0; padding-bottom: ${fd}in; padding-left: ${paddingLeft}in; padding-right: ${mr}in; display: flex; flex-direction: column; justify-content: flex-end;">
-                    <div class="prodoc-footer">${currentFooter}</div>
-                </div>
-            </div>
-        `;
-    }).join('');
-
-    return { html: pagesHtml, styles: printStyles };
-  };
-
-  const handlePrint = () => {
-    setIsPreparingPrint(true);
-    
-    const { html, styles } = generatePrintHTML();
-
-    const container = document.createElement('div');
-    container.id = 'prodoc-print-container';
-    container.innerHTML = html;
-    document.body.appendChild(container);
-
-    const styleEl = document.createElement('style');
-    styleEl.id = 'prodoc-print-styles';
-    styleEl.innerHTML = styles;
-    document.head.appendChild(styleEl);
-
-    setTimeout(() => {
-        const cleanup = () => {
-            if (document.body.contains(container)) document.body.removeChild(container);
-            if (document.head.contains(styleEl)) document.head.removeChild(styleEl);
-            setIsPreparingPrint(false);
-            window.removeEventListener('afterprint', cleanup);
-        };
-
-        window.addEventListener('afterprint', cleanup);
-        
-        try {
-            window.print();
-        } catch (e) {
-            console.error("Print failed", e);
-            cleanup();
-        }
-
-        setTimeout(cleanup, 1000); 
-    }, 100);
-  };
-
-  const handleDownloadPdf = async () => {
+  // Paged.js Print Implementation
+  const handlePagedJsPrint = async () => {
       setIsPreparingPrint(true);
-      
-      const { html, styles } = generatePrintHTML();
-      const dims = getPageDimensionsInInches(localConfig);
-      
-      const container = document.createElement('div');
-      container.innerHTML = `<style>${styles} .print-page { margin: 0; overflow: hidden; }</style>${html}`;
-      
-      const opt = {
-        margin: 0,
-        filename: `${documentTitle || 'document'}.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { 
-            scale: 2, 
-            useCORS: true, 
-            logging: false,
-            scrollY: 0,
-            letterRendering: true
-        },
-        jsPDF: { 
-            unit: 'in', 
-            format: [dims.w, dims.h],
-            orientation: 'portrait' 
-        }
-      };
 
       try {
-          await html2pdf().set(opt).from(container).save();
-      } catch (error) {
-          console.error("PDF Generation Failed", error);
-          alert("Failed to generate PDF. Please try using the Print option and Save as PDF instead.");
+          // 1. Create container for Paged.js and hide everything else
+          const printContainer = document.createElement('div');
+          printContainer.id = 'paged-print-container';
+          document.body.classList.add('printing-mode');
+          document.body.appendChild(printContainer);
+
+          // 2. Generate CSS for Paged.js based on localConfig
+          const { size, orientation, margins } = localConfig;
+          
+          // Determine precise size string
+          let sizeStr = `${size} ${orientation}`;
+          if (size === 'Custom' && localConfig.customWidth && localConfig.customHeight) {
+              sizeStr = `${localConfig.customWidth}in ${localConfig.customHeight}in`;
+          } else {
+              // If it's a standard size, Paged.js usually recognizes it, but we can be explicit if needed.
+              // Using ID from constants which are standard names (Letter, A4, etc.)
+              // Add orientation
+              sizeStr = `${size} ${orientation}`;
+          }
+
+          const css = `
+              @page {
+                  size: ${sizeStr};
+                  margin-top: ${margins.top}in;
+                  margin-bottom: ${margins.bottom}in;
+                  margin-left: ${margins.left}in;
+                  margin-right: ${margins.right}in;
+                  
+                  @top-center {
+                      content: element(header);
+                  }
+                  @bottom-center {
+                      content: element(footer);
+                  }
+              }
+
+              .pagedjs-header {
+                  position: running(header);
+                  width: 100%;
+              }
+
+              .pagedjs-footer {
+                  position: running(footer);
+                  width: 100%;
+              }
+
+              /* Ensure content typography matches editor */
+              .paged-content {
+                  font-family: 'Calibri', 'Inter', sans-serif;
+                  font-size: 11pt;
+                  line-height: 1.5;
+                  color: black;
+              }
+              
+              /* Styles for tables, images, etc. */
+              .paged-content table { border-collapse: collapse; width: 100%; margin: 1em 0; }
+              .paged-content td, .paged-content th { border: 1px solid #000; padding: 4px 8px; }
+              .paged-content img { max-width: 100%; }
+              
+              /* Hide math tools in print */
+              .equation-handle, .equation-dropdown { display: none !important; }
+              
+              /* Force breaks */
+              .prodoc-page-break { break-after: page; height: 0; margin: 0; border: none; }
+          `;
+
+          // 3. Clean up Header/Footer HTML
+          let cleanHeader = headerContent.replace('[Header]', '');
+          let cleanFooter = footerContent; // Page numbers are handled by Paged.js via CSS counters usually, but here we inject HTML.
+          // Paged.js doesn't auto-increment HTML content in running elements easily for each page unless using CSS counters.
+          // Simple fix: If footer has a page number placeholder, use CSS counter
+          if (cleanFooter.includes('page-number-placeholder')) {
+               // Replace the span content with CSS counter
+               // Note: 'content: counter(page)' works in CSS content property, not easily inside HTML structure unless using ::after
+               // We'll try a CSS approach for the placeholder span.
+               cleanFooter = cleanFooter.replace(/<span class="page-number-placeholder">.*?<\/span>/g, '<span class="pagedjs-page-number"></span>');
+          }
+
+          // Add dynamic CSS for page number
+          const pageNumCss = `
+             .pagedjs-page-number::after {
+                 content: counter(page);
+             }
+          `;
+
+          // 4. Build HTML Structure
+          const htmlContent = `
+              <div class="pagedjs-header">${cleanHeader}</div>
+              <div class="pagedjs-footer">${cleanFooter}</div>
+              <div class="paged-content">
+                  ${content}
+              </div>
+          `;
+
+          // 5. Run Previewer
+          const previewer = new Previewer();
+          
+          // We pass the CSS as a style element in the "stylesheets" array or just inject it?
+          // Previewer accepts an array of stylesheet URLs or style elements.
+          // We'll create a temporary style element.
+          const styleEl = document.createElement('style');
+          styleEl.innerHTML = css + pageNumCss;
+          document.head.appendChild(styleEl);
+
+          // This renders the paginated content into printContainer
+          await previewer.preview(htmlContent, [], printContainer);
+
+          // 6. Trigger Print
+          window.print();
+
+          // 7. Cleanup happens in finally block, but we should wait for print dialog to close?
+          // Browser behavior varies. We'll cleanup immediately after the blocking call returns (or async).
+          
+          // Remove style element
+          if(document.head.contains(styleEl)) document.head.removeChild(styleEl);
+
+      } catch (e) {
+          console.error("Paged.js Print Error:", e);
+          alert("Failed to prepare print layout.");
       } finally {
+          // Remove container and class
+          document.body.classList.remove('printing-mode');
+          const container = document.getElementById('paged-print-container');
+          if (container) container.remove();
           setIsPreparingPrint(false);
       }
   };
@@ -864,8 +763,8 @@ export const PrintModal: React.FC = () => {
                 setLocalConfig={setLocalConfig}
                 copies={copies}
                 setCopies={setCopies}
-                onPrint={handlePrint}
-                onDownload={handleDownloadPdf}
+                onPrint={handlePagedJsPrint}
+                onDownload={handlePagedJsPrint} // Reuse print logic for PDF download via browser
                 isPreparing={isPreparingPrint}
                 closeModal={closeModal}
                 isMobile={isMobile}
@@ -882,8 +781,7 @@ export const PrintModal: React.FC = () => {
                     headerContent={headerContent}
                     footerContent={footerContent}
                     isPreparing={isPreparingPrint}
-                    onPrint={handlePrint}
-                    onDownload={handleDownloadPdf}
+                    onPrint={handlePagedJsPrint}
                     isVisible={mobileTab === 'preview'}
                 />
             ) : (
