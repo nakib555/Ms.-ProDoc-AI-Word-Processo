@@ -125,8 +125,9 @@ export const useMathLive = (content: string, containerRef: React.RefObject<HTMLE
                 // If prev is a text node ending with ZWS, jump before it
                 if (prevNode && prevNode.nodeType === Node.TEXT_NODE && prevNode.textContent?.endsWith('\u200B')) {
                     const len = prevNode.textContent!.length;
-                    range.setStart(prevNode, len - 1);
-                    range.setEnd(prevNode, len - 1);
+                    const safeOffset = Math.max(0, len - 1); // Safe guard against 0-length text node
+                    range.setStart(prevNode, safeOffset);
+                    range.setEnd(prevNode, safeOffset);
                 } else {
                     range.setStartBefore(wrapper);
                     range.setEndBefore(wrapper);

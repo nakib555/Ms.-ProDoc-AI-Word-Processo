@@ -192,7 +192,10 @@ const setCursorInNode = (root: HTMLElement, offset: number) => {
         if (node.nodeType === Node.TEXT_NODE) {
             const len = (node.nodeValue || "").length;
             if (currentCount + len >= offset) {
-                range.setStart(node, offset - currentCount);
+                const localOffset = offset - currentCount;
+                // Guard against negative offsets or out of bounds due to miscalculation
+                const safeOffset = Math.max(0, Math.min(len, localOffset));
+                range.setStart(node, safeOffset);
                 range.collapse(true);
                 found = true;
                 return;
