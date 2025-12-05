@@ -464,12 +464,27 @@ export const PrintModal: React.FC = () => {
   const handlePrint = () => {
     setIsPreparingPrint(true);
     
-    setTimeout(() => {
-        const printWindow = window.open('', '_blank');
-        if (!printWindow) {
-            alert("Please allow popups to print");
-            setIsPreparingPrint(false);
-            return;
+    // Use requestAnimationFrame to allow UI update (spinner) before heavy lifting
+    requestAnimationFrame(() => {
+        // Create a hidden iframe
+        const iframe = document.createElement('iframe');
+        iframe.style.position = 'fixed';
+        iframe.style.right = '0';
+        iframe.style.bottom = '0';
+        iframe.style.width = '0';
+        iframe.style.height = '0';
+        iframe.style.border = '0';
+        // Using visibility hidden is safer for some rendering engines than display:none
+        iframe.style.visibility = 'hidden'; 
+        
+        document.body.appendChild(iframe);
+        
+        const doc = iframe.contentWindow?.document;
+        if (!doc) {
+             alert("Printing failed: Could not create print context.");
+             setIsPreparingPrint(false);
+             document.body.removeChild(iframe);
+             return;
         }
 
         const htmlContent = `
@@ -525,19 +540,35 @@ export const PrintModal: React.FC = () => {
                     </div>
                 `;
             }).join('')}
-            <script>
-                window.onload = function() { 
-                    setTimeout(() => { window.print(); window.close(); }, 500); 
-                };
-            </script>
           </body>
           </html>
         `;
 
-        printWindow.document.write(htmlContent);
-        printWindow.document.close();
-        setIsPreparingPrint(false);
-    }, 500);
+        doc.open();
+        doc.write(htmlContent);
+        doc.close();
+
+        // Wait for resources (images, fonts) to load before printing
+        iframe.onload = () => {
+            setTimeout(() => {
+                try {
+                    iframe.contentWindow?.focus();
+                    iframe.contentWindow?.print();
+                } catch (e) {
+                    console.error("Print error", e);
+                    alert("Problem printing the page. Please try again.");
+                } finally {
+                    setIsPreparingPrint(false);
+                    // Remove iframe after a delay to allow print dialog to take over
+                    setTimeout(() => {
+                        if (document.body.contains(iframe)) {
+                            document.body.removeChild(iframe);
+                        }
+                    }, 2000);
+                }
+            }, 500);
+        };
+    });
   };
 
   return (
