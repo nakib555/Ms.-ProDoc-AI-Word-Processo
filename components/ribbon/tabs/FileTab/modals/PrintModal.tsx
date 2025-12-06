@@ -12,6 +12,10 @@ import { PAGE_SIZES, MARGIN_PRESETS, PAPER_FORMATS } from '../../../../../consta
 import { PageConfig } from '../../../../../types';
 // @ts-ignore
 import { Previewer } from 'pagedjs';
+// @ts-ignore
+import PDFDocument from 'pdfkit/js/pdfkit.standalone';
+// @ts-ignore
+import blobStream from 'blob-stream';
 
 // --- Shared UI Components ---
 
@@ -140,7 +144,7 @@ const PrintSelect = ({ label, value, onChange, options, icon: Icon, disabled, cl
     );
 };
 
-// --- Helper to render page content consistently ---
+// --- Helper to render page content consistently for PREVIEW ---
 const getVerticalAlignStyle = (align: string): React.CSSProperties => {
   const style: React.CSSProperties = { display: 'flex', flexDirection: 'column' };
   let justifyContent: 'center' | 'flex-end' | 'space-between' | 'flex-start' = 'flex-start';
@@ -221,7 +225,6 @@ const renderPageContent = (
                     width: `${widthIn}in`,
                     height: `${heightIn}in`,
                     transform: `scale(${scale})`,
-                    // New Box Model using Physical Units
                     paddingTop: `${margins.top}in`,
                     paddingBottom: `${margins.bottom}in`,
                     paddingLeft: `${margins.left}in`,
@@ -326,7 +329,7 @@ const DesktopPrintPreview: React.FC<{
              {pages.length === 0 || isPreparing ? (
                  <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-3">
                      <Loader2 className="animate-spin" size={32} />
-                     <span className="text-sm font-medium">{isPreparing ? 'Preparing document...' : 'Generating Preview...'}</span>
+                     <span className="text-sm font-medium">{isPreparing ? 'Rendering PDF...' : 'Generating Preview...'}</span>
                  </div>
              ) : (
                  <div className="flex flex-col gap-8 items-center w-full pb-24">
@@ -387,7 +390,7 @@ const MobilePrintPreview: React.FC<{
                 {pages.length === 0 || isPreparing ? (
                      <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-3">
                          <Loader2 className="animate-spin" size={28} />
-                         <span className="text-xs font-medium">{isPreparing ? 'Preparing document...' : 'Loading...'}</span>
+                         <span className="text-xs font-medium">{isPreparing ? 'Generating PDF...' : 'Loading...'}</span>
                      </div>
                  ) : (
                      <div className="flex flex-col gap-4 items-center w-full transition-opacity duration-300" style={{ opacity: scale > 0 ? 1 : 0 }}>
@@ -402,7 +405,7 @@ const MobilePrintPreview: React.FC<{
                     disabled={isPreparing}
                     className="w-14 h-14 bg-blue-600 text-white rounded-full shadow-[0_8px_20px_rgba(37,99,235,0.4)] flex items-center justify-center hover:bg-blue-700 active:scale-90 transition-all border-2 border-white/20 backdrop-blur-sm"
                  >
-                    {isPreparing ? <Loader2 size={24} className="animate-spin"/> : <Printer size={24} />}
+                    {isPreparing ? <Loader2 size={24} className="animate-spin"/> : <Download size={24} />}
                  </button>
              </div>
         </div>
@@ -486,11 +489,19 @@ const PrintSettingsPanel: React.FC<{
                         label="Destination"
                         value="default"
                         onChange={() => {}}
-                        options={[{ value: 'default', label: 'Save as PDF / Print' }]}
+                        options={[{ value: 'default', label: 'Save as PDF' }]}
                         icon={Printer}
                         disabled
                     />
                     
+                    <PrintSelect
+                        label="Print Quality"
+                        value={dpi}
+                        onChange={setDpi}
+                        options={DPI_OPTIONS}
+                        icon={ImageIcon}
+                    />
+
                     <div className="flex items-center justify-between bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 shadow-sm opacity-60 pointer-events-none" title="Copies disabled for PDF download">
                          <div className="flex flex-col">
                              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Copies</span>
@@ -508,8 +519,8 @@ const PrintSettingsPanel: React.FC<{
                 <div className="space-y-4">
                     <div className="flex justify-between items-center">
                         <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Page Settings</h3>
-                        <span className="text-[10px] text-slate-400 font-mono flex items-center gap-1">
-                            <Ruler size={10} /> {getDimensionsDisplay()}
+                        <span className="text-xs text-slate-400 font-mono flex items-center gap-1">
+                            <Ruler size={12} /> {getDimensionsDisplay()}
                         </span>
                     </div>
                     
@@ -557,8 +568,8 @@ const PrintSettingsPanel: React.FC<{
                         disabled={isPreparing}
                         className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-base shadow-lg shadow-blue-200/50 dark:shadow-none transition-all flex items-center justify-center gap-3 disabled:opacity-70 active:scale-[0.98]"
                     >
-                        {isPreparing ? <Loader2 className="animate-spin" size={20}/> : <Printer size={20}/>}
-                        <span>{isPreparing ? 'Preparing...' : 'Print / Save PDF'}</span>
+                        {isPreparing ? <Loader2 className="animate-spin" size={20}/> : <Download size={20}/>}
+                        <span>{isPreparing ? 'Generating PDF...' : 'Download PDF'}</span>
                     </button>
                 </div>
             )}
@@ -596,191 +607,159 @@ export const PrintModal: React.FC = () => {
     return () => clearTimeout(timer);
   }, [content, localConfig]);
 
-  // High-Quality Vector PDF Generation using Browser Print
+  // PDF Generation using PDFKit
   const handleDownloadPDF = async () => {
       setIsPreparingPrint(true);
 
       try {
-          // 1. Cleanup potential stale elements
-          const oldContainer = document.getElementById('paged-print-container');
-          if (oldContainer) document.body.removeChild(oldContainer);
-          const oldStyle = document.getElementById('paged-print-style');
-          if (oldStyle) document.head.removeChild(oldStyle);
-
-          // 2. Add printing class to body to hide app UI
-          document.body.classList.add('printing-mode');
-
-          // 3. Create container for Paged.js
-          const printContainer = document.createElement('div');
-          printContainer.id = 'paged-print-container';
-          document.body.appendChild(printContainer);
-
-          // 4. Generate CSS for Paged.js based on localConfig
+          // 1. Initialize PDFKit
           const { size, orientation, margins } = localConfig;
           
-          // Determine explicit dimensions in inches
-          let widthIn = 0;
-          let heightIn = 0;
+          // Determine dimensions in Points (72 DPI for PDF standard)
+          let widthPt = 0;
+          let heightPt = 0;
 
           if (size === 'Custom' && localConfig.customWidth && localConfig.customHeight) {
-              widthIn = localConfig.customWidth;
-              heightIn = localConfig.customHeight;
+              widthPt = localConfig.customWidth * 72;
+              heightPt = localConfig.customHeight * 72;
           } else {
               const baseSize = PAGE_SIZES[size as string] || PAGE_SIZES['Letter'];
-              // Constants are in pixels at 96 DPI
-              widthIn = baseSize.width / 96;
-              heightIn = baseSize.height / 96;
+              // Constants are in pixels at 96 DPI. 96 px = 1 inch. 1 inch = 72 points.
+              // So point = px * (72/96) = px * 0.75
+              widthPt = baseSize.width * 0.75;
+              heightPt = baseSize.height * 0.75;
           }
 
-          // Handle Landscape Swap
           if (orientation === 'landscape') {
-              const temp = widthIn;
-              widthIn = heightIn;
-              heightIn = temp;
+              const temp = widthPt;
+              widthPt = heightPt;
+              heightPt = temp;
           }
 
-          // Use explicit dimensions for Paged.js to ensure matching aspect ratio
-          const sizeCss = `${widthIn}in ${heightIn}in`;
+          const doc = new PDFDocument({
+              autoFirstPage: false,
+              size: [widthPt, heightPt],
+              margin: 0 
+          });
 
-          const css = `
-              @page {
-                  size: ${sizeCss};
-                  margin-top: ${margins.top}in;
-                  margin-bottom: ${margins.bottom}in;
-                  margin-left: ${margins.left}in;
-                  margin-right: ${margins.right}in;
-                  
-                  @top-center {
-                      content: element(header);
-                  }
-                  @bottom-center {
-                      content: element(footer);
-                  }
-              }
+          const stream = doc.pipe(blobStream());
 
-              .pagedjs-header {
-                  position: running(header);
-                  width: 100%;
-              }
-
-              .pagedjs-footer {
-                  position: running(footer);
-                  width: 100%;
-              }
-
-              /* Ensure content typography matches editor */
-              .paged-content {
-                  font-family: 'Calibri, Inter, sans-serif';
-                  font-size: 11pt;
-                  line-height: 1.5;
-                  color: black;
-              }
+          // Helper to convert node content to PDF commands
+          // This is a simplified parser that handles basic text and images
+          const renderNodesToPDF = async (container: HTMLElement, xOffset: number, yOffset: number, maxWidth: number) => {
+              const nodes = Array.from(container.childNodes);
+              let currentY = yOffset;
               
-              /* Table Printing Improvements */
-              .paged-content table { 
-                  border-collapse: collapse; 
-                  width: 100%; 
-                  margin: 1em 0;
-                  page-break-inside: auto;
-              }
-              .paged-content tr {
-                  break-inside: avoid;
-                  page-break-inside: avoid;
-              }
-              .paged-content thead {
-                  display: table-header-group;
-              }
-              .paged-content td, .paged-content th { 
-                  border: 1px solid #000; 
-                  padding: 4px 8px; 
-              }
-              
-              .paged-content img { max-width: 100%; }
-              .equation-handle, .equation-dropdown { display: none !important; }
-              .prodoc-page-break { break-after: page; height: 0; margin: 0; border: none; }
-              
-              /* Hide the container from view but keep it renderable */
-              #paged-print-container {
-                  position: absolute;
-                  top: 0;
-                  left: 0;
-                  width: 100%;
-                  z-index: -1000;
-                  visibility: visible; 
-              }
+              for (const node of nodes) {
+                  if (node.nodeType === Node.TEXT_NODE) {
+                      const text = node.textContent?.trim();
+                      if (text) {
+                          doc.fontSize(11).font('Helvetica').text(text, xOffset, currentY, { width: maxWidth, align: 'left' });
+                          currentY = doc.y;
+                      }
+                  } else if (node.nodeType === Node.ELEMENT_NODE) {
+                      const el = node as HTMLElement;
+                      const tagName = el.tagName.toLowerCase();
 
-              @media print {
-                  body { margin: 0; }
-                  #paged-print-container { 
-                      display: block; 
-                      z-index: 9999; 
-                      position: relative;
+                      // Basic styling mapping
+                      if (tagName === 'h1') {
+                          doc.fontSize(24).font('Helvetica-Bold').text(el.textContent || '', xOffset, currentY, { width: maxWidth });
+                          currentY = doc.y + 10;
+                      } else if (tagName === 'h2') {
+                          doc.fontSize(18).font('Helvetica-Bold').text(el.textContent || '', xOffset, currentY, { width: maxWidth });
+                          currentY = doc.y + 8;
+                      } else if (tagName === 'p' || tagName === 'div') {
+                           // Simple text extraction for paragraphs
+                           const text = el.textContent || '';
+                           if (text.trim()) {
+                               doc.fontSize(11).font('Helvetica').text(text, xOffset, currentY, { width: maxWidth });
+                               currentY = doc.y + 4;
+                           }
+                      } else if (tagName === 'img') {
+                           const src = (el as HTMLImageElement).src;
+                           if (src) {
+                               try {
+                                   const resp = await fetch(src);
+                                   const blob = await resp.blob();
+                                   const buffer = await blob.arrayBuffer();
+                                   // Determine scale to fit width
+                                   doc.image(buffer, xOffset, currentY, { width: Math.min(300, maxWidth) }); // Limit width
+                                   currentY = doc.y + 10;
+                               } catch (e) {
+                                   console.warn("Could not load image for PDF", src);
+                               }
+                           }
+                      } else if (tagName === 'br') {
+                           currentY += 12; // Approx line height
+                      }
                   }
               }
-          `;
+          };
 
-          // 5. Clean up Header/Footer HTML
-          let cleanHeader = headerContent.replace('[Header]', '');
-          let cleanFooter = footerContent; 
-          if (cleanFooter.includes('page-number-placeholder')) {
-               cleanFooter = cleanFooter.replace(/<span class="page-number-placeholder">.*?<\/span>/g, '<span class="pagedjs-page-number"></span>');
+          // 2. Iterate Pages
+          // Paged.js handles pagination preview, but PDFKit needs explicit pages.
+          // We use the 'previewPages' generated by our layout engine as a guide for content chunks.
+          
+          for (let i = 0; i < previewPages.length; i++) {
+              doc.addPage({ size: [widthPt, heightPt], margin: 0 });
+              
+              const pageConfig = previewPages[i].config;
+              
+              // Calculate margins in points
+              const mTop = pageConfig.margins.top * 72;
+              const mBottom = pageConfig.margins.bottom * 72;
+              const mLeft = pageConfig.margins.left * 72;
+              const mRight = pageConfig.margins.right * 72;
+              const mGutter = (pageConfig.margins.gutter || 0) * 72;
+              
+              let effLeft = mLeft;
+              let effTop = mTop;
+              
+              if (pageConfig.gutterPosition === 'left') effLeft += mGutter;
+              if (pageConfig.gutterPosition === 'top') effTop += mGutter;
+
+              const contentWidth = widthPt - effLeft - mRight;
+              const contentHeight = heightPt - effTop - mBottom;
+
+              // Render Header (Simplified text extraction)
+              const headerDiv = document.createElement('div');
+              headerDiv.innerHTML = headerContent.replace('[Header]', '');
+              // PDFKit header pos
+              const headerY = (pageConfig.headerDistance || 0.5) * 72;
+              doc.fontSize(10).font('Helvetica').text(headerDiv.textContent || '', effLeft, headerY, { width: contentWidth, align: 'left' });
+
+              // Render Body Content
+              // We parse the HTML chunk for this page
+              const bodyDiv = document.createElement('div');
+              bodyDiv.innerHTML = previewPages[i].html;
+              
+              await renderNodesToPDF(bodyDiv, effLeft, effTop, contentWidth);
+
+              // Render Footer
+              const footerDiv = document.createElement('div');
+              let footerText = footerContent.replace(/\[Page \d+\]/g, `Page ${i + 1}`);
+              footerDiv.innerHTML = footerText;
+              const footerY = heightPt - ((pageConfig.footerDistance || 0.5) * 72) - 12; // Approx font height up
+              doc.fontSize(10).font('Helvetica').text(footerDiv.textContent || '', effLeft, footerY, { width: contentWidth, align: 'center' });
           }
 
-          const pageNumCss = `
-             .pagedjs-page-number::after {
-                 content: counter(page);
-             }
-          `;
-
-          // 6. Build HTML Structure
-          const htmlContent = `
-              <div class="pagedjs-header">${cleanHeader}</div>
-              <div class="pagedjs-footer">${cleanFooter}</div>
-              <div class="paged-content">
-                  ${content}
-              </div>
-          `;
-
-          // 7. Run Previewer (Paged.js)
-          const previewer = new Previewer();
-          const styleEl = document.createElement('style');
-          styleEl.id = 'paged-print-style';
-          styleEl.innerHTML = css + pageNumCss;
-          document.head.appendChild(styleEl);
-
-          // Render content into printContainer using Paged.js
-          await previewer.preview(htmlContent, [], printContainer);
-
-          // 8. Trigger Browser Print
-          // Small delay to ensure DOM is painted and resources loaded
-          setTimeout(() => {
-              window.print();
-          }, 500);
+          doc.end();
+          
+          stream.on('finish', function() {
+              const url = stream.toBlobURL('application/pdf');
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = `${documentTitle || 'document'}.pdf`;
+              a.click();
+          });
 
       } catch (e) {
-          console.error("Print Error:", e);
-          alert("Failed to prepare print document.");
-          document.body.classList.remove('printing-mode');
-          const container = document.getElementById('paged-print-container');
-          if (container) document.body.removeChild(container);
+          console.error("PDF Generation Error:", e);
+          alert("Failed to generate PDF. Please try again.");
+      } finally {
           setIsPreparingPrint(false);
       }
   };
-
-  // Add effect to handle cleanup after print
-  useEffect(() => {
-      const cleanupAfterPrint = () => {
-          document.body.classList.remove('printing-mode');
-          const container = document.getElementById('paged-print-container');
-          if (container) document.body.removeChild(container);
-          const style = document.getElementById('paged-print-style');
-          if (style) document.head.removeChild(style);
-          setIsPreparingPrint(false);
-      };
-
-      window.addEventListener('afterprint', cleanupAfterPrint);
-      return () => window.removeEventListener('afterprint', cleanupAfterPrint);
-  }, []);
 
   return (
     <div 
