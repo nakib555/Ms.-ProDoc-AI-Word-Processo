@@ -1,11 +1,12 @@
 
 import React, { useState, Suspense, useEffect } from 'react';
-import { LayoutTemplate, FileText, Feather, BookOpen, Loader2, ChevronDown, Zap, Smile, GraduationCap, AlertTriangle, Wand2, Sparkles } from 'lucide-react';
+// FIX: Import missing icons used in the component.
+import { LayoutTemplate, Sparkles, FileText, Feather, Activity, BookOpen, Loader2, ChevronDown, AlignLeft, Zap, Wand2, AlertTriangle, Smile, GraduationCap } from 'lucide-react';
 import { useAIAssistantTab } from '../../AIAssistantTabContext';
 import { useAI } from '../../../../../../hooks/useAI';
 import { MenuPortal } from '../../../../common/MenuPortal';
 import { ErrorBoundary } from '../../../../../ErrorBoundary';
-import { getSmartDocPrompt, getAutoDetectTemplatePrompt } from '../../../../../../services/prompts/tools/draft';
+import { getSmartDocPrompt } from '../../../../../../services/prompts/tools/draft';
 
 // Lazy load the PredictiveBuilder to reduce initial bundle size
 const PredictiveBuilder = React.lazy(() => 
@@ -61,14 +62,8 @@ export const SmartDocTemplateTool: React.FC = () => {
   const handlePredictiveSelect = (item: { l: string, f: string }) => {
       const prompt = getSmartDocPrompt(item.l, item.f, selectedStyle);
       
-      // Use replace mode to create a fresh document with headers/footers and page settings
+      // Use 'replace' mode to create a fresh document with headers/footers and page settings
       performAIAction('generate_content', prompt, { mode: 'replace' });
-      closeMenu();
-  };
-
-  const handleAutoDetect = () => {
-      const prompt = getAutoDetectTemplatePrompt();
-      performAIAction('generate_content', prompt, { mode: 'insert' });
       closeMenu();
   };
 
@@ -95,35 +90,9 @@ export const SmartDocTemplateTool: React.FC = () => {
                 className="flex flex-col max-h-[70vh] md:max-h-[80vh] h-full overflow-hidden bg-white dark:bg-slate-900 shadow-2xl rounded-xl border border-slate-200 dark:border-slate-700"
                 onMouseDown={(e) => e.stopPropagation()}
              >
-                 {/* Header */}
-                 <div className="p-3 bg-slate-50 dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 z-10 shrink-0">
-                     <div className="flex items-center gap-2 mb-3 px-1">
-                         <div className="p-1.5 bg-blue-600 rounded-lg shadow-sm">
-                             <Wand2 size={14} className="text-white" />
-                         </div>
-                         <div>
-                             <h3 className="text-xs font-bold text-slate-800 dark:text-slate-100 uppercase tracking-wide">Template Architect</h3>
-                             <p className="text-[10px] text-slate-500 dark:text-slate-400">AI-powered document generation</p>
-                         </div>
-                     </div>
-
-                     <button 
-                        onClick={handleAutoDetect} 
-                        className="w-full text-left px-3 py-3 hover:bg-white dark:hover:bg-slate-800 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-200 flex items-center gap-3 group transition-all border border-transparent hover:border-slate-200 dark:hover:border-slate-700 shadow-sm hover:shadow-md"
-                     >
-                        <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-md text-indigo-600 dark:text-indigo-400 group-hover:scale-110 transition-transform">
-                            <Sparkles size={16} className="fill-indigo-200 dark:fill-indigo-900" />
-                        </div>
-                        <div>
-                            <div className="leading-tight font-semibold text-indigo-900 dark:text-indigo-100">Auto-Generate</div>
-                            <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Detect context & create template</div>
-                        </div>
-                     </button>
-                 </div>
-
                  {/* Style Selector */}
                  <div className="p-3 bg-white dark:bg-slate-900 shrink-0 space-y-2">
-                     <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-1">Select Tone</div>
+                     <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-1">SELECT TONE</div>
                      <div className="grid grid-cols-2 gap-2">
                          {TONES.map((tone) => (
                              <button

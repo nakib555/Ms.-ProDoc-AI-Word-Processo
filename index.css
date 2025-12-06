@@ -361,32 +361,24 @@ math-field:not(.equation-wrapper math-field):focus-within {
   to { transform: translateY(0); opacity: 1; }
 }
 
-/* Print styles - Native Browser Print with Paged.js */
+/* Print styles */
 @media print {
-  /* Hide EVERYTHING by default */
-  body > * {
+  .no-print {
     display: none !important;
   }
-
-  /* Only show the Paged.js print container */
-  #paged-print-container {
+  body.printing-mode > *:not(#paged-print-container) {
+    display: none !important;
+  }
+  body.printing-mode #paged-print-container {
     display: block !important;
     position: absolute;
     top: 0;
     left: 0;
     width: 100%;
-    height: auto;
     margin: 0;
     padding: 0;
-    z-index: 9999;
-    visibility: visible;
   }
   
-  /* Ensure Paged.js internal styles are visible */
-  #paged-print-container * {
-    visibility: visible;
-  }
-
   /* Paged.js override styles for clean print */
   .pagedjs_pages {
     width: 100%;
@@ -396,7 +388,6 @@ math-field:not(.equation-wrapper math-field):focus-within {
     margin: 0 !important;
     box-shadow: none !important;
     break-after: page;
-    background: white !important;
   }
   
   /* Standard cleanups */
@@ -417,12 +408,11 @@ math-field:not(.equation-wrapper math-field):focus-within {
   .equation-handle, .equation-dropdown {
     display: none !important;
   }
-  .no-print {
-    display: none !important;
-  }
 }
 
-/* Paged.js Screen Preview Styles (hidden by default on screen) */
-#paged-print-container {
-  display: none;
+/* Paged.js Screen Preview Styles (hidden by default until printing-mode or specific container used) */
+.pagedjs_page {
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.1);
+  margin-bottom: 2em;
+  background: white;
 }
