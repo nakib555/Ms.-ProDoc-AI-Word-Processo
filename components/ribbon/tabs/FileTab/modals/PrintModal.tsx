@@ -1,10 +1,10 @@
-
 import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { 
   FileText, FileType, Printer, ChevronDown, Loader2, 
   LayoutTemplate, Check, ArrowLeft, Sliders, Eye, Ruler, Download,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Monitor
 } from 'lucide-react';
 import { useEditor } from '../../../../../contexts/EditorContext';
 import { useFileTab } from '../FileTabContext';
@@ -13,240 +13,15 @@ import { PAGE_SIZES, MARGIN_PRESETS, PAPER_FORMATS } from '../../../../../consta
 import { PageConfig } from '../../../../../types';
 // @ts-ignore
 import { Previewer } from 'pagedjs';
+// @ts-ignore
+import html2canvas from 'html2canvas';
 
+// Access jspdf from window since it's loaded via script tag for browser compatibility
 declare global {
     interface Window {
-        PDFDocument: any;
+        jspdf: any;
     }
 }
-
-/**
- * A robust writable stream implementation to collect PDFKit chunks.
- */
-class BlobStreamShim {
-    private chunks: any[] = [];
-    private callbacks: Record<string, Function[]> = {};
-    public writable = true;
-
-    constructor() {
-        this.write = this.write.bind(this);
-        this.end = this.end.bind(this);
-        this.on = this.on.bind(this);
-        this.once = this.once.bind(this);
-        this.removeListener = this.removeListener.bind(this);
-        this.emit = this.emit.bind(this);
-    }
-
-    write(chunk: any) {
-        this.chunks.push(chunk);
-    }
-    
-    end() {
-        this.emit('finish');
-    }
-    
-    on(event: string, callback: Function) {
-        if (!this.callbacks[event]) this.callbacks[event] = [];
-        this.callbacks[event].push(callback);
-        return this;
-    }
-    
-    once(event: string, callback: Function) {
-        const wrapper = (...args: any[]) => {
-            callback(...args);
-            this.removeListener(event, wrapper);
-        };
-        this.on(event, wrapper);
-        return this;
-    }
-
-    removeListener(event: string, callback: Function) {
-        if (this.callbacks[event]) {
-            this.callbacks[event] = this.callbacks[event].filter(cb => cb !== callback);
-        }
-        return this;
-    }
-    
-    emit(event: string, ...args: any[]) {
-        if (this.callbacks[event]) {
-            [...this.callbacks[event]].forEach(cb => cb(...args));
-        }
-    }
-    
-    toBlobURL(mimeType: string) {
-        const blob = new Blob(this.chunks, { type: mimeType });
-        return URL.createObjectURL(blob);
-    }
-}
-
-// --- Vector PDF Generation Helpers ---
-
-const PX_TO_PT = 0.75; // 96 DPI (Screen) -> 72 DPI (PDF)
-
-const mapFont = (style: CSSStyleDeclaration): string => {
-    const family = style.fontFamily.toLowerCase();
-    const weight = parseInt(style.fontWeight) || 400;
-    const isBold = weight >= 700 || style.fontWeight === 'bold';
-    const isItalic = style.fontStyle === 'italic';
-
-    let base = 'Helvetica';
-    if (family.includes('serif') || family.includes('times')) base = 'Times';
-    if (family.includes('mono') || family.includes('courier')) base = 'Courier';
-
-    if (base === 'Times') {
-        if (isBold && isItalic) return 'Times-BoldItalic';
-        if (isBold) return 'Times-Bold';
-        if (isItalic) return 'Times-Italic';
-        return 'Times-Roman';
-    } else {
-        // Helvetica & Courier format: Base-Bold, Base-Oblique, Base-BoldOblique
-        let suffix = '';
-        if (isBold) suffix += 'Bold';
-        if (isItalic) suffix += 'Oblique'; // PDFKit uses Oblique for these
-        
-        if (suffix) return `${base}-${suffix}`;
-        return base;
-    }
-};
-
-const getRgbColor = (colorStr: string): [number, number, number] | string => {
-    if (colorStr.startsWith('rgb')) {
-        const match = colorStr.match(/\d+/g);
-        if (match && match.length >= 3) {
-            return [parseInt(match[0]), parseInt(match[1]), parseInt(match[2])];
-        }
-    }
-    return colorStr;
-};
-
-/**
- * Recursively traverses the DOM element and issues PDFKit commands to render content.
- * This creates selectable text and vectors instead of a raster image.
- */
-const renderDOMToPDF = async (doc: any, node: Node, pageRect: DOMRect) => {
-    if (node.nodeType === Node.TEXT_NODE) {
-        const text = node.textContent?.replace(/\s+/g, ' '); // Collapse whitespace similar to browser
-        if (!text || !text.trim()) return;
-
-        // Create a range to get precise bounding box of this text node
-        const range = document.createRange();
-        range.selectNode(node);
-        const rects = range.getClientRects();
-
-        if (rects.length === 0) return;
-        
-        const parent = node.parentElement;
-        if (!parent) return;
-        
-        const style = window.getComputedStyle(parent);
-        const isHidden = style.display === 'none' || style.visibility === 'hidden' || parseFloat(style.opacity) === 0;
-        if (isHidden) return;
-
-        const fontName = mapFont(style);
-        const fontSize = parseFloat(style.fontSize) * PX_TO_PT;
-        const color = getRgbColor(style.color);
-
-        // Render each line rect separately (handles wrapping somewhat)
-        // Note: This paints text "where it is".
-        for (let i = 0; i < rects.length; i++) {
-            const rect = rects[i];
-            const x = (rect.left - pageRect.left) * PX_TO_PT;
-            // PDFKit draws text from baseline-ish or top-left depending on options.
-            // Standard .text() acts like a block. .text(str, x, y) places it.
-            // To align with HTML baseline is tricky, but top-alignment usually works okay for visual approximation.
-            // Adjusting y by a small factor might help align baseline.
-            const y = (rect.top - pageRect.top) * PX_TO_PT;
-            
-            doc.fillColor(color)
-               .font(fontName)
-               .fontSize(fontSize)
-               .text(text, x, y + (fontSize * 0.15), { // Slight nudge for baseline
-                   width: rect.width * PX_TO_PT,
-                   lineBreak: false,
-                   ellipsis: false
-               });
-               
-            // Since we iterate rects of a single text node, usually a text node is one line unless wrapped.
-            // If wrapped, getClientRects returns multiple boxes. We'd ideally need to know WHICH text goes in WHICH box.
-            // Range.getClientRects gives boxes for the *whole* content.
-            // Splitting the text string per box is hard without a range-walker.
-            // APPROXIMATION: If multiple rects exist for one text node, we print the whole text in the first rect
-            // with the width of the union? No, that causes overlap.
-            // FALLBACK: For complex wrapping text nodes, just printing at the first rect is the safest "simple" vector approach.
-            // Browser engines wrap text nodes into multiple line boxes.
-            // For 100% accuracy, we'd need to bisect the text range to find line breaks.
-            // For this implementation, we assume the text node mostly fits in the primary rect.
-            break; 
-        }
-
-    } else if (node.nodeType === Node.ELEMENT_NODE) {
-        const el = node as HTMLElement;
-        const style = window.getComputedStyle(el);
-        const isHidden = style.display === 'none' || style.visibility === 'hidden' || parseFloat(style.opacity) === 0;
-
-        if (isHidden) return;
-
-        // Background Colors
-        if (style.backgroundColor !== 'rgba(0, 0, 0, 0)' && style.backgroundColor !== 'transparent') {
-            const rect = el.getBoundingClientRect();
-            const x = (rect.left - pageRect.left) * PX_TO_PT;
-            const y = (rect.top - pageRect.top) * PX_TO_PT;
-            const w = rect.width * PX_TO_PT;
-            const h = rect.height * PX_TO_PT;
-
-            doc.save()
-               .rect(x, y, w, h)
-               .fillColor(getRgbColor(style.backgroundColor))
-               .fill()
-               .restore();
-        }
-
-        // Borders (Simplified: solid borders only)
-        if (style.borderStyle !== 'none' && parseFloat(style.borderWidth) > 0) {
-             const rect = el.getBoundingClientRect();
-             const x = (rect.left - pageRect.left) * PX_TO_PT;
-             const y = (rect.top - pageRect.top) * PX_TO_PT;
-             const w = rect.width * PX_TO_PT;
-             const h = rect.height * PX_TO_PT;
-             const bWidth = parseFloat(style.borderWidth) * PX_TO_PT;
-             
-             doc.save()
-                .rect(x, y, w, h)
-                .lineWidth(bWidth)
-                .strokeColor(getRgbColor(style.borderColor))
-                .stroke()
-                .restore();
-        }
-
-        // Images
-        if (el.tagName === 'IMG') {
-            const img = el as HTMLImageElement;
-            if (img.src && img.complete && img.naturalWidth > 0) {
-                const rect = el.getBoundingClientRect();
-                const x = (rect.left - pageRect.left) * PX_TO_PT;
-                const y = (rect.top - pageRect.top) * PX_TO_PT;
-                const w = rect.width * PX_TO_PT;
-                const h = rect.height * PX_TO_PT;
-
-                try {
-                    // Need to fetch blob for PDFKit
-                    const resp = await fetch(img.src);
-                    const blob = await resp.blob();
-                    const buffer = await blob.arrayBuffer();
-                    doc.image(buffer, x, y, { width: w, height: h });
-                } catch (e) {
-                    console.warn("Could not embed image in PDF", img.src);
-                }
-            }
-        }
-
-        // Recursively render children
-        const children = Array.from(el.childNodes);
-        for (const child of children) {
-            await renderDOMToPDF(doc, child, pageRect);
-        }
-    }
-};
 
 // --- UI Components ---
 
@@ -633,11 +408,19 @@ const MobilePrintPreview: React.FC<{
 };
 
 const DPI_OPTIONS = [
-    { value: 72, label: '72 DPI (Draft/Screen)' },
-    { value: 96, label: '96 DPI (Standard Web)' },
-    { value: 150, label: '150 DPI (Low Quality Print)' },
-    { value: 300, label: '300 DPI (High Quality Print)' },
-    { value: 600, label: '600 DPI (Ultra High Quality)' }
+    { value: 96, label: '96 DPI (Screen)' },
+    { value: 150, label: '150 DPI (Draft)' },
+    { value: 300, label: '300 DPI (Print)' },
+    { value: 600, label: '600 DPI (High Quality)' },
+    { value: 1200, label: '1200 DPI (Professional)' },
+    { value: 1500, label: '1500 DPI (Ultra)' },
+    { value: 1800, label: '1800 DPI (Extreme)' },
+    { value: 2000, label: '2000 DPI (Archival)' },
+    { value: 2400, label: '2400 DPI (Film)' },
+    { value: 3000, label: '3000 DPI (Microfilm)' },
+    { value: 3300, label: '3300 DPI (High-Res Film)' },
+    { value: 3600, label: '3600 DPI (Ultra-Res Film)' },
+    { value: 4000, label: '4000 DPI (Master)' }
 ];
 
 const PrintSettingsPanel: React.FC<{
@@ -757,6 +540,14 @@ const PrintSettingsPanel: React.FC<{
                         }))}
                         icon={LayoutTemplate}
                     />
+                    
+                     <PrintSelect
+                        label="Quality (DPI)"
+                        value={dpi}
+                        onChange={(v: any) => setDpi(Number(v))}
+                        options={DPI_OPTIONS}
+                        icon={Monitor}
+                    />
                 </div>
                 
                 {isMobile && <div className="h-20"></div>}
@@ -837,9 +628,6 @@ export const PrintModal: React.FC = () => {
               widthIn = heightIn;
               heightIn = temp;
           }
-
-          const widthPt = widthIn * 72;
-          const heightPt = heightIn * 72;
 
           const sizeCss = `${widthIn}in ${heightIn}in`;
 
@@ -937,43 +725,50 @@ export const PrintModal: React.FC = () => {
           styleEl.innerHTML = css + pageNumCss;
           document.head.appendChild(styleEl);
 
+          // 1. Generate Layout with Paged.js
           await previewer.preview(htmlContent, [], printContainer);
 
           const pagedPages = document.querySelectorAll('.pagedjs_page');
           if (pagedPages.length === 0) throw new Error("No pages generated by Paged.js");
 
-          const doc = new window.PDFDocument({
-             autoFirstPage: false
-          });
-          
-          const stream = new BlobStreamShim();
-          doc.pipe(stream);
-          
-          stream.on('finish', () => {
-             const url = stream.toBlobURL('application/pdf');
-             const a = document.createElement('a');
-             a.href = url;
-             a.download = `${documentTitle || 'document'}.pdf`;
-             document.body.appendChild(a);
-             a.click();
-             document.body.removeChild(a);
-             URL.revokeObjectURL(url);
+          // 2. Initialize jsPDF
+          // Use 'in' (inches) as unit since our layout logic is inch-based
+          const orientationShort = orientation === 'landscape' ? 'l' : 'p';
+          // Initialize jsPDF through window or import if available
+          const jsPDF = window.jspdf?.jsPDF || (window as any).jsPDF;
+          if (!jsPDF) throw new Error("jsPDF library not loaded");
+
+          const pdf = new jsPDF({
+              orientation: orientationShort,
+              unit: 'in',
+              format: [widthIn, heightIn]
           });
 
+          // 3. Rasterize Pages with html2canvas and add to PDF
+          // Scale factor: DPI / 96 (browser standard)
+          const scale = dpi / 96;
+
           for (let i = 0; i < pagedPages.length; i++) {
+              if (i > 0) pdf.addPage([widthIn, heightIn], orientationShort);
+
               const pageEl = pagedPages[i] as HTMLElement;
               
-              doc.addPage({
-                  size: [widthPt, heightPt],
-                  margin: 0
+              // Use html2canvas to screenshot the rendered HTML page
+              const canvas = await html2canvas(pageEl, {
+                  scale: scale,
+                  useCORS: true,
+                  logging: false,
+                  backgroundColor: '#ffffff'
               });
+
+              const imgData = canvas.toDataURL('image/jpeg', 0.95); // Use JPEG for smaller size, high quality
               
-              // Vector PDF Generation: Traverse the DOM nodes and render them using PDFKit commands
-              // This replaces html2canvas rasterization
-              await renderDOMToPDF(doc, pageEl, pageEl.getBoundingClientRect());
+              // Add image to PDF, filling the page dimensions
+              pdf.addImage(imgData, 'JPEG', 0, 0, widthIn, heightIn);
           }
           
-          doc.end();
+          // 4. Save
+          pdf.save(`${documentTitle || 'document'}.pdf`);
 
       } catch (e) {
           console.error("PDF Generation Error:", e);
