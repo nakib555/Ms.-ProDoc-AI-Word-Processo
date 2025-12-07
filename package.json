@@ -15,8 +15,7 @@
     "lucide-react": "^0.554.0",
     "react-virtualized-auto-sizer": "^1.0.24",
     "pagedjs": "^0.4.3",
-    "html2canvas": "^1.4.1",
-    "jspdf": "^2.5.1"
+    "html2canvas": "^1.4.1"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",

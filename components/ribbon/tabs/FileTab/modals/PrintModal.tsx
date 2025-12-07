@@ -15,7 +15,14 @@ import { PageConfig } from '../../../../../types';
 // @ts-ignore
 import { Previewer } from 'pagedjs';
 import html2canvas from 'html2canvas';
-import { jsPDF } from 'jspdf';
+
+// Declare global types for PDFKit and blob-stream loaded via script tag
+declare global {
+  interface Window {
+    PDFDocument: any;
+    blobStream: any;
+  }
+}
 
 // --- UI Components ---
 
@@ -407,14 +414,6 @@ const DPI_OPTIONS = [
     { value: 300, label: '300 DPI (Print)' },
     { value: 600, label: '600 DPI (High Quality)' },
     { value: 1200, label: '1200 DPI (Professional)' },
-    { value: 1500, label: '1500 DPI (Ultra)' },
-    { value: 1800, label: '1800 DPI (Extreme)' },
-    { value: 2000, label: '2000 DPI (Archival)' },
-    { value: 2400, label: '2400 DPI (Film)' },
-    { value: 3000, label: '3000 DPI (Microfilm)' },
-    { value: 3300, label: '3300 DPI (High-Res Film)' },
-    { value: 3600, label: '3600 DPI (Ultra-Res Film)' },
-    { value: 4000, label: '4000 DPI (Master)' }
 ];
 
 const PrintSettingsPanel: React.FC<{
@@ -425,10 +424,11 @@ const PrintSettingsPanel: React.FC<{
     dpi: number;
     setDpi: (dpi: number) => void;
     onPrint: () => void;
+    onNativePrint: () => void;
     isPreparing: boolean;
     closeModal: () => void;
     isMobile?: boolean;
-}> = ({ localConfig, setLocalConfig, copies, setCopies, dpi, setDpi, onPrint, isPreparing, closeModal, isMobile }) => {
+}> = ({ localConfig, setLocalConfig, copies, setCopies, dpi, setDpi, onPrint, onNativePrint, isPreparing, closeModal, isMobile }) => {
     
     const handleSettingChange = (key: keyof PageConfig | 'marginPreset', value: any) => {
       setLocalConfig(prev => {
@@ -482,12 +482,24 @@ const PrintSettingsPanel: React.FC<{
             <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6 custom-scrollbar">
                 <div className="space-y-4">
                     <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Printer</h3>
+                    <div className="bg-blue-50 dark:bg-blue-900/10 p-3 rounded-lg border border-blue-100 dark:border-blue-900/30 mb-4">
+                        <button 
+                            onClick={onNativePrint}
+                            className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold text-sm shadow-sm transition-all flex items-center justify-center gap-2"
+                        >
+                            <Printer size={16} /> Native Print / Save Vector PDF
+                        </button>
+                        <p className="text-[10px] text-blue-600/80 dark:text-blue-300 mt-2 text-center">
+                            Use system dialog for highest quality vector output.
+                        </p>
+                    </div>
+                    
                     <PrintSelect
                         label="Destination"
                         value="default"
                         onChange={() => {}}
-                        options={[{ value: 'default', label: 'Save as PDF' }]}
-                        icon={Printer}
+                        options={[{ value: 'default', label: 'Save as Image PDF' }]}
+                        icon={FileType}
                         disabled
                     />
                 </div>
@@ -552,10 +564,10 @@ const PrintSettingsPanel: React.FC<{
                     <button 
                         onClick={onPrint}
                         disabled={isPreparing}
-                        className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-base shadow-lg shadow-blue-200/50 dark:shadow-none transition-all flex items-center justify-center gap-3 disabled:opacity-70 active:scale-[0.98]"
+                        className="w-full py-3.5 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 rounded-xl font-bold text-base shadow-sm transition-all flex items-center justify-center gap-3 disabled:opacity-70 active:scale-[0.98]"
                     >
                         {isPreparing ? <Loader2 className="animate-spin" size={20}/> : <Download size={20}/>}
-                        <span>{isPreparing ? 'Generating PDF...' : 'Download PDF'}</span>
+                        <span>{isPreparing ? 'Generating PDF...' : 'Download Image PDF'}</span>
                     </button>
                 </div>
             )}
@@ -590,7 +602,90 @@ export const PrintModal: React.FC = () => {
     return () => clearTimeout(timer);
   }, [content, localConfig]);
 
+  const handleNativePrint = () => {
+      // Create a print container with Paged.js content
+      const printContainer = document.createElement('div');
+      printContainer.id = 'paged-print-container';
+      
+      // Basic Paged.js CSS
+      const css = `
+          @page {
+              size: ${localConfig.size} ${localConfig.orientation};
+              margin: ${localConfig.margins.top}in ${localConfig.margins.right}in ${localConfig.margins.bottom}in ${localConfig.margins.left}in;
+          }
+          @media print {
+            body > *:not(#paged-print-container) { display: none !important; }
+            #paged-print-container { display: block !important; }
+            .pagedjs_page { 
+                display: block !important; 
+                margin: 0 !important; 
+                padding: 0 !important;
+                box-shadow: none !important;
+                break-after: page;
+            }
+          }
+      `;
+      
+      const styleEl = document.createElement('style');
+      styleEl.id = 'paged-print-style';
+      styleEl.innerHTML = css;
+      document.head.appendChild(styleEl);
+      
+      // Use Paged.js to render
+      // Simplified approach: Render the preview pages directly into the print container
+      // Since `previewPages` already contains segmented HTML, we can just dump them into a print container
+      // But Paged.js is better at handling flows.
+      
+      // For Native Print, we will just use window.print() after injecting a print-specific stylesheet 
+      // that hides the UI and shows the content.
+      // However, we are in a SPA. The best way is to open a new window or use an iframe, OR use the Paged.js logic below.
+      
+      // Let's use the robust Paged.js previewer to render into a hidden div, then print.
+      
+      setIsPreparingPrint(true);
+      
+      const previewer = new Previewer();
+      
+      // Add container to body
+      document.body.appendChild(printContainer);
+
+      let cleanHeader = headerContent.replace('[Header]', '');
+      let cleanFooter = footerContent;
+      if (cleanFooter.includes('page-number-placeholder')) {
+            cleanFooter = cleanFooter.replace(/<span class="page-number-placeholder">.*?<\/span>/g, '<span class="pagedjs-page-number"></span>');
+      }
+
+      const htmlContent = `
+          <div class="pagedjs-header">${cleanHeader}</div>
+          <div class="pagedjs-footer">${cleanFooter}</div>
+          <div class="paged-content">
+              ${content}
+          </div>
+      `;
+
+      previewer.preview(htmlContent, [], printContainer).then(() => {
+          setIsPreparingPrint(false);
+          window.print();
+          
+          // Cleanup after print dialog closes (or immediately, browser handles print queue)
+          // To be safe, we can leave it for a moment or remove on focus back
+          const cleanup = () => {
+              if (document.body.contains(printContainer)) document.body.removeChild(printContainer);
+              if (document.head.contains(styleEl)) document.head.removeChild(styleEl);
+              window.removeEventListener('focus', cleanup);
+          };
+          window.addEventListener('focus', cleanup);
+          // Fallback timeout
+          setTimeout(cleanup, 5000);
+      });
+  };
+
   const handleDownloadPDF = async () => {
+      if (!window.PDFDocument || !window.blobStream) {
+          alert("PDFKit library failed to load. Please check your internet connection or try the 'Native Print' option.");
+          return;
+      }
+      
       setIsPreparingPrint(true);
 
       try {
@@ -601,6 +696,10 @@ export const PrintModal: React.FC = () => {
 
           const printContainer = document.createElement('div');
           printContainer.id = 'paged-print-container';
+          // Hide offscreen but keep visible for rendering
+          printContainer.style.position = 'absolute';
+          printContainer.style.top = '-10000px';
+          printContainer.style.left = '-10000px';
           document.body.appendChild(printContainer);
 
           const { size, orientation, margins } = localConfig;
@@ -681,15 +780,6 @@ export const PrintModal: React.FC = () => {
                  box-shadow: none !important;
                  margin: 0 !important;
               }
-              
-              #paged-print-container {
-                  position: absolute;
-                  top: 0;
-                  left: 0;
-                  width: 100%;
-                  z-index: -1000;
-                  visibility: visible;
-              }
           `;
 
           let cleanHeader = headerContent.replace('[Header]', '');
@@ -725,23 +815,25 @@ export const PrintModal: React.FC = () => {
           const pagedPages = document.querySelectorAll('.pagedjs_page');
           if (pagedPages.length === 0) throw new Error("No pages generated by Paged.js");
 
-          // 2. Initialize jsPDF
-          // Use 'in' (inches) as unit since our layout logic is inch-based
-          const orientationShort = orientation === 'landscape' ? 'l' : 'p';
-          
-          const pdf = new jsPDF({
-              orientation: orientationShort,
-              unit: 'in',
-              format: [widthIn, heightIn]
+          // 2. Initialize PDFKit
+          // PDFKit uses Points (1/72 inch). HTML/CSS uses 96 DPI.
+          // widthIn (in) * 72 = points
+          const widthPt = widthIn * 72;
+          const heightPt = heightIn * 72;
+
+          const doc = new window.PDFDocument({
+              autoFirstPage: false,
+              size: [widthPt, heightPt],
+              margin: 0 // We handle margins via HTML layout/screenshot
           });
 
-          // 3. Rasterize Pages with html2canvas and add to PDF
-          // Scale factor: DPI / 96 (browser standard)
+          const stream = doc.pipe(window.blobStream());
+
+          // 3. Rasterize Pages with html2canvas and add to PDFKit
+          // We render at high scale for quality, then fit to page size in PDF
           let scale = dpi / 96;
 
-          // Safety Check: Browser Canvas Limits
-          // Mobile devices often crash or return blank canvases if > 4096px
-          // Desktop usually safe up to 8192px or 16384px depending on GPU
+          // Safety Check for browser canvas limits
           const MAX_CANVAS_DIMENSION = window.innerWidth < 768 ? 4000 : 8000;
           const projectedWidth = widthIn * 96 * scale;
           const projectedHeight = heightIn * 96 * scale;
@@ -754,7 +846,7 @@ export const PrintModal: React.FC = () => {
           }
 
           for (let i = 0; i < pagedPages.length; i++) {
-              if (i > 0) pdf.addPage([widthIn, heightIn], orientationShort);
+              doc.addPage(); // Use default size from constructor
 
               const pageEl = pagedPages[i] as HTMLElement;
               
@@ -766,18 +858,30 @@ export const PrintModal: React.FC = () => {
                   backgroundColor: '#ffffff'
               });
 
-              const imgData = canvas.toDataURL('image/jpeg', 0.95); // Use JPEG for smaller size, high quality
+              const imgData = canvas.toDataURL('image/jpeg', 0.95);
               
-              // Add image to PDF, filling the page dimensions
-              pdf.addImage(imgData, 'JPEG', 0, 0, widthIn, heightIn);
+              // Add image to PDFKit doc, fitting it to the page points
+              doc.image(imgData, 0, 0, { width: widthPt, height: heightPt });
           }
           
-          // 4. Save
-          pdf.save(`${documentTitle || 'document'}.pdf`);
+          doc.end();
+
+          stream.on('finish', function() {
+            // @ts-ignore
+            const url = stream.toBlobURL('application/pdf');
+            
+            // Create a link to download
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${documentTitle || 'document'}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+          });
 
       } catch (e) {
           console.error("PDF Generation Error:", e);
-          alert("Failed to generate PDF. Please try again.");
+          alert("Failed to generate PDF. Please try again or use Native Print.");
       } finally {
           const container = document.getElementById('paged-print-container');
           if (container) document.body.removeChild(container);
@@ -836,6 +940,7 @@ export const PrintModal: React.FC = () => {
                 dpi={dpi}
                 setDpi={setDpi}
                 onPrint={handleDownloadPDF}
+                onNativePrint={handleNativePrint}
                 isPreparing={isPreparingPrint}
                 closeModal={closeModal}
                 isMobile={isMobile}
