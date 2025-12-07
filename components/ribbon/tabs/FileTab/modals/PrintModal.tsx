@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { 
@@ -736,7 +737,21 @@ export const PrintModal: React.FC = () => {
 
           // 3. Rasterize Pages with html2canvas and add to PDF
           // Scale factor: DPI / 96 (browser standard)
-          const scale = dpi / 96;
+          let scale = dpi / 96;
+
+          // Safety Check: Browser Canvas Limits
+          // Mobile devices often crash or return blank canvases if > 4096px
+          // Desktop usually safe up to 8192px or 16384px depending on GPU
+          const MAX_CANVAS_DIMENSION = window.innerWidth < 768 ? 4000 : 8000;
+          const projectedWidth = widthIn * 96 * scale;
+          const projectedHeight = heightIn * 96 * scale;
+          
+          if (projectedWidth > MAX_CANVAS_DIMENSION || projectedHeight > MAX_CANVAS_DIMENSION) {
+              const scaleW = MAX_CANVAS_DIMENSION / (widthIn * 96);
+              const scaleH = MAX_CANVAS_DIMENSION / (heightIn * 96);
+              scale = Math.min(scaleW, scaleH);
+              console.warn(`Reduced print DPI to prevent browser crash. Effective scale: ${scale}`);
+          }
 
           for (let i = 0; i < pagedPages.length; i++) {
               if (i > 0) pdf.addPage([widthIn, heightIn], orientationShort);
