@@ -23,12 +23,9 @@ export const generateVectorPdf = async (
 ) => {
     try {
         if (onProgress) onProgress("Loading fonts...");
-        // Load fonts once
         const fonts = await loadFonts();
 
         // Initialize PDF
-        // We use the config of the first page to determine initial orientation, 
-        // but we will add pages dynamically.
         const firstPage = pages[0].config;
         const orientation = firstPage.orientation === 'landscape' ? 'l' : 'p';
         const format = firstPage.size === 'Custom' 
@@ -41,7 +38,7 @@ export const generateVectorPdf = async (
             format: format
         });
 
-        // We delete the initial page because we'll add pages in the loop with specific dimensions
+        // Delete initial page
         doc.deletePage(1);
 
         for (let i = 0; i < pages.length; i++) {
@@ -51,10 +48,7 @@ export const generateVectorPdf = async (
             const config = page.config;
             const isLandscape = config.orientation === 'landscape';
 
-            // Determine dimensions in pixels (Satori works in px)
-            // 96 DPI is standard for screen/web metrics
-            let widthPx = 0;
-            let heightPx = 0;
+            // Dimensions
             let widthIn = 0;
             let heightIn = 0;
 
@@ -71,13 +65,10 @@ export const generateVectorPdf = async (
                 [widthIn, heightIn] = [heightIn, widthIn];
             }
             
-            widthPx = widthIn * 96;
-            heightPx = heightIn * 96;
+            // Satori works in pixels (96 DPI standard)
+            const widthPx = widthIn * 96;
+            const heightPx = heightIn * 96;
 
-            // Prepare Content for Satori
-            // We wrap it in a div that mimics the page structure
-            // Satori supports flexbox mostly. We try to map block layout to flex-col.
-            
             // Margins
             const mt = config.margins.top * 96;
             const mb = config.margins.bottom * 96;
@@ -88,18 +79,40 @@ export const generateVectorPdf = async (
             const effectiveMl = ml + (config.gutterPosition === 'left' ? gutter : 0);
             const effectiveMt = mt + (config.gutterPosition === 'top' ? gutter : 0);
 
-            // Clean content for Satori (Satori is strict about some HTML/CSS)
-            // We use satori-html to convert string -> VNode
-            
+            // Prepare Content for Satori
+            // Satori requires explicit flex styles for layout containers.
+            // We inject a style block to enforce flex column layout on all block-level elements
+            // to prevent "Expected <div> to have explicit display: flex" errors.
             const contentHtml = `
-                <div style="display: flex; flex-direction: column; width: 100%; height: 100%; bg-white;">
+                <div style="display: flex; flex-direction: column; width: 100%; height: 100%; background-color: white; font-family: 'Inter', sans-serif; font-size: 14px; color: black;">
+                    <style>
+                        div, section, article, header, footer, main, nav, aside, p, h1, h2, h3, h4, h5, h6, li, blockquote {
+                            display: flex;
+                            flex-direction: column;
+                        }
+                        ul, ol {
+                            display: flex;
+                            flex-direction: column;
+                        }
+                        /* Tables need flex for Satori */
+                        table, tr, tbody, thead, tfoot {
+                            display: flex;
+                            flex-direction: column;
+                        }
+                        td, th {
+                            display: flex;
+                            flex-direction: column;
+                        }
+                        /* Hide formatting marks in PDF */
+                        .prodoc-page-break { display: none; }
+                    </style>
                     <div style="display: flex; flex-direction: column; flex: 1; padding: ${effectiveMt}px ${mr}px ${mb}px ${effectiveMl}px;">
                         ${page.html}
                     </div>
                 </div>
             `;
 
-            // Convert to Satori VDOM
+            // Convert HTML string to Satori VDOM
             // @ts-ignore
             const vdom = html(contentHtml);
 
@@ -108,14 +121,12 @@ export const generateVectorPdf = async (
                 width: widthPx,
                 height: heightPx,
                 fonts: fonts as any,
-                // Debug: false
             });
 
-            // Add new page to PDF
+            // Add page to PDF
             doc.addPage([widthIn, heightIn], isLandscape ? 'l' : 'p');
 
-            // Render SVG into PDF
-            // svg2pdf expects a DOM element
+            // Render SVG to PDF
             const parser = new DOMParser();
             const svgElement = parser.parseFromString(svgString, "image/svg+xml").documentElement;
 

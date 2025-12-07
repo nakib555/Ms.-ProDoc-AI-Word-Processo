@@ -590,7 +590,9 @@ export const PrintModal: React.FC = () => {
       setProgressMsg('Starting export...');
 
       try {
-          // Prepare pages including headers and footers for the vector generator
+          // Prepare pages including headers and footers for the vector generator.
+          // CRITICAL: Satori requires explicit display:flex for containers that have multiple children.
+          // We inline these styles here to ensure Satori sees them, as external classes won't apply.
           const fullPages = previewPages.map((page, index) => {
              // Basic replacement of placeholders
              let header = headerContent.replace('[Header]', '');
@@ -598,14 +600,15 @@ export const PrintModal: React.FC = () => {
                                        .replace(/<span class="page-number-placeholder">.*?<\/span>/g, `${index + 1}`);
 
              // Combine into a full page HTML representation
-             // Note: SatoriPdfService will wrap this in a flex container mimicking the page layout
+             // We use explicit flex styles to satisfy Satori's layout engine constraints.
+             // Satori errors if a div has children but defaults to 'block' layout.
              return {
                  ...page,
                  html: `
                     <div style="display: flex; flex-direction: column; width: 100%; height: 100%; justify-content: space-between;">
-                        <div style="width: 100%;">${header}</div>
-                        <div style="width: 100%; flex: 1;">${page.html}</div>
-                        <div style="width: 100%;">${footer}</div>
+                        <div style="display: flex; flex-direction: column; width: 100%;">${header}</div>
+                        <div style="display: flex; flex-direction: column; width: 100%; flex: 1;">${page.html}</div>
+                        <div style="display: flex; flex-direction: column; width: 100%;">${footer}</div>
                     </div>
                  `
              };
