@@ -82,6 +82,10 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
       heightIn = config.orientation === 'portrait' ? base.height / 96 : base.width / 96;
   }
 
+  // Convert to Pixels (96 DPI standard for Screen/SVG)
+  const widthPx = widthIn * 96;
+  const heightPx = heightIn * 96;
+
   // Minimum body gap (approx 2 inches) used for safe header/footer max height calculation
   const MIN_BODY_GAP_IN = 2; 
 
@@ -580,26 +584,6 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
 
   const margins = getMarginsInches();
 
-  const getBackgroundStyle = (): React.CSSProperties => {
-      const base: React.CSSProperties = {
-          backgroundColor: config.pageColor || '#ffffff',
-      };
-      if (config.background === 'ruled') {
-          return {
-              ...base,
-              backgroundImage: 'linear-gradient(#e2e8f0 1px, transparent 1px)',
-              backgroundSize: '100% 0.33in' // Approx 2rem rule spacing
-          };
-      } else if (config.background === 'grid') {
-          return {
-              ...base,
-              backgroundImage: 'linear-gradient(#e2e8f0 1px, transparent 1px), linear-gradient(90deg, #e2e8f0 1px, transparent 1px)',
-              backgroundSize: '0.2in 0.2in' // Approx 20px grid
-          };
-      }
-      return base;
-  };
-
   const getVerticalAlignStyle = (): React.CSSProperties => {
       const style: React.CSSProperties = {
           display: 'flex',
@@ -677,135 +661,189 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
     <div 
         className="relative group transition-all duration-300 ease-[cubic-bezier(0.2,0,0,1)] mx-auto origin-top"
         style={{
-            // Use Physical Units (Inches)
+            // Use Physical Units (Inches) scaled
             width: `${widthIn * scale}in`,
             height: `${heightIn * scale}in`,
         }}
     >
-        <div 
-            className={`
-                prodoc-page-sheet absolute inset-0 bg-white overflow-hidden 
-                ${cursorStyle} ${selectionMode ? 'smart-selection-active' : ''}
-            `}
+        {/* SVG VECTOR PAGE CONTAINER */}
+        <svg 
+            width={widthPx} 
+            height={heightPx} 
+            viewBox={`0 0 ${widthPx} ${heightPx}`}
+            className={`prodoc-page-sheet absolute inset-0 overflow-visible ${cursorStyle} ${selectionMode ? 'smart-selection-active' : ''}`}
             style={{
                 transform: `scale(${scale})`,
                 transformOrigin: 'top left',
-                width: `${widthIn}in`,
-                height: `${heightIn}in`,
                 boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06), 0 0 0 1px rgba(0,0,0,0.05)',
-                // Margin simulation using Padding in Inches
-                paddingTop: `${margins.top}in`,
-                paddingBottom: `${margins.bottom}in`,
-                paddingLeft: `${margins.left}in`,
-                paddingRight: `${margins.right}in`,
-                boxSizing: 'border-box',
-                ...getBackgroundStyle()
+                display: 'block'
             }}
             onMouseDown={handlePageClick}
         >
-            {/* Header Area */}
-            <div 
-                className={`absolute left-0 right-0 z-30 ${isHeaderFooterMode ? 'z-50' : ''}`}
-                style={{ 
-                    top: 0, 
-                    height: `${margins.top}in`,
-                    maxHeight: `${safeMaxHeaderHeight}in`,
-                    paddingTop: `${config.headerDistance || 0.5}in`, 
-                    paddingLeft: `${margins.left}in`,
-                    paddingRight: `${margins.right}in`,
-                }}
-                onDoubleClick={onHeaderDoubleClick}
-                onMouseDown={(e) => e.stopPropagation()} 
-            >
-                <div className={`w-full h-full relative ${isHeaderFooterMode ? 'border-b-2 border-dashed border-indigo-500' : 'hover:bg-slate-50/50'}`}>
-                    {isHeaderFooterMode && (
-                        <div className="header-footer-label bg-indigo-600 text-white" style={{ left: 0, bottom: -2, transform: 'translateY(100%)' }}>Header</div>
-                    )}
-                    <div 
-                        ref={headerRef}
-                        className={`prodoc-header w-full min-h-full outline-none ${isHeaderFooterEditable ? 'cursor-text pointer-events-auto' : 'cursor-default pointer-events-none'}`}
-                        contentEditable={isHeaderFooterEditable}
-                        inputMode={isKeyboardLocked || selectionMode ? "none" : "text"}
-                        suppressContentEditableWarning
-                        onInput={handleHeaderInput}
-                        onFocus={() => setActiveEditingArea && setActiveEditingArea('header')}
-                        style={{ minHeight: '1em' }}
-                    />
-                </div>
-            </div>
+            <defs>
+                <pattern id="grid-pattern" width="20" height="20" patternUnits="userSpaceOnUse">
+                    <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#e2e8f0" strokeWidth="1"/>
+                </pattern>
+                <pattern id="ruled-pattern" width="100%" height="32" patternUnits="userSpaceOnUse">
+                    <line x1="0" y1="32" x2="100%" y2="32" stroke="#e2e8f0" strokeWidth="1" />
+                </pattern>
+                <filter id="dropshadow" height="130%">
+                  <feGaussianBlur in="SourceAlpha" stdDeviation="3"/> 
+                  <feOffset dx="2" dy="2" result="offsetblur"/> 
+                  <feComponentTransfer>
+                    <feFuncA type="linear" slope="0.2"/>
+                  </feComponentTransfer>
+                  <feMerge> 
+                    <feMergeNode/>
+                    <feMergeNode in="SourceGraphic"/> 
+                  </feMerge>
+                </filter>
+            </defs>
 
-            {/* Watermark */}
+            {/* 1. Page Background (Vector Rect) */}
+            <rect 
+                width="100%" 
+                height="100%" 
+                fill={config.pageColor || "white"} 
+            />
+
+            {/* 2. Patterns (Grid/Ruled) */}
+            {config.background === 'grid' && <rect width="100%" height="100%" fill="url(#grid-pattern)" />}
+            {config.background === 'ruled' && <rect width="100%" height="100%" fill="url(#ruled-pattern)" />}
+
+            {/* 3. Watermark (Vector Text) */}
             {config.watermark && (
-                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden z-0">
-                     <div className="transform -rotate-45 text-slate-300/40 font-bold text-[8rem] whitespace-nowrap select-none" style={{ color: 'rgba(0,0,0,0.08)' }}>
-                        {config.watermark}
-                     </div>
-                 </div>
+                 <text 
+                    x="50%" 
+                    y="50%" 
+                    textAnchor="middle" 
+                    dominantBaseline="middle"
+                    fill="rgba(0,0,0,0.08)"
+                    transform={`rotate(-45 ${widthPx/2} ${heightPx/2})`}
+                    fontSize={widthPx / 6}
+                    fontFamily="Arial"
+                    fontWeight="bold"
+                    pointerEvents="none"
+                 >
+                    {config.watermark}
+                 </text>
             )}
 
-            {/* Body Container */}
-            <div 
-                className={`relative w-full h-full overflow-hidden transition-opacity duration-300 ${isHeaderFooterMode ? 'opacity-50' : 'opacity-100'}`}
-                style={{ ...getVerticalAlignStyle() }}
-                onDoubleClick={onBodyDoubleClick}
-                onMouseDown={(e) => e.stopPropagation()} 
-            >
-                <div
-                    id={`prodoc-editor-${pageNumber}`}
-                    ref={editorRef}
-                    className={`prodoc-editor w-full outline-none text-lg leading-loose break-words z-10 ${showFormattingMarks ? 'show-formatting-marks' : ''} ${isHeaderFooterMode ? 'pointer-events-none select-none' : ''}`}
-                    contentEditable={isBodyEditable}
-                    inputMode={isKeyboardLocked || selectionMode ? "none" : "text"}
-                    onInput={handleInput}
-                    onKeyDown={handleKeyDown}
-                    onFocus={onFocus}
-                    onClick={handleEditorClick}
-                    onContextMenu={(e) => selectionMode && e.preventDefault()}
-                    onPointerDown={handleSmartPointerDown}
-                    onPointerMove={handleSmartPointerMove}
-                    onPointerUp={handleSmartPointerUp}
-                    onPointerCancel={handleSmartPointerUp}
-                    suppressContentEditableWarning={true}
+            {/* 4. Content Layer via foreignObject (Allows HTML/Editor inside SVG) */}
+            <foreignObject x="0" y="0" width="100%" height="100%">
+                <div 
+                    xmlns="http://www.w3.org/1999/xhtml"
+                    className="h-full w-full relative"
                     style={{
-                        fontFamily: 'Calibri, Inter, sans-serif',
-                        color: '#000000',
-                        flex: config.verticalAlign === 'justify' ? '1 1 auto' : undefined,
-                        minHeight: '100%' 
+                        paddingTop: `${margins.top}in`,
+                        paddingBottom: `${margins.bottom}in`,
+                        paddingLeft: `${margins.left}in`,
+                        paddingRight: `${margins.right}in`,
+                        boxSizing: 'border-box',
                     }}
-                />
-            </div>
-
-            {/* Footer Area */}
-            <div 
-                className={`absolute left-0 right-0 z-30 ${isHeaderFooterMode ? 'z-50' : ''}`}
-                style={{
-                    bottom: 0,
-                    height: `${margins.bottom}in`, 
-                    maxHeight: `${safeMaxFooterHeight}in`,
-                    paddingBottom: `${config.footerDistance || 0.5}in`, 
-                    paddingLeft: `${margins.left}in`,
-                    paddingRight: `${margins.right}in`,
-                }}
-                onDoubleClick={onFooterDoubleClick}
-                onMouseDown={(e) => e.stopPropagation()} 
-            >
-                 <div className={`w-full h-full relative flex flex-col justify-end ${isHeaderFooterMode ? 'border-t-2 border-dashed border-indigo-500' : 'hover:bg-slate-50/50'}`}>
-                    {isHeaderFooterMode && (
-                        <div className="header-footer-label footer-tag bg-indigo-600 text-white" style={{ left: 0, top: -2, transform: 'translateY(-100%)' }}>Footer</div>
-                    )}
+                >
+                    {/* Header Area */}
                     <div 
-                        ref={footerRef}
-                        className={`prodoc-footer w-full min-h-full outline-none ${isHeaderFooterEditable ? 'cursor-text pointer-events-auto' : 'cursor-default pointer-events-none'}`}
-                        contentEditable={isHeaderFooterEditable}
-                        inputMode={isKeyboardLocked || selectionMode ? "none" : "text"}
-                        suppressContentEditableWarning
-                        onInput={handleFooterInput}
-                        onFocus={() => setActiveEditingArea && setActiveEditingArea('footer')}
-                        style={{ minHeight: '1em' }}
-                    />
-                 </div>
-            </div>
-        </div>
+                        className={`absolute left-0 right-0 z-30 ${isHeaderFooterMode ? 'z-50' : ''}`}
+                        style={{ 
+                            top: 0, 
+                            height: `${margins.top}in`,
+                            maxHeight: `${safeMaxHeaderHeight}in`,
+                            paddingTop: `${config.headerDistance || 0.5}in`, 
+                            paddingLeft: `${margins.left}in`,
+                            paddingRight: `${margins.right}in`,
+                            pointerEvents: 'none' // Let clicks pass unless active
+                        }}
+                    >
+                        <div 
+                            className={`w-full h-full relative pointer-events-auto ${isHeaderFooterMode ? 'border-b-2 border-dashed border-indigo-500' : 'hover:bg-slate-50/50'}`}
+                            onDoubleClick={onHeaderDoubleClick}
+                            onMouseDown={(e) => e.stopPropagation()} 
+                        >
+                            {isHeaderFooterMode && (
+                                <div className="header-footer-label bg-indigo-600 text-white" style={{ left: 0, bottom: -2, transform: 'translateY(100%)' }}>Header</div>
+                            )}
+                            <div 
+                                ref={headerRef}
+                                className={`prodoc-header w-full min-h-full outline-none ${isHeaderFooterEditable ? 'cursor-text' : 'cursor-default'}`}
+                                contentEditable={isHeaderFooterEditable}
+                                inputMode={isKeyboardLocked || selectionMode ? "none" : "text"}
+                                suppressContentEditableWarning
+                                onInput={handleHeaderInput}
+                                onFocus={() => setActiveEditingArea && setActiveEditingArea('header')}
+                                style={{ minHeight: '1em' }}
+                            />
+                        </div>
+                    </div>
+
+                    {/* Body Container */}
+                    <div 
+                        className={`relative w-full h-full overflow-hidden transition-opacity duration-300 ${isHeaderFooterMode ? 'opacity-50' : 'opacity-100'}`}
+                        style={{ ...getVerticalAlignStyle() }}
+                        onDoubleClick={onBodyDoubleClick}
+                        onMouseDown={(e) => e.stopPropagation()} 
+                    >
+                        <div
+                            id={`prodoc-editor-${pageNumber}`}
+                            ref={editorRef}
+                            className={`prodoc-editor w-full outline-none text-lg leading-loose break-words z-10 ${showFormattingMarks ? 'show-formatting-marks' : ''} ${isHeaderFooterMode ? 'pointer-events-none select-none' : ''}`}
+                            contentEditable={isBodyEditable}
+                            inputMode={isKeyboardLocked || selectionMode ? "none" : "text"}
+                            onInput={handleInput}
+                            onKeyDown={handleKeyDown}
+                            onFocus={onFocus}
+                            onClick={handleEditorClick}
+                            onContextMenu={(e) => selectionMode && e.preventDefault()}
+                            onPointerDown={handleSmartPointerDown}
+                            onPointerMove={handleSmartPointerMove}
+                            onPointerUp={handleSmartPointerUp}
+                            onPointerCancel={handleSmartPointerUp}
+                            suppressContentEditableWarning={true}
+                            style={{
+                                fontFamily: 'Calibri, Inter, sans-serif',
+                                color: '#000000',
+                                flex: config.verticalAlign === 'justify' ? '1 1 auto' : undefined,
+                                minHeight: '100%' 
+                            }}
+                        />
+                    </div>
+
+                    {/* Footer Area */}
+                    <div 
+                        className={`absolute left-0 right-0 z-30 ${isHeaderFooterMode ? 'z-50' : ''}`}
+                        style={{
+                            bottom: 0,
+                            height: `${margins.bottom}in`, 
+                            maxHeight: `${safeMaxFooterHeight}in`,
+                            paddingBottom: `${config.footerDistance || 0.5}in`, 
+                            paddingLeft: `${margins.left}in`,
+                            paddingRight: `${margins.right}in`,
+                            pointerEvents: 'none'
+                        }}
+                    >
+                         <div 
+                            className={`w-full h-full relative flex flex-col justify-end pointer-events-auto ${isHeaderFooterMode ? 'border-t-2 border-dashed border-indigo-500' : 'hover:bg-slate-50/50'}`}
+                            onDoubleClick={onFooterDoubleClick}
+                            onMouseDown={(e) => e.stopPropagation()} 
+                         >
+                            {isHeaderFooterMode && (
+                                <div className="header-footer-label footer-tag bg-indigo-600 text-white" style={{ left: 0, top: -2, transform: 'translateY(-100%)' }}>Footer</div>
+                            )}
+                            <div 
+                                ref={footerRef}
+                                className={`prodoc-footer w-full min-h-full outline-none ${isHeaderFooterEditable ? 'cursor-text' : 'cursor-default'}`}
+                                contentEditable={isHeaderFooterEditable}
+                                inputMode={isKeyboardLocked || selectionMode ? "none" : "text"}
+                                suppressContentEditableWarning
+                                onInput={handleFooterInput}
+                                onFocus={() => setActiveEditingArea && setActiveEditingArea('footer')}
+                                style={{ minHeight: '1em' }}
+                            />
+                         </div>
+                    </div>
+                </div>
+            </foreignObject>
+        </svg>
     </div>
   );
 };

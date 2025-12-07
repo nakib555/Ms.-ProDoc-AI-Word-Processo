@@ -505,6 +505,9 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
                             className="prodoc-page-wrapper box-border shrink-0 relative group"
                             data-page-index={index}
                             style={{ 
+                                // Ensure wrapper has explicit height to allow SVG to render correctly in flow
+                                height: `${scaledHeight}px`,
+                                // Using content-visibility to improve performance with large SVGs
                                 contentVisibility: 'auto', 
                                 containIntrinsicSize: `0 ${scaledHeight}px`
                             }}
