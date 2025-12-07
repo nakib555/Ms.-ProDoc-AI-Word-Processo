@@ -4,6 +4,7 @@ import { createPortal } from 'react-dom';
 import { 
   FileText, FileType, Printer, ChevronDown, Loader2, 
   LayoutTemplate, Check, ArrowLeft, Sliders, Eye, Ruler, Download,
+  Image as ImageIcon,
   Monitor
 } from 'lucide-react';
 import { useEditor } from '../../../../../contexts/EditorContext';
@@ -13,7 +14,8 @@ import { PAGE_SIZES, MARGIN_PRESETS, PAPER_FORMATS } from '../../../../../consta
 import { PageConfig } from '../../../../../types';
 // @ts-ignore
 import { Previewer } from 'pagedjs';
-import { generateVectorPdf } from '../../../../../utils/satoriPdfService';
+import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
 
 // --- UI Components ---
 
@@ -405,6 +407,14 @@ const DPI_OPTIONS = [
     { value: 300, label: '300 DPI (Print)' },
     { value: 600, label: '600 DPI (High Quality)' },
     { value: 1200, label: '1200 DPI (Professional)' },
+    { value: 1500, label: '1500 DPI (Ultra)' },
+    { value: 1800, label: '1800 DPI (Extreme)' },
+    { value: 2000, label: '2000 DPI (Archival)' },
+    { value: 2400, label: '2400 DPI (Film)' },
+    { value: 3000, label: '3000 DPI (Microfilm)' },
+    { value: 3300, label: '3300 DPI (High-Res Film)' },
+    { value: 3600, label: '3600 DPI (Ultra-Res Film)' },
+    { value: 4000, label: '4000 DPI (Master)' }
 ];
 
 const PrintSettingsPanel: React.FC<{
@@ -416,10 +426,9 @@ const PrintSettingsPanel: React.FC<{
     setDpi: (dpi: number) => void;
     onPrint: () => void;
     isPreparing: boolean;
-    progressMsg: string;
     closeModal: () => void;
     isMobile?: boolean;
-}> = ({ localConfig, setLocalConfig, copies, setCopies, dpi, setDpi, onPrint, isPreparing, progressMsg, closeModal, isMobile }) => {
+}> = ({ localConfig, setLocalConfig, copies, setCopies, dpi, setDpi, onPrint, isPreparing, closeModal, isMobile }) => {
     
     const handleSettingChange = (key: keyof PageConfig | 'marginPreset', value: any) => {
       setLocalConfig(prev => {
@@ -465,7 +474,7 @@ const PrintSettingsPanel: React.FC<{
                          <ArrowLeft size={20} />
                      </button>
                      <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
-                         Export PDF
+                         Print / Download
                      </h2>
                 </div>
             )}
@@ -477,7 +486,7 @@ const PrintSettingsPanel: React.FC<{
                         label="Destination"
                         value="default"
                         onChange={() => {}}
-                        options={[{ value: 'default', label: 'Save as PDF (Vector)' }]}
+                        options={[{ value: 'default', label: 'Save as PDF' }]}
                         icon={Printer}
                         disabled
                     />
@@ -546,11 +555,8 @@ const PrintSettingsPanel: React.FC<{
                         className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-base shadow-lg shadow-blue-200/50 dark:shadow-none transition-all flex items-center justify-center gap-3 disabled:opacity-70 active:scale-[0.98]"
                     >
                         {isPreparing ? <Loader2 className="animate-spin" size={20}/> : <Download size={20}/>}
-                        <span>{isPreparing ? progressMsg || 'Generating...' : 'Download Vector PDF'}</span>
+                        <span>{isPreparing ? 'Generating PDF...' : 'Download PDF'}</span>
                     </button>
-                    <p className="text-[10px] text-center text-slate-400">
-                        High-fidelity vector export using Satori.
-                    </p>
                 </div>
             )}
         </div>
@@ -565,7 +571,6 @@ export const PrintModal: React.FC = () => {
   const [localConfig, setLocalConfig] = useState<PageConfig>({ ...globalConfig });
   const [previewPages, setPreviewPages] = useState<{ html: string, config: PageConfig }[]>([]);
   const [isPreparingPrint, setIsPreparingPrint] = useState(false);
-  const [progressMsg, setProgressMsg] = useState('');
   const [copies, setCopies] = useState(1);
   const [dpi, setDpi] = useState(300);
   const [isMobile, setIsMobile] = useState(false);
@@ -585,45 +590,201 @@ export const PrintModal: React.FC = () => {
     return () => clearTimeout(timer);
   }, [content, localConfig]);
 
-  const handlePrint = async () => {
+  const handleDownloadPDF = async () => {
       setIsPreparingPrint(true);
-      setProgressMsg('Starting export...');
 
       try {
-          // Prepare pages including headers and footers for the vector generator.
-          // CRITICAL: Satori requires explicit display:flex for containers that have multiple children.
-          // We inline these styles here to ensure Satori sees them, as external classes won't apply.
-          const fullPages = previewPages.map((page, index) => {
-             // Basic replacement of placeholders
-             let header = headerContent.replace('[Header]', '');
-             let footer = footerContent.replace(/\[Page \d+\]/g, `[Page ${index + 1}]`)
-                                       .replace(/<span class="page-number-placeholder">.*?<\/span>/g, `${index + 1}`);
+          const oldContainer = document.getElementById('paged-print-container');
+          if (oldContainer) document.body.removeChild(oldContainer);
+          const oldStyle = document.getElementById('paged-print-style');
+          if (oldStyle) document.head.removeChild(oldStyle);
 
-             // Combine into a full page HTML representation
-             // We use explicit flex styles to satisfy Satori's layout engine constraints.
-             // Satori errors if a div has children but defaults to 'block' layout.
-             return {
-                 ...page,
-                 html: `
-                    <div style="display: flex; flex-direction: column; width: 100%; height: 100%; justify-content: space-between;">
-                        <div style="display: flex; flex-direction: column; width: 100%;">${header}</div>
-                        <div style="display: flex; flex-direction: column; width: 100%; flex: 1;">${page.html}</div>
-                        <div style="display: flex; flex-direction: column; width: 100%;">${footer}</div>
-                    </div>
-                 `
-             };
+          const printContainer = document.createElement('div');
+          printContainer.id = 'paged-print-container';
+          document.body.appendChild(printContainer);
+
+          const { size, orientation, margins } = localConfig;
+          
+          let widthIn = 0;
+          let heightIn = 0;
+
+          if (size === 'Custom' && localConfig.customWidth && localConfig.customHeight) {
+              widthIn = localConfig.customWidth;
+              heightIn = localConfig.customHeight;
+          } else {
+              const baseSize = PAGE_SIZES[size as string] || PAGE_SIZES['Letter'];
+              widthIn = baseSize.width / 96;
+              heightIn = baseSize.height / 96;
+          }
+
+          if (orientation === 'landscape') {
+              const temp = widthIn;
+              widthIn = heightIn;
+              heightIn = temp;
+          }
+
+          const sizeCss = `${widthIn}in ${heightIn}in`;
+
+          const css = `
+              @page {
+                  size: ${sizeCss};
+                  margin-top: ${margins.top}in;
+                  margin-bottom: ${margins.bottom}in;
+                  margin-left: ${margins.left}in;
+                  margin-right: ${margins.right}in;
+                  
+                  @top-center {
+                      content: element(header);
+                  }
+                  @bottom-center {
+                      content: element(footer);
+                  }
+              }
+
+              .pagedjs-header {
+                  position: running(header);
+                  width: 100%;
+              }
+
+              .pagedjs-footer {
+                  position: running(footer);
+                  width: 100%;
+              }
+
+              .paged-content {
+                  font-family: 'Calibri, Inter, sans-serif',
+                  font-size: 11pt;
+                  line-height: 1.5;
+                  color: black;
+              }
+              
+              .paged-content table { 
+                  border-collapse: collapse; 
+                  width: 100%; 
+                  margin: 1em 0;
+              }
+              .paged-content tr {
+                  break-inside: avoid;
+                  page-break-inside: avoid;
+              }
+              .paged-content td, .paged-content th { 
+                  border: 1px solid #000; 
+                  padding: 4px 8px; 
+              }
+              
+              .paged-content img { max-width: 100%; }
+              .equation-handle, .equation-dropdown { display: none !important; }
+              .prodoc-page-break { break-after: page; height: 0; margin: 0; border: none; }
+              
+              .pagedjs_page {
+                 background: white;
+                 box-shadow: none !important;
+                 margin: 0 !important;
+              }
+              
+              #paged-print-container {
+                  position: absolute;
+                  top: 0;
+                  left: 0;
+                  width: 100%;
+                  z-index: -1000;
+                  visibility: visible;
+              }
+          `;
+
+          let cleanHeader = headerContent.replace('[Header]', '');
+          let cleanFooter = footerContent; 
+          if (cleanFooter.includes('page-number-placeholder')) {
+               cleanFooter = cleanFooter.replace(/<span class="page-number-placeholder">.*?<\/span>/g, '<span class="pagedjs-page-number"></span>');
+          }
+
+          const pageNumCss = `
+             .pagedjs-page-number::after {
+                 content: counter(page);
+             }
+          `;
+
+          const htmlContent = `
+              <div class="pagedjs-header">${cleanHeader}</div>
+              <div class="pagedjs-footer">${cleanFooter}</div>
+              <div class="paged-content">
+                  ${content}
+              </div>
+          `;
+
+          const previewer = new Previewer();
+          
+          const styleEl = document.createElement('style');
+          styleEl.id = 'paged-print-style';
+          styleEl.innerHTML = css + pageNumCss;
+          document.head.appendChild(styleEl);
+
+          // 1. Generate Layout with Paged.js
+          await previewer.preview(htmlContent, [], printContainer);
+
+          const pagedPages = document.querySelectorAll('.pagedjs_page');
+          if (pagedPages.length === 0) throw new Error("No pages generated by Paged.js");
+
+          // 2. Initialize jsPDF
+          // Use 'in' (inches) as unit since our layout logic is inch-based
+          const orientationShort = orientation === 'landscape' ? 'l' : 'p';
+          
+          const pdf = new jsPDF({
+              orientation: orientationShort,
+              unit: 'in',
+              format: [widthIn, heightIn]
           });
 
-          await generateVectorPdf(fullPages, documentTitle, (msg) => setProgressMsg(msg));
+          // 3. Rasterize Pages with html2canvas and add to PDF
+          // Scale factor: DPI / 96 (browser standard)
+          let scale = dpi / 96;
+
+          // Safety Check: Browser Canvas Limits
+          // Mobile devices often crash or return blank canvases if > 4096px
+          // Desktop usually safe up to 8192px or 16384px depending on GPU
+          const MAX_CANVAS_DIMENSION = window.innerWidth < 768 ? 4000 : 8000;
+          const projectedWidth = widthIn * 96 * scale;
+          const projectedHeight = heightIn * 96 * scale;
           
-          setIsPreparingPrint(false);
-          setProgressMsg('');
+          if (projectedWidth > MAX_CANVAS_DIMENSION || projectedHeight > MAX_CANVAS_DIMENSION) {
+              const scaleW = MAX_CANVAS_DIMENSION / (widthIn * 96);
+              const scaleH = MAX_CANVAS_DIMENSION / (heightIn * 96);
+              scale = Math.min(scaleW, scaleH);
+              console.warn(`Reduced print DPI to prevent browser crash. Effective scale: ${scale}`);
+          }
+
+          for (let i = 0; i < pagedPages.length; i++) {
+              if (i > 0) pdf.addPage([widthIn, heightIn], orientationShort);
+
+              const pageEl = pagedPages[i] as HTMLElement;
+              
+              // Use html2canvas to screenshot the rendered HTML page
+              const canvas = await html2canvas(pageEl, {
+                  scale: scale,
+                  useCORS: true,
+                  logging: false,
+                  backgroundColor: '#ffffff'
+              });
+
+              const imgData = canvas.toDataURL('image/jpeg', 0.95); // Use JPEG for smaller size, high quality
+              
+              // Add image to PDF, filling the page dimensions
+              pdf.addImage(imgData, 'JPEG', 0, 0, widthIn, heightIn);
+          }
+          
+          // 4. Save
+          pdf.save(`${documentTitle || 'document'}.pdf`);
 
       } catch (e) {
-          console.error("Print Generation Error:", e);
+          console.error("PDF Generation Error:", e);
           alert("Failed to generate PDF. Please try again.");
+      } finally {
+          const container = document.getElementById('paged-print-container');
+          if (container) document.body.removeChild(container);
+          const style = document.getElementById('paged-print-style');
+          if (style) document.head.removeChild(style);
+          
           setIsPreparingPrint(false);
-          setProgressMsg('');
       }
   };
 
@@ -641,7 +802,7 @@ export const PrintModal: React.FC = () => {
                     >
                         <ArrowLeft size={20} />
                     </button>
-                    <h2 className="text-base font-bold text-slate-800 dark:text-slate-100">Export PDF</h2>
+                    <h2 className="text-base font-bold text-slate-800 dark:text-slate-100">Print / Download</h2>
                     <div className="w-8"></div>
                 </div>
                 <div className="px-4 pb-3">
@@ -674,9 +835,8 @@ export const PrintModal: React.FC = () => {
                 setCopies={setCopies}
                 dpi={dpi}
                 setDpi={setDpi}
-                onPrint={handlePrint}
+                onPrint={handleDownloadPDF}
                 isPreparing={isPreparingPrint}
-                progressMsg={progressMsg}
                 closeModal={closeModal}
                 isMobile={isMobile}
             />
@@ -692,7 +852,7 @@ export const PrintModal: React.FC = () => {
                     headerContent={headerContent}
                     footerContent={footerContent}
                     isPreparing={isPreparingPrint}
-                    onPrint={handlePrint}
+                    onPrint={handleDownloadPDF}
                     isVisible={mobileTab === 'preview'}
                 />
             ) : (

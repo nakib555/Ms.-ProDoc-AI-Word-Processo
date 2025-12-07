@@ -9,13 +9,16 @@
       window.process = window.process || { env: {} };
     </script>
     <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Serif:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
     
     <!-- MathLive Dependencies -->
     <script defer src="//unpkg.com/mathlive"></script>
+    
+    <!-- PDF Generation (jsPDF + html2canvas) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
 
     <script>
       tailwind.config = {
@@ -84,11 +87,8 @@
     "url": "https://aistudiocdn.com/url@^0.11.4",
     "react-virtualized-auto-sizer": "https://aistudiocdn.com/react-virtualized-auto-sizer@^1.0.26",
     "pagedjs": "https://unpkg.com/pagedjs/dist/paged.esm.js",
-    "html2pdf.js": "https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js",
-    "jspdf": "https://aistudiocdn.com/jspdf@^3.0.4",
-    "svg2pdf.js": "https://aistudiocdn.com/svg2pdf.js@^2.6.0",
-    "satori": "https://aistudiocdn.com/satori@^0.18.3",
-    "satori-html": "https://aistudiocdn.com/satori-html@^0.3.2"
+    "html2canvas": "https://aistudiocdn.com/html2canvas@^1.4.1",
+    "jspdf": "https://aistudiocdn.com/jspdf@^2.5.1"
   }
 }
 </script>
