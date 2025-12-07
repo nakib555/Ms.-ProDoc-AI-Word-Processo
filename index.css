@@ -113,18 +113,12 @@
 }
 
 /* Smooth transition for the page sheet itself (Zoom, Resize) */
-/* Modified for SVG structure */
 .prodoc-page-sheet {
-  transition-property: transform;
+  transition-property: width, height, transform, box-shadow, background-color;
   transition-duration: 0.4s;
   transition-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
-  will-change: transform;
-  display: block;
-}
-
-/* IMPORTANT: foreignObject needs to not block interactivity */
-foreignObject {
-    overflow: visible;
+  will-change: transform, width, height;
+  box-sizing: border-box; /* Ensure padding is included in width/height calculations */
 }
 
 /* --- Smart Selection Mode (Mobile) --- */
