@@ -372,11 +372,13 @@ math-field:not(.equation-wrapper math-field):focus-within {
   to { transform: translateY(0); opacity: 1; }
 }
 
-/* Print styles */
+/* Print styles - Adjusted for Paged.js native print flow */
 @media print {
-  .no-print { display: none !important; }
-  body.printing-mode > *:not(#paged-print-container) { display: none !important; }
-  body.printing-mode #paged-print-container {
+  /* Hide the entire React App UI */
+  #root { display: none !important; }
+  
+  /* Ensure the Paged.js generated container is visible */
+  #paged-print-output {
     display: block !important;
     position: absolute;
     top: 0;
@@ -384,13 +386,43 @@ math-field:not(.equation-wrapper math-field):focus-within {
     width: 100%;
     margin: 0;
     padding: 0;
+    background: white;
+    z-index: 9999;
   }
-  .pagedjs_pages { width: 100%; display: block; }
-  .pagedjs_page { margin: 0 !important; box-shadow: none !important; break-after: page; }
-  .prodoc-page-break { display: block; break-after: page; page-break-after: always; height: 0; border: none !important; margin: 0; }
+
+  /* Paged.js page styling overrides for print media */
+  .pagedjs_pages { 
+      width: 100%; 
+      display: block; 
+  }
+  
+  .pagedjs_page { 
+      margin: 0 !important; 
+      box-shadow: none !important; 
+      break-after: page; 
+      page-break-after: always;
+  }
+  
+  /* Ensure content breaks correctly */
+  .prodoc-page-break { 
+      display: block; 
+      break-after: page; 
+      page-break-after: always; 
+      height: 0; 
+      border: none !important; 
+      margin: 0; 
+  }
+  
+  /* Hide UI elements within content if they leaked */
   .prodoc-page-break::after { display: none; }
   .header-footer-label { display: none !important; }
   .equation-handle, .equation-dropdown { display: none !important; }
+  .no-print { display: none !important; }
+}
+
+/* Paged.js Preview Styling (when visible in DOM before print) */
+#paged-print-output {
+    display: none; /* Hidden by default on screen */
 }
 
 .pagedjs_page {
