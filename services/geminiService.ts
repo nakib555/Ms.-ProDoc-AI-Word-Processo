@@ -1,4 +1,4 @@
-import { GoogleGenAI, GenerateContentResponse, HarmCategory, HarmBlockThreshold } from "@google/genai";
+import { GoogleGenAI, GenerateContentResponse, HarmCategory, HarmBlockThreshold, Modality } from "@google/genai";
 import { AIOperation } from '../types';
 import { getSystemPrompt, getChatSystemPrompt } from './prompts';
 
@@ -38,6 +38,52 @@ const formatGeminiError = (error: any): string => {
     return "⚠️ Content blocked by safety filters. Please revise your prompt.";
   }
   return `⚠️ AI Error: ${msg}`;
+};
+
+const base64ToUint8Array = (base64: string) => {
+  const binaryString = atob(base64);
+  const len = binaryString.length;
+  const bytes = new Uint8Array(len);
+  for (let i = 0; i < len; i++) {
+    bytes[i] = binaryString.charCodeAt(i);
+  }
+  return bytes;
+};
+
+export const generateSpeech = async (text: string, voiceName: string = 'Kore'): Promise<Uint8Array | null> => {
+  const client = getClient();
+  if (!client) {
+      console.error("API Key not configured");
+      return null;
+  }
+
+  try {
+    // Truncate text if too long to prevent errors (approx limit check for TTS model)
+    const safeText = text.slice(0, 4000); 
+    
+    const response = await client.models.generateContent({
+      model: "gemini-2.5-flash-preview-tts",
+      contents: [{ parts: [{ text: safeText }] }],
+      config: {
+        responseModalities: [Modality.AUDIO],
+        speechConfig: {
+            voiceConfig: {
+              prebuiltVoiceConfig: { voiceName },
+            },
+        },
+      },
+    });
+
+    const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+    if (base64Audio) {
+        return base64ToUint8Array(base64Audio);
+    }
+    return null;
+
+  } catch (error) {
+    console.error("[Gemini Service] Speech Gen Error:", error);
+    return null;
+  }
 };
 
 export const generateAIContent = async (

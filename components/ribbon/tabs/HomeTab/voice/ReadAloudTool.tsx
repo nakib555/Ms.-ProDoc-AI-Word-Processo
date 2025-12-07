@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Volume2, Square } from 'lucide-react';
+import { Volume2, Loader2, Square } from 'lucide-react';
 import { RibbonButton } from '../../../common/RibbonButton';
 import { useEditor } from '../../../../../contexts/EditorContext';
+import { generateSpeech } from '../../../../../services/geminiService';
 
 // Animated Visualizer Component
 const WaveformIcon = ({ className }: { className?: string }) => (
@@ -28,9 +29,12 @@ const WaveformIcon = ({ className }: { className?: string }) => (
 
 export const ReadAloudTool: React.FC = () => {
   const { content } = useEditor();
-  const [isReading, setIsReading] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [hasContent, setHasContent] = useState(false);
-  const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+  
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const sourceRef = useRef<AudioBufferSourceNode | null>(null);
 
   // Check content presence for disabled state using innerText to respect visibility
   useEffect(() => {
@@ -40,86 +44,116 @@ export const ReadAloudTool: React.FC = () => {
     setHasContent(text.length > 0);
   }, [content]);
 
-  // Monitor speech synthesis state to sync UI if it stops externally
-  useEffect(() => {
-     const interval = setInterval(() => {
-         if (!window.speechSynthesis.speaking && isReading) {
-             setIsReading(false);
-         }
-     }, 200);
-     return () => clearInterval(interval);
-  }, [isReading]);
+  // Decode helper for Gemini PCM (24kHz, 1 channel)
+  const decodeAudioData = (
+      data: Uint8Array,
+      ctx: AudioContext
+  ): AudioBuffer => {
+      const pcmData = new Int16Array(data.buffer);
+      const float32Data = new Float32Array(pcmData.length);
+      for (let i = 0; i < pcmData.length; i++) {
+          float32Data[i] = pcmData[i] / 32768.0;
+      }
+      const buffer = ctx.createBuffer(1, float32Data.length, 24000);
+      buffer.copyToChannel(float32Data, 0);
+      return buffer;
+  };
+
+  const stopAudio = () => {
+      if (sourceRef.current) {
+          try { sourceRef.current.stop(); } catch (e) {}
+          sourceRef.current = null;
+      }
+      setIsPlaying(false);
+  };
+
+  const handleReadAloud = async () => {
+    if (isPlaying) {
+        stopAudio();
+        return;
+    }
+    
+    if (isLoading) return;
+
+    // Get text to read
+    let textToRead = "";
+    const selection = window.getSelection();
+    if (selection && !selection.isCollapsed) {
+        textToRead = selection.toString();
+    } else {
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = content;
+        textToRead = tempDiv.innerText || "";
+    }
+    
+    textToRead = textToRead.trim();
+    if (!textToRead) return;
+
+    setIsLoading(true);
+    
+    try {
+        const audioData = await generateSpeech(textToRead);
+        
+        if (audioData) {
+             if (!audioContextRef.current) {
+                 audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
+             }
+             
+             if (audioContextRef.current.state === 'suspended') {
+                 await audioContextRef.current.resume();
+             }
+
+             const buffer = decodeAudioData(audioData, audioContextRef.current);
+             
+             // Create source
+             const source = audioContextRef.current.createBufferSource();
+             source.buffer = buffer;
+             source.connect(audioContextRef.current.destination);
+             
+             source.onended = () => {
+                 setIsPlaying(false);
+                 sourceRef.current = null;
+             };
+             
+             sourceRef.current = source;
+             source.start();
+             setIsPlaying(true);
+        } else {
+            alert("Could not generate speech. Please check your API key.");
+        }
+    } catch (e) {
+        console.error(e);
+        alert("Error generating speech.");
+    } finally {
+        setIsLoading(false);
+    }
+  };
 
   // Cleanup on unmount
   useEffect(() => {
       return () => {
-          if (window.speechSynthesis) {
-              window.speechSynthesis.cancel();
+          stopAudio();
+          if (audioContextRef.current) {
+              audioContextRef.current.close();
           }
       };
   }, []);
 
-  const handleReadAloud = () => {
-    if (isReading) {
-        window.speechSynthesis.cancel();
-        setIsReading(false);
-        return;
-    }
-
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = content;
-    
-    // Get visible text content
-    const textToRead = (tempDiv.innerText || '').replace(/\s+/g, ' ').trim();
-
-    if (textToRead.length > 0) {
-        window.speechSynthesis.cancel(); // Cancel any existing speech
-
-        const utterance = new SpeechSynthesisUtterance(textToRead);
-        utteranceRef.current = utterance;
-        
-        // Attempt to set a preferred voice (English)
-        const loadVoices = () => {
-            const voices = window.speechSynthesis.getVoices();
-            // Prefer a high quality Google voice or standard English
-            const preferredVoice = voices.find(v => 
-                (v.name.includes('Google') && v.name.includes('English')) || 
-                (v.name.includes('Natural') && v.lang.startsWith('en'))
-            ) || voices.find(v => v.lang.startsWith('en'));
-            
-            if (preferredVoice) {
-                utterance.voice = preferredVoice;
-            }
-        };
-
-        loadVoices();
-        // If voices aren't loaded yet (Chrome behavior), listen for event
-        if (window.speechSynthesis.onvoiceschanged !== undefined) {
-             window.speechSynthesis.onvoiceschanged = loadVoices;
-        }
-
-        utterance.onstart = () => setIsReading(true);
-        utterance.onend = () => setIsReading(false);
-        utterance.onerror = (e) => {
-            // Check for interruption vs actual error
-            if (e.error !== 'interrupted' && e.error !== 'canceled') {
-                console.error("TTS Error:", e); 
-            }
-            setIsReading(false);
-        };
-
-        window.speechSynthesis.speak(utterance);
-    }
-  };
+  let Icon = Volume2;
+  if (isLoading) Icon = Loader2;
+  else if (isPlaying) Icon = WaveformIcon;
+  else if (isPlaying) Icon = Square; // Fallback
 
   return (
     <RibbonButton 
-        icon={isReading ? WaveformIcon : Volume2} 
-        label={isReading ? "Stop" : "Read Aloud"} 
+        icon={Icon} 
+        label={isLoading ? "Generating..." : isPlaying ? "Stop" : "Read Aloud"} 
         onClick={handleReadAloud} 
-        disabled={!hasContent}
-        className={isReading ? "bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 border-red-200" : ""}
-        title={!hasContent ? "No content to read" : isReading ? "Stop Reading" : "Read document aloud"}
+        disabled={!hasContent && !isPlaying}
+        className={isPlaying || isLoading ? "bg-indigo-50 text-indigo-600 hover:bg-indigo-100 hover:text-indigo-700 border-indigo-200" : ""}
+        title={!hasContent ? "No content to read" : isReading ? "Stop Reading" : "Read document aloud with Gemini AI"}
     />
   );
 };
+// Helper alias for tooltip
+const isReading = false;
