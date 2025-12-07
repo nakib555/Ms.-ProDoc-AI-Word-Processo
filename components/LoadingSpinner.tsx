@@ -15,6 +15,7 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({ className = "w-8
           cy="24" 
           r="16" 
           fill="none" 
+          stroke="#4f46e5"
           strokeWidth="4.5" 
           strokeLinecap="round" 
           strokeDasharray="80 100" 

@@ -1,7 +1,8 @@
 
 import React from 'react';
-import { Menu, MoreHorizontal, Loader2, Cloud } from 'lucide-react';
+import { Menu, MoreHorizontal, Cloud } from 'lucide-react';
 import { useEditor } from '../../contexts/EditorContext';
+import { LoadingSpinner } from '@/components/LoadingSpinner';
 
 interface RibbonHeaderProps {
   toggleSidebar: () => void;
@@ -15,7 +16,7 @@ export const RibbonHeader: React.FC<RibbonHeaderProps> = ({ toggleSidebar }) => 
       case 'saving':
         return (
           <span className="font-medium tracking-wide flex items-center text-slate-400 text-[10px] uppercase animate-pulse">
-            <Loader2 size={12} className="mr-1.5 animate-spin" />
+            <LoadingSpinner className="w-3 h-3 mr-1.5" />
             <span className="hidden sm:inline">Saving...</span>
           </span>
         );

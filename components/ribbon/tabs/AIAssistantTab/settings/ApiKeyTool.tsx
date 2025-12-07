@@ -435,4 +435,24 @@ export const ApiKeyTool: React.FC = () => {
                         </div>
                     </div>
 
-                    <div className="px-5 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-3 shrink-
+                    <div className="px-5 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-3 shrink-0">
+                        <button 
+                            onClick={verifyKey}
+                            disabled={verifying || !inputKey}
+                            className="px-4 py-2 bg-white border border-slate-300 text-slate-700 text-sm font-medium rounded-lg hover:bg-slate-50 focus:ring-2 focus:ring-slate-200 transition-all disabled:opacity-50 shadow-sm"
+                        >
+                            Verify
+                        </button>
+                        <button 
+                            onClick={saveAndClose}
+                            className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 shadow-md hover:shadow-lg focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 transition-all disabled:opacity-50 disabled:shadow-none flex items-center gap-2"
+                        >
+                            <Save size={16} /> Save Changes
+                        </button>
+                    </div>
+                </div>
+            </div>
+        )}
+    </>
+  );
+};
