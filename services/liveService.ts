@@ -38,20 +38,20 @@ export class LiveService {
     try {
       const client = this.getClient();
 
-      // Initialize Audio Context
-      // We force 16kHz here so that the browser resamples the mic input automatically
-      this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)({
-        sampleRate: 16000,
-      });
-
-      // Get Microphone Stream
-      // Using relaxed constraints to avoid "Requested device not found" / OverconstrainedError.
-      // We simply ask for audio; the AudioContext above handles the 16kHz requirement via resampling.
+      // 1. Get Microphone Stream FIRST
+      // This ensures we have mic permission and hardware before spinning up AudioContext/Gemini Session
+      // Using relaxed constraints (audio: true) to avoid OverconstrainedError on devices that don't natively support 16kHz
       this.stream = await navigator.mediaDevices.getUserMedia({
         audio: true, 
       });
 
-      // Initialize Session
+      // 2. Initialize Audio Context with target sample rate
+      // Modern browsers will resample the stream to match this context automatically
+      this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)({
+        sampleRate: 16000,
+      });
+
+      // 3. Initialize Gemini Session
       this.session = await client.live.connect({
         model: 'gemini-2.5-flash-native-audio-preview-09-2025',
         config: {
@@ -79,7 +79,7 @@ export class LiveService {
             onClose();
           },
           onerror: (err) => {
-            console.error("Dictation Error:", err);
+            console.error("Dictation Session Error:", err);
             this.cleanup();
             onError(new Error("Connection error"));
           }
@@ -94,9 +94,11 @@ export class LiveService {
       if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
          onError(new Error("Microphone permission denied. Please allow microphone access in your browser settings."));
       } else if (error.name === 'NotFoundError' || error.name === 'DevicesNotFoundError') {
-         onError(new Error("No microphone found. Please check your audio input settings."));
+         onError(new Error("No microphone found. Please check your system audio settings and permissions."));
       } else if (error.name === 'OverconstrainedError') {
          onError(new Error("Microphone hardware constraints not met."));
+      } else if (error.name === 'NotSupportedError') {
+         onError(new Error("Audio sample rate not supported by this browser."));
       } else {
          onError(error);
       }
@@ -106,26 +108,35 @@ export class LiveService {
   private startAudioStreaming() {
     if (!this.audioContext || !this.stream || !this.session) return;
 
-    this.source = this.audioContext.createMediaStreamSource(this.stream);
-    this.processor = this.audioContext.createScriptProcessor(4096, 1, 1);
+    try {
+        this.source = this.audioContext.createMediaStreamSource(this.stream);
+        this.processor = this.audioContext.createScriptProcessor(4096, 1, 1);
 
-    this.processor.onaudioprocess = (e) => {
-      if (!this.isConnected || !this.session) return;
-      
-      const inputData = e.inputBuffer.getChannelData(0);
-      const pcmBlob = this.createBlob(inputData);
-      
-      // Ensure session is ready before sending
-      this.session.sendRealtimeInput({ media: pcmBlob });
-    };
+        this.processor.onaudioprocess = (e) => {
+          if (!this.isConnected || !this.session) return;
+          
+          const inputData = e.inputBuffer.getChannelData(0);
+          const pcmBlob = this.createBlob(inputData);
+          
+          // Ensure session is ready before sending
+          this.session.sendRealtimeInput({ media: pcmBlob });
+        };
 
-    this.source.connect(this.processor);
-    this.processor.connect(this.audioContext.destination);
+        this.source.connect(this.processor);
+        this.processor.connect(this.audioContext.destination);
+    } catch (e) {
+        console.error("Error starting audio stream:", e);
+    }
   }
 
   disconnect() {
+    this.isConnected = false;
     if (this.session) {
-      this.session.close();
+      try {
+        this.session.close();
+      } catch (e) {
+        console.warn("Error closing session:", e);
+      }
     }
     this.cleanup();
   }
@@ -135,23 +146,31 @@ export class LiveService {
     this.session = null;
 
     if (this.processor) {
-      this.processor.disconnect();
-      this.processor.onaudioprocess = null;
+      try {
+        this.processor.disconnect();
+        this.processor.onaudioprocess = null;
+      } catch (e) {}
       this.processor = null;
     }
 
     if (this.source) {
-      this.source.disconnect();
+      try {
+        this.source.disconnect();
+      } catch (e) {}
       this.source = null;
     }
 
     if (this.stream) {
-      this.stream.getTracks().forEach(track => track.stop());
+      try {
+        this.stream.getTracks().forEach(track => track.stop());
+      } catch (e) {}
       this.stream = null;
     }
 
     if (this.audioContext) {
-      this.audioContext.close();
+      try {
+        this.audioContext.close();
+      } catch (e) {}
       this.audioContext = null;
     }
   }
