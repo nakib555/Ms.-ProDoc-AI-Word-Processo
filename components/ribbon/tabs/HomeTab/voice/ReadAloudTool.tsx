@@ -3,16 +3,40 @@ import { Volume2, Square } from 'lucide-react';
 import { RibbonButton } from '../../../common/RibbonButton';
 import { useEditor } from '../../../../../contexts/EditorContext';
 
+// Animated Visualizer Component
+const WaveformIcon = ({ className }: { className?: string }) => (
+  <div className={`flex items-center justify-center gap-[2px] ${className}`}>
+      <style>{`
+        @keyframes waveform {
+            0%, 100% { height: 20%; }
+            50% { height: 100%; }
+        }
+      `}</style>
+      {[0, 1, 2, 3].map((i) => (
+          <div 
+            key={i} 
+            className="w-[2.5px] bg-current rounded-full"
+            style={{ 
+                height: '40%',
+                animation: 'waveform 0.6s ease-in-out infinite', 
+                animationDelay: `${i * 0.1}s` 
+            }} 
+          />
+      ))}
+  </div>
+);
+
 export const ReadAloudTool: React.FC = () => {
   const { content } = useEditor();
   const [isReading, setIsReading] = useState(false);
   const [hasContent, setHasContent] = useState(false);
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
 
-  // Check content presence for disabled state
+  // Check content presence for disabled state using innerText to respect visibility
   useEffect(() => {
-    // Strip HTML tags to check if there is actual text
-    const text = content.replace(/<[^>]*>/g, ' ').trim();
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = content;
+    const text = (tempDiv.innerText || '').trim();
     setHasContent(text.length > 0);
   }, [content]);
 
@@ -22,7 +46,7 @@ export const ReadAloudTool: React.FC = () => {
          if (!window.speechSynthesis.speaking && isReading) {
              setIsReading(false);
          }
-     }, 500);
+     }, 200);
      return () => clearInterval(interval);
   }, [isReading]);
 
@@ -32,7 +56,7 @@ export const ReadAloudTool: React.FC = () => {
           if (window.speechSynthesis) {
               window.speechSynthesis.cancel();
           }
-      }
+      };
   }, []);
 
   const handleReadAloud = () => {
@@ -42,12 +66,10 @@ export const ReadAloudTool: React.FC = () => {
         return;
     }
 
-    // Create a temporary element to extract clean text from HTML content
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = content;
     
-    // Get text content, replacing multiple spaces/newlines with single space
-    // This provides a smoother reading experience than raw innerText
+    // Get visible text content
     const textToRead = (tempDiv.innerText || '').replace(/\s+/g, ' ').trim();
 
     if (textToRead.length > 0) {
@@ -60,9 +82,10 @@ export const ReadAloudTool: React.FC = () => {
         const loadVoices = () => {
             const voices = window.speechSynthesis.getVoices();
             // Prefer a high quality Google voice or standard English
-            const preferredVoice = voices.find(v => v.name.includes('Google US English')) || 
-                                   voices.find(v => v.lang.startsWith('en-US')) ||
-                                   voices.find(v => v.lang.startsWith('en'));
+            const preferredVoice = voices.find(v => 
+                (v.name.includes('Google') && v.name.includes('English')) || 
+                (v.name.includes('Natural') && v.lang.startsWith('en'))
+            ) || voices.find(v => v.lang.startsWith('en'));
             
             if (preferredVoice) {
                 utterance.voice = preferredVoice;
@@ -80,7 +103,7 @@ export const ReadAloudTool: React.FC = () => {
         utterance.onerror = (e) => {
             // Check for interruption vs actual error
             if (e.error !== 'interrupted' && e.error !== 'canceled') {
-                console.error("TTS Error:", e.error); 
+                console.error("TTS Error:", e); 
             }
             setIsReading(false);
         };
@@ -91,7 +114,7 @@ export const ReadAloudTool: React.FC = () => {
 
   return (
     <RibbonButton 
-        icon={isReading ? Square : Volume2} 
+        icon={isReading ? WaveformIcon : Volume2} 
         label={isReading ? "Stop" : "Read Aloud"} 
         onClick={handleReadAloud} 
         disabled={!hasContent}
