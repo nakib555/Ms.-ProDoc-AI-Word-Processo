@@ -1,5 +1,5 @@
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Send, Sparkles, ChevronDown, FileText, Coffee, Zap, Smile, Edit3, ArrowRight, RefreshCw, FilePlus } from 'lucide-react';
 import { useAI } from '../../../../../hooks/useAI';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
@@ -51,10 +51,16 @@ const ToneSelector: React.FC<{ tone: string, setTone: (t: string) => void }> = (
 
 export const QuickPromptTool: React.FC = () => {
   const { performAIAction, isProcessing } = useAI();
+  const { content } = useEditor();
   const [prompt, setPrompt] = useState('');
   const [tone, setTone] = useState('professional');
   const [action, setAction] = useState<'insert' | 'refine' | 'replace'>('insert');
   const [savedRange, setSavedRange] = useState<Range | null>(null);
+
+  // Check if document has content to refine
+  const hasContent = useMemo(() => {
+      return content ? content.replace(/<[^>]*>/g, ' ').trim().length > 0 : false;
+  }, [content]);
 
   // Auto-switch to "Refine" if user selects text, back to "Insert" if they clear selection
   useEffect(() => {
@@ -79,6 +85,13 @@ export const QuickPromptTool: React.FC = () => {
     document.addEventListener('selectionchange', handleSelectionChange);
     return () => document.removeEventListener('selectionchange', handleSelectionChange);
   }, [action, isProcessing]);
+
+  // Ensure we don't stay in Refine mode if content is empty (e.g. deleted all)
+  useEffect(() => {
+      if (!hasContent && action === 'refine') {
+          setAction('insert');
+      }
+  }, [hasContent, action]);
 
   const handleGenerate = () => {
     if (!prompt.trim() || isProcessing) return;
@@ -120,7 +133,9 @@ export const QuickPromptTool: React.FC = () => {
                 </button>
                 <button 
                     onClick={() => setAction('refine')}
-                    className={`flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide rounded-md transition-all ${action === 'refine' ? 'bg-white dark:bg-slate-600 text-purple-600 dark:text-purple-300 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'}`}
+                    disabled={!hasContent}
+                    className={`flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide rounded-md transition-all ${action === 'refine' ? 'bg-white dark:bg-slate-600 text-purple-600 dark:text-purple-300 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'} ${!hasContent ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    title={!hasContent ? "Document is empty" : "Refine existing content"}
                 >
                     <RefreshCw size={10} /> Refine
                 </button>
