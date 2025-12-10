@@ -42,7 +42,7 @@ const TabButton = memo(({ tabId, icon: Icon, label, isActive, onClick, isContext
     const baseColor = isContextual ? `${colorClass} dark:text-amber-400 hover:text-amber-700` : 'text-slate-400 hover:text-slate-100';
     const activeColor = isContextual ? 'text-amber-700 dark:text-amber-300' : 'text-indigo-600 dark:text-indigo-400';
     
-    // Updated dark mode backgrounds for active tab
+    // Updated dark mode backgrounds for active tab to match the ribbon body color (#1e293b)
     const activeBg = 'bg-white dark:bg-[#1e293b]';
 
     return (
@@ -50,7 +50,7 @@ const TabButton = memo(({ tabId, icon: Icon, label, isActive, onClick, isContext
             onClick={onClick}
             onMouseDown={(e) => e.preventDefault()}
             className={`
-              px-4 py-2.5 text-xs sm:text-sm font-medium rounded-t-lg transition-all duration-200 whitespace-nowrap relative group flex-shrink-0 flex items-center gap-2 select-none
+              px-3 py-2.5 text-sm font-medium rounded-t-lg transition-all duration-200 whitespace-nowrap relative group flex-shrink-0 flex items-center gap-2
               ${isActive 
                 ? `${activeBg} ${activeColor} z-10 translate-y-[1px] pb-3 font-semibold shadow-[0_-1px_3px_rgba(0,0,0,0.05)] dark:shadow-none` 
                 : `${baseColor} hover:bg-slate-800/50 dark:hover:bg-slate-800/50 mb-0.5`}
@@ -181,7 +181,7 @@ export const RibbonTabBar: React.FC<RibbonTabBarProps> = React.memo(({ activeTab
   const isHeaderFooterMode = activeEditingArea === 'header' || activeEditingArea === 'footer';
 
   return (
-    <div className="relative flex items-end bg-[#0f172a] dark:bg-[#0f172a] pt-1.5 flex-shrink-0 z-20 w-full group select-none border-b border-white/10 dark:border-slate-800">
+    <div className="relative flex items-end bg-[#0f172a] dark:bg-[#0f172a] pt-1 flex-shrink-0 z-20 w-full group select-none border-b border-white/10 dark:border-slate-800">
        <div 
           className={`absolute left-0 top-0 bottom-0 z-30 flex items-center pl-1 pr-8 bg-gradient-to-r from-[#0f172a] dark:from-[#0f172a] via-[#0f172a]/90 dark:via-[#0f172a]/90 to-transparent transition-opacity duration-200 ${showLeftArrow ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
        >

@@ -1,5 +1,5 @@
 {
-  "name": "prodoc-ai-word-processor",
+  "name": "copy-of-prodoc-ai---modern-word-processor",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -16,8 +16,7 @@
     "react-virtualized-auto-sizer": "^1.0.24",
     "pagedjs": "^0.4.3",
     "html2canvas": "^1.4.1",
-    "jspdf": "^2.5.1",
-    "mathlive": "^0.98.6"
+    "jspdf": "^2.5.1"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",
