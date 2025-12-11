@@ -24,14 +24,14 @@ export const DropdownButton: React.FC<DropdownButtonProps> = React.memo(({
           <button
               onClick={(e) => { e.stopPropagation(); !disabled && toggleMenu(id); }}
               onMouseDown={(e) => e.preventDefault()}
-              className={`flex flex-col items-center justify-center px-1 py-1 min-w-[52px] md:min-w-[60px] h-full rounded-lg transition-all duration-200 group relative text-slate-600 hover:text-blue-700 hover:bg-slate-50 ${activeMenu === id ? 'bg-slate-100 text-blue-700 shadow-inner ring-1 ring-slate-200' : ''}`}
+              className={`flex flex-col items-center justify-center px-2 py-1 min-w-[60px] md:min-w-[68px] h-full rounded-lg transition-all duration-200 group relative text-slate-600 hover:text-blue-700 hover:bg-slate-50 ${activeMenu === id ? 'bg-slate-100 text-blue-700 shadow-inner ring-1 ring-slate-200' : ''}`}
           >
-              <div className="p-1 rounded-md group-hover:bg-white group-hover:shadow-sm transition-all mb-0.5">
-                  <Icon className={`w-5 h-5 ${activeMenu === id ? 'text-blue-600' : 'text-slate-500 group-hover:text-blue-600'}`} strokeWidth={1.5} />
+              <div className="p-1.5 rounded-md group-hover:bg-white group-hover:shadow-sm transition-all mb-1">
+                  <Icon className={`w-6 h-6 ${activeMenu === id ? 'text-blue-600' : 'text-slate-500 group-hover:text-blue-600'}`} strokeWidth={1.5} />
               </div>
               <div className="flex items-center justify-center w-full px-0.5">
-                  <span className="text-[11px] font-medium leading-tight text-center">{label}</span>
-                  {hasArrow && <ChevronDown size={10} className={`ml-0.5 ${activeMenu === id ? 'rotate-180' : ''} transition-transform text-slate-400 shrink-0`} />}
+                  <span className="text-xs font-medium leading-tight text-center">{label}</span>
+                  {hasArrow && <ChevronDown size={12} className={`ml-0.5 ${activeMenu === id ? 'rotate-180' : ''} transition-transform text-slate-400 shrink-0`} />}
               </div>
           </button>
       </div>

@@ -50,7 +50,7 @@ const Ribbon: React.FC<RibbonProps> = ({
         const timer = setTimeout(() => {
             if (contentRef.current) {
                 const contentHeight = contentRef.current.scrollHeight;
-                setHeight(Math.max(contentHeight, 96));
+                setHeight(Math.max(contentHeight, 100));
             }
         }, 50);
         return () => clearTimeout(timer);
@@ -118,7 +118,7 @@ const Ribbon: React.FC<RibbonProps> = ({
 
       <div 
         className={`bg-white dark:bg-[#1e293b] border-b border-slate-200 dark:border-slate-700 relative z-10 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] overflow-hidden ${activeTab ? 'opacity-100' : 'opacity-0'}`}
-        style={{ height: activeTab ? `${Math.max(height, 96)}px` : '0px' }}
+        style={{ height: activeTab ? `${Math.max(height, 100)}px` : '0px' }}
       >
          <div 
             ref={scrollContainerRef}
