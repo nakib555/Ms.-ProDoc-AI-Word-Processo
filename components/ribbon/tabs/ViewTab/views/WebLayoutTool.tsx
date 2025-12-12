@@ -15,10 +15,14 @@ export const WebLayoutTool: React.FC = () => {
             label="Web Layout" 
             onClick={() => !isAIProcessing && setViewMode('web')} 
             className={viewMode === 'web' ? 'bg-slate-100 text-blue-700' : ''}
+            iconClassName="text-indigo-600"
         />
     </div>
   );
 };
+
+// ... (Rest of WebLayoutView logic, no changes needed below this point for icon coloring)
+// Must include full file content.
 
 interface WebLayoutViewProps {
   editorRef: React.RefObject<HTMLDivElement | null>;

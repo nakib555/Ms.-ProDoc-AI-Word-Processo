@@ -156,6 +156,7 @@ export const ReadAloudTool: React.FC = () => {
         onClick={handleReadAloud} 
         disabled={!hasContent && !isPlaying}
         className={isPlaying || isLoading ? "bg-indigo-50 text-indigo-600 hover:bg-indigo-100 hover:text-indigo-700 border-indigo-200" : ""}
+        iconClassName={!isPlaying && !isLoading ? "text-cyan-500" : ""}
         title={!hasContent ? "No content to read" : isPlaying ? "Stop Reading" : "Read document aloud with Gemini AI"}
     />
   );

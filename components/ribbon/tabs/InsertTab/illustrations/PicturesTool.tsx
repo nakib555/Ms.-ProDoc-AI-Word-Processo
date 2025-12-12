@@ -41,6 +41,7 @@ export const PicturesTool: React.FC = () => {
              id="pictures_menu" 
              icon={Image} 
              label="Pictures" 
+             iconClassName="text-green-600"
          />
          <MenuPortal id="pictures_menu" activeMenu={activeMenu} menuPos={menuPos} closeMenu={closeMenu}>
              <div className="p-1">

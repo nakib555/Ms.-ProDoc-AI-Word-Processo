@@ -12,6 +12,7 @@ export const ReadModeTool: React.FC = () => {
         label="Read Mode" 
         onClick={() => setViewMode('read')}
         title="Switch to distraction-free Read Mode"
+        iconClassName="text-indigo-600"
     />
   );
 };

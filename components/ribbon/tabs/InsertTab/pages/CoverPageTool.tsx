@@ -54,6 +54,7 @@ export const CoverPageTool: React.FC = () => {
              icon={LayoutTemplate} 
              label="Cover Page" 
              variant="small"
+             iconClassName="text-indigo-600"
          />
          <MenuPortal id="cover_page" activeMenu={activeMenu} menuPos={menuPos} closeMenu={closeMenu}>
              <div className="px-3 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider bg-slate-50 border-b border-slate-100">Built-in</div>

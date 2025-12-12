@@ -9,10 +9,11 @@ interface DropdownButtonProps {
   label: string;
   disabled?: boolean;
   hasArrow?: boolean;
+  iconClassName?: string;
 }
 
 export const DropdownButton: React.FC<DropdownButtonProps> = React.memo(({ 
-  id, icon: Icon, label, disabled = false, hasArrow = true 
+  id, icon: Icon, label, disabled = false, hasArrow = true, iconClassName
 }) => {
    const { activeMenu, toggleMenu, registerTrigger } = useLayoutTab();
 
@@ -27,7 +28,7 @@ export const DropdownButton: React.FC<DropdownButtonProps> = React.memo(({
               className={`flex flex-col items-center justify-center px-2 py-1 min-w-[60px] md:min-w-[68px] h-full rounded-lg transition-all duration-200 group relative text-slate-600 hover:text-blue-700 hover:bg-slate-50 ${activeMenu === id ? 'bg-slate-100 text-blue-700 shadow-inner ring-1 ring-slate-200' : ''}`}
           >
               <div className="p-1.5 rounded-md group-hover:bg-white group-hover:shadow-sm transition-all mb-1">
-                  <Icon className={`w-6 h-6 ${activeMenu === id ? 'text-blue-600' : 'text-slate-500 group-hover:text-blue-600'}`} strokeWidth={1.5} />
+                  <Icon className={`w-6 h-6 ${iconClassName || 'text-slate-500'} ${activeMenu === id ? 'text-blue-600' : 'group-hover:text-blue-600'}`} strokeWidth={1.5} />
               </div>
               <div className="flex items-center justify-center w-full px-0.5">
                   <span className="text-xs font-medium leading-tight text-center">{label}</span>
@@ -41,7 +42,7 @@ export const DropdownButton: React.FC<DropdownButtonProps> = React.memo(({
 export const ParagraphInput: React.FC<{ label: string, value: string, icon: any, onChange?: (val: string) => void }> = React.memo(({ label, value, icon: Icon, onChange }) => (
     <div className="flex items-center gap-2 h-7">
         <div className="flex items-center justify-end w-[64px] gap-1.5 opacity-90">
-             <Icon size={13} className="text-slate-400 stroke-[1.5]" />
+             <Icon size={13} className="text-emerald-500 stroke-[1.5]" />
              <span className="text-[11px] font-medium text-slate-600">{label}:</span>
         </div>
         <div className="flex items-center bg-white border border-slate-300 rounded-lg hover:border-blue-400 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 transition-all h-7 w-20 relative overflow-hidden group shadow-sm">

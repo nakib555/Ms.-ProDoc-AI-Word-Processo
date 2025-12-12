@@ -22,6 +22,7 @@ export const OrientationTool: React.FC = () => {
              id={menuId} 
              icon={RotateCw} 
              label="Orientation" 
+             iconClassName="text-cyan-600"
          />
          <MenuPortal id={menuId} activeMenu={activeMenu} menuPos={menuPos} closeMenu={closeMenu} width={160}>
              <div className="p-1">

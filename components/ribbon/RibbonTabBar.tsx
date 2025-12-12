@@ -14,18 +14,18 @@ interface RibbonTabBarProps {
   onTabChange: (tab: RibbonTab) => void;
 }
 
-const TAB_CONFIG: Record<string, { icon: React.ElementType, label?: string }> = {
-  [RibbonTab.FILE]: { icon: FileText },
-  [RibbonTab.HOME]: { icon: Home },
-  [RibbonTab.INSERT]: { icon: Blocks },
-  [RibbonTab.DRAW]: { icon: PenTool },
-  [RibbonTab.DESIGN]: { icon: Palette },
-  [RibbonTab.LAYOUT]: { icon: Layout },
-  [RibbonTab.REFERENCES]: { icon: BookOpen },
-  [RibbonTab.MAILINGS]: { icon: Mail },
-  [RibbonTab.REVIEW]: { icon: CheckSquare },
-  [RibbonTab.VIEW]: { icon: Eye },
-  [RibbonTab.AI_ASSISTANT]: { icon: Sparkles, label: "AI Assistant" }
+const TAB_CONFIG: Record<string, { icon: React.ElementType, label?: string, color: string }> = {
+  [RibbonTab.FILE]: { icon: FileText, color: 'text-blue-600 dark:text-blue-400' },
+  [RibbonTab.HOME]: { icon: Home, color: 'text-indigo-600 dark:text-indigo-400' },
+  [RibbonTab.INSERT]: { icon: Blocks, color: 'text-purple-600 dark:text-purple-400' },
+  [RibbonTab.DRAW]: { icon: PenTool, color: 'text-pink-600 dark:text-pink-400' },
+  [RibbonTab.DESIGN]: { icon: Palette, color: 'text-rose-600 dark:text-rose-400' },
+  [RibbonTab.LAYOUT]: { icon: Layout, color: 'text-cyan-600 dark:text-cyan-400' },
+  [RibbonTab.REFERENCES]: { icon: BookOpen, color: 'text-amber-600 dark:text-amber-400' },
+  [RibbonTab.MAILINGS]: { icon: Mail, color: 'text-teal-600 dark:text-teal-400' },
+  [RibbonTab.REVIEW]: { icon: CheckSquare, color: 'text-emerald-600 dark:text-emerald-400' },
+  [RibbonTab.VIEW]: { icon: Eye, color: 'text-sky-600 dark:text-sky-400' },
+  [RibbonTab.AI_ASSISTANT]: { icon: Sparkles, label: "AI Assistant", color: 'text-fuchsia-600 dark:text-fuchsia-400' }
 };
 
 interface TabButtonProps {
@@ -38,11 +38,14 @@ interface TabButtonProps {
     colorClass?: string;
 }
 
-const TabButton = memo(({ tabId, icon: Icon, label, isActive, onClick, isContextual, colorClass = 'text-amber-600' }: TabButtonProps) => {
-    const baseColor = isContextual ? `${colorClass} dark:text-amber-400 hover:text-amber-700` : 'text-slate-400 hover:text-slate-100';
-    const activeColor = isContextual ? 'text-amber-700 dark:text-amber-300' : 'text-indigo-600 dark:text-indigo-400';
+const TabButton = memo(({ tabId, icon: Icon, label, isActive, onClick, isContextual, colorClass }: TabButtonProps) => {
+    // Default color from config if not contextual
+    const configColor = TAB_CONFIG[tabId]?.color || 'text-slate-500';
     
-    // Updated dark mode backgrounds for active tab to match the ribbon body color (#1e293b)
+    // For contextual tabs, use the passed color class. For normal tabs, use slate when inactive, specific color when active/hover.
+    const baseColor = isContextual ? `${colorClass} dark:text-amber-400 hover:text-amber-700` : 'text-slate-400 hover:text-slate-100';
+    const activeColor = isContextual ? 'text-amber-700 dark:text-amber-300' : configColor;
+    
     const activeBg = 'bg-white dark:bg-[#1e293b]';
 
     return (
@@ -60,7 +63,7 @@ const TabButton = memo(({ tabId, icon: Icon, label, isActive, onClick, isContext
             {Icon && (
               <Icon 
                 size={16} 
-                className={`transition-colors duration-200 ${isActive ? activeColor : 'text-slate-500 group-hover:text-slate-300'} ${isContextual && isActive ? 'text-current' : ''}`}
+                className={`transition-colors duration-200 ${isActive ? 'text-current' : isContextual ? 'text-current' : configColor} ${!isActive && !isContextual ? 'opacity-70 group-hover:opacity-100 group-hover:text-white' : ''}`}
                 strokeWidth={isActive ? 2.5 : 2}
               />
             )}
@@ -68,7 +71,6 @@ const TabButton = memo(({ tabId, icon: Icon, label, isActive, onClick, isContext
             
             {isActive && (
                <>
-                 {/* Corner smoothing */}
                  <div className="absolute bottom-0 left-0 right-0 h-3 bg-white dark:bg-[#1e293b] z-20"></div>
                  <div className="absolute bottom-0 -left-2 w-2 h-2 bg-transparent shadow-[2px_2px_0_#fff] dark:shadow-[2px_2px_0_#1e293b] rounded-br-full z-20 pointer-events-none"></div>
                  <div className="absolute bottom-0 -right-2 w-2 h-2 bg-transparent shadow-[-2px_2px_0_#fff] dark:shadow-[-2px_2px_0_#1e293b] rounded-bl-full z-20 pointer-events-none"></div>
@@ -122,7 +124,6 @@ export const RibbonTabBar: React.FC<RibbonTabBarProps> = React.memo(({ activeTab
     }
   }, [activeTab]);
 
-  // Manage contextual tab visibility
   useEffect(() => {
       let timeoutId: ReturnType<typeof setTimeout>;
       const prevType = prevElementTypeRef.current;
@@ -220,15 +221,15 @@ export const RibbonTabBar: React.FC<RibbonTabBarProps> = React.memo(({ activeTab
         { isHeaderFooterMode && (
             <>
                 <div className="w-[1px] h-6 bg-slate-700 mx-1 mb-2"></div>
-                <TabButton tabId={RibbonTab.HEADER_FOOTER} icon={LayoutPanelTop} label="Header & Footer" isActive={activeTab === RibbonTab.HEADER_FOOTER} onClick={() => onTabChange(RibbonTab.HEADER_FOOTER)} isContextual colorClass="text-cyan-500" />
+                <TabButton tabId={RibbonTab.HEADER_FOOTER} icon={LayoutPanelTop} label="Header & Footer" isActive={activeTab === RibbonTab.HEADER_FOOTER} onClick={() => onTabChange(RibbonTab.HEADER_FOOTER)} isContextual colorClass="text-emerald-500" />
             </>
         )}
 
         {activeElementType === 'table' && (
             <>
                 <div className="w-[1px] h-6 bg-slate-700 mx-1 mb-2"></div>
-                <TabButton tabId={RibbonTab.TABLE_DESIGN} icon={PaintBucket} label="Table Design" isActive={activeTab === RibbonTab.TABLE_DESIGN} onClick={() => onTabChange(RibbonTab.TABLE_DESIGN)} isContextual colorClass="text-amber-600" />
-                <TabButton tabId={RibbonTab.TABLE_LAYOUT} icon={Table} label="Table Layout" isActive={activeTab === RibbonTab.TABLE_LAYOUT} onClick={() => onTabChange(RibbonTab.TABLE_LAYOUT)} isContextual colorClass="text-amber-600" />
+                <TabButton tabId={RibbonTab.TABLE_DESIGN} icon={PaintBucket} label="Table Design" isActive={activeTab === RibbonTab.TABLE_DESIGN} onClick={() => onTabChange(RibbonTab.TABLE_DESIGN)} isContextual colorClass="text-yellow-500" />
+                <TabButton tabId={RibbonTab.TABLE_LAYOUT} icon={Table} label="Table Layout" isActive={activeTab === RibbonTab.TABLE_LAYOUT} onClick={() => onTabChange(RibbonTab.TABLE_LAYOUT)} isContextual colorClass="text-yellow-500" />
             </>
         )}
 

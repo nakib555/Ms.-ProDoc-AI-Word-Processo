@@ -15,6 +15,7 @@ export const DictateTool: React.FC = () => {
             onClick={toggleDictation} 
             title={isListening ? "Stop Dictation" : "Start Voice Dictation"}
             className={`h-full transition-all duration-300 ${isListening ? 'bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 border-red-200' : ''}`}
+            iconClassName={isListening ? "text-red-600" : "text-sky-500"}
         />
         
         {/* Live indicator ping */}

@@ -4,5 +4,5 @@ import { Smile } from 'lucide-react';
 import { SmallRibbonButton } from '../common/InsertTools';
 
 export const IconsTool: React.FC = () => (
-    <SmallRibbonButton icon={Smile} label="Icons" onClick={() => alert('Icons Library')} />
+    <SmallRibbonButton icon={Smile} label="Icons" onClick={() => alert('Icons Library')} iconClassName="text-yellow-500" />
 );

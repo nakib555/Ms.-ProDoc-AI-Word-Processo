@@ -71,6 +71,7 @@ export const MarginsTool: React.FC = () => {
              id={menuId} 
              icon={LayoutTemplate} 
              label="Margins" 
+             iconClassName="text-cyan-600"
          />
          <MenuPortal id={menuId} activeMenu={activeMenu} menuPos={menuPos} closeMenu={closeMenu} width={280}>
              <div className="p-1 space-y-0.5 max-h-[60vh] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-200">

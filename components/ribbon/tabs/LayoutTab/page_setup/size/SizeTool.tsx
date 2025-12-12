@@ -40,6 +40,7 @@ export const SizeTool: React.FC = () => {
              id={menuId} 
              icon={FileText} 
              label="Size" 
+             iconClassName="text-cyan-600"
          />
          <MenuPortal id={menuId} activeMenu={activeMenu} menuPos={menuPos} closeMenu={closeMenu} width={260}>
              <div 

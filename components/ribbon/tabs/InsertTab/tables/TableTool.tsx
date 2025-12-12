@@ -35,6 +35,7 @@ export const TableTool: React.FC = () => {
              id="table_menu" 
              icon={Table} 
              label="Table" 
+             iconClassName="text-blue-600"
          />
          <MenuPortal id="table_menu" activeMenu={activeMenu} menuPos={menuPos} closeMenu={closeMenu} width="auto">
              <TableGridPicker onInsert={handleTableInsert} />

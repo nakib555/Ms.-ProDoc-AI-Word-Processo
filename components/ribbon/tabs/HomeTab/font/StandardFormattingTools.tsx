@@ -47,36 +47,42 @@ export const StandardFormattingTools: React.FC = () => {
             onClick={() => { executeCommand('bold'); checkFormats(); }} 
             title="Bold (Ctrl+B)" 
             active={activeFormats.bold}
+            iconClass="text-slate-800 dark:text-slate-200 font-bold"
          />
          <ToolBtn 
             icon={Italic} 
             onClick={() => { executeCommand('italic'); checkFormats(); }} 
             title="Italic (Ctrl+I)" 
             active={activeFormats.italic}
+            iconClass="text-slate-700 dark:text-slate-300"
          />
          <ToolBtn 
             icon={Underline} 
             onClick={() => { executeCommand('underline'); checkFormats(); }} 
             title="Underline (Ctrl+U)" 
             active={activeFormats.underline}
+            iconClass="text-slate-700 dark:text-slate-300"
          />
          <ToolBtn 
             icon={Strikethrough} 
             onClick={() => { executeCommand('strikeThrough'); checkFormats(); }} 
             title="Strikethrough" 
             active={activeFormats.strikethrough}
+            iconClass="text-slate-500"
          />
          <ToolBtn 
             icon={Subscript} 
             onClick={() => { executeCommand('subscript'); checkFormats(); }} 
             title="Subscript (Ctrl+=)" 
             active={activeFormats.subscript}
+            iconClass="text-violet-500"
          />
          <ToolBtn 
             icon={Superscript} 
             onClick={() => { executeCommand('superscript'); checkFormats(); }} 
             title="Superscript (Ctrl+Shift++)" 
             active={activeFormats.superscript}
+            iconClass="text-violet-500"
          />
     </GroupRow>
   );

@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { ChevronDown } from 'lucide-react';
 import { useHomeTab } from '../HomeTabContext';
@@ -8,10 +9,11 @@ export interface DropdownButtonProps {
   title: string;
   className?: string;
   color?: string;
+  iconClass?: string;
 }
 
 export const DropdownToolBtn: React.FC<DropdownButtonProps> = React.memo(({ 
-  id, icon: Icon, title, className, color 
+  id, icon: Icon, title, className, color, iconClass
 }) => {
   const { activeMenu, toggleMenu, registerTrigger } = useHomeTab();
   
@@ -27,7 +29,7 @@ export const DropdownToolBtn: React.FC<DropdownButtonProps> = React.memo(({
       `} 
       title={title}
     >
-      <Icon className="w-4 h-4" strokeWidth={2} />
+      <Icon className={`w-4 h-4 ${iconClass || ''}`} strokeWidth={2} />
       {color && (
         <div 
           className="h-[3px] w-[16px] absolute bottom-0.5 rounded-full ring-1 ring-white dark:ring-slate-800" 
@@ -46,8 +48,9 @@ export const ToolBtn: React.FC<{
   active?: boolean, 
   color?: string,
   className?: string,
-  disabled?: boolean
-}> = React.memo(({ icon: Icon, onClick, title, active, color, className, disabled }) => (
+  disabled?: boolean,
+  iconClass?: string
+}> = React.memo(({ icon: Icon, onClick, title, active, color, className, disabled, iconClass }) => (
   <button 
     onClick={onClick}
     onMouseDown={(e) => e.preventDefault()}
@@ -60,7 +63,7 @@ export const ToolBtn: React.FC<{
     `} 
     title={title}
   >
-    <Icon className="w-4 h-4" strokeWidth={2} />
+    <Icon className={`w-4 h-4 ${iconClass || ''}`} strokeWidth={2} />
     {color && (
       <div 
         className="h-[3px] w-[16px] absolute bottom-0.5 rounded-full ring-1 ring-white dark:ring-slate-800" 

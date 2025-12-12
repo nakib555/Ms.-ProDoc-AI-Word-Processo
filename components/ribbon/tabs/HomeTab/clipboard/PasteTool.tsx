@@ -18,7 +18,7 @@ export const PasteTool: React.FC = () => {
                 className="flex flex-col items-center justify-center flex-1 w-full rounded-t-lg hover:bg-slate-100 active:bg-blue-50 transition-colors pt-1.5 pb-0.5"
                 title="Paste (Ctrl+V)"
             >
-                <Clipboard className="w-6 h-6 text-slate-600" strokeWidth={1.5} />
+                <Clipboard className="w-6 h-6 text-blue-600 dark:text-blue-500" strokeWidth={1.5} />
             </button>
             <button 
                 onClick={() => toggleMenu(menuId)}
@@ -33,13 +33,13 @@ export const PasteTool: React.FC = () => {
         <MenuPortal id={menuId} activeMenu={activeMenu} menuPos={menuPos} closeMenu={closeMenu} width={200}>
             <div className="p-1">
                 <button onClick={() => { handlePasteSpecial('keep-source'); closeMenu(); }} className="w-full text-left px-3 py-2 hover:bg-slate-100 rounded-md text-xs font-medium text-slate-700 flex items-center gap-2">
-                    <Clipboard size={14} className="text-slate-500"/> Keep Source Formatting
+                    <Clipboard size={14} className="text-blue-500"/> Keep Source Formatting
                 </button>
                 <button onClick={() => { handlePasteSpecial('merge'); closeMenu(); }} className="w-full text-left px-3 py-2 hover:bg-slate-100 rounded-md text-xs font-medium text-slate-700 flex items-center gap-2">
-                    <ArrowDownAZ size={14} className="text-slate-500"/> Merge Formatting
+                    <ArrowDownAZ size={14} className="text-blue-500"/> Merge Formatting
                 </button>
                 <button onClick={() => { handlePasteSpecial('text-only'); closeMenu(); }} className="w-full text-left px-3 py-2 hover:bg-slate-100 rounded-md text-xs font-medium text-slate-700 flex items-center gap-2">
-                    <FileText size={14} className="text-slate-500"/> Keep Text Only
+                    <FileText size={14} className="text-blue-500"/> Keep Text Only
                 </button>
             </div>
         </MenuPortal>
