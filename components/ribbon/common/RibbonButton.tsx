@@ -31,7 +31,7 @@ export const RibbonButton: React.FC<RibbonButtonProps> = React.memo(({
     title={title || label}
     disabled={disabled}
   >
-    <div className={`p-1.5 rounded-md transition-all mb-1 ${disabled ? '' : 'group-hover:bg-white dark:group-hover:bg-slate-700 group-hover:shadow-sm dark:group-hover:shadow-none group-active:scale-95'}`}>
+    <div className={`p-1.5 rounded-md transition-all mb-1 ${disabled ? '' : 'group-active:scale-95'}`}>
         <Icon className={`w-6 h-6 transition-colors ${iconClassName || 'text-slate-500 dark:text-slate-400'} ${disabled ? '' : 'group-hover:text-slate-700 dark:group-hover:text-slate-200'}`} strokeWidth={1.5} />
     </div>
     <div className="flex items-center justify-center w-full px-0.5">

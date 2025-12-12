@@ -22,7 +22,7 @@ export const DropdownRibbonButton: React.FC<DropdownButtonProps> = React.memo(({
       onClick={(e) => { e.stopPropagation(); toggleMenu(id); }}
       onMouseDown={(e) => e.preventDefault()}
     >
-      <div className="p-1.5 rounded-md group-hover:bg-white dark:group-hover:bg-slate-700 group-hover:shadow-sm transition-all mb-1">
+      <div className="p-1.5 rounded-md transition-all mb-1">
           <Icon className={`w-6 h-6 ${activeMenu === id ? 'text-slate-900 dark:text-white' : 'text-slate-500 dark:text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-200'}`} strokeWidth={1.5} />
       </div>
       <div className="flex items-center justify-center w-full px-0.5">

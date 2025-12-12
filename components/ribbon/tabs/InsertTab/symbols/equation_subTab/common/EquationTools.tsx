@@ -22,7 +22,7 @@ export const StructureButton: React.FC<{
     onMouseDown={(e) => e.preventDefault()}
     title={label}
   >
-    <div className="p-1.5 rounded-md group-hover:bg-white dark:group-hover:bg-slate-700 group-hover:shadow-sm transition-all mb-1 bg-transparent">
+    <div className="p-1.5 rounded-md transition-all mb-1 bg-transparent">
         <Icon className="w-6 h-6 text-slate-500 dark:text-slate-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors" strokeWidth={1.5} />
     </div>
     <div className="flex items-center justify-center w-full px-0.5">
@@ -232,7 +232,7 @@ export const StructureDropdown: React.FC<{
                 className={`flex flex-col items-center justify-center px-2 py-1 min-w-[64px] h-full rounded-lg transition-all duration-200 group relative text-slate-600 dark:text-slate-300 hover:text-blue-700 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-700/50 flex-shrink-0 ${isOpen ? 'bg-slate-100 dark:bg-slate-700 text-blue-700 dark:text-blue-400' : ''}`}
                 title={label}
             >
-                <div className="p-1.5 rounded-md group-hover:bg-white dark:group-hover:bg-slate-700 group-hover:shadow-sm transition-all mb-1 bg-transparent">
+                <div className="p-1.5 rounded-md transition-all mb-1 bg-transparent">
                     <Icon className={`w-6 h-6 transition-colors ${isOpen ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400 group-hover:text-blue-600 dark:group-hover:text-blue-400'}`} strokeWidth={1.5} />
                 </div>
                 <div className="flex items-center justify-center w-full px-0.5">

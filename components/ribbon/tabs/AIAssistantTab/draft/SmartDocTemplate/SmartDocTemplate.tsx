@@ -77,7 +77,7 @@ export const SmartDocTemplateTool: React.FC = () => {
           onMouseDown={(e) => e.preventDefault()}
           title="Smart Doc Template"
         >
-          <div className="p-1 rounded-md group-hover:bg-white group-hover:shadow-sm transition-all mb-0.5">
+          <div className="p-1 rounded-md transition-all mb-0.5">
               <LayoutTemplate className={`w-4 h-4 ${isActive ? 'text-blue-600' : 'text-slate-500 group-hover:text-blue-600'}`} strokeWidth={1.5} />
           </div>
           <div className="flex items-center justify-center w-full px-0.5">
