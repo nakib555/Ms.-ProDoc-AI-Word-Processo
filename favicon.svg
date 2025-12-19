@@ -1,26 +1,41 @@
 <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <linearGradient id="brandGradient" x1="4" y1="4" x2="60" y2="60" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#4f46e5" />
-      <stop offset="1" stop-color="#7c3aed" />
+    <linearGradient id="bgGradient" x1="4" y1="4" x2="60" y2="60" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#4F46E5" />
+      <stop offset="1" stop-color="#7C3AED" />
     </linearGradient>
-    <filter id="shadow" x="-4" y="-4" width="72" height="72" filterUnits="userSpaceOnUse">
-      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#000" flood-opacity="0.15"/>
+    <linearGradient id="starGradient" x1="42" y1="8" x2="54" y2="28" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FCD34D" />
+      <stop offset="1" stop-color="#F59E0B" />
+    </linearGradient>
+    <filter id="dropShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="4" stdDeviation="3" flood-color="#000" flood-opacity="0.2"/>
+    </filter>
+    <filter id="innerGlow" x="-20%" y="-20%" width="140%" height="140%">
+       <feGaussianBlur in="SourceAlpha" stdDeviation="1.5" result="blur"/>
+       <feComposite in="SourceAlpha" in2="blur" operator="arithmetic" k2="-1" k3="1" result="shadowDiff"/>
+       <feFlood flood-color="white" flood-opacity="0.2"/>
+       <feComposite in2="shadowDiff" operator="in"/>
     </filter>
   </defs>
 
-  <!-- Background Container -->
-  <rect x="4" y="4" width="56" height="56" rx="14" fill="url(#brandGradient)" filter="url(#shadow)" />
+  <!-- Background Base -->
+  <rect x="4" y="4" width="56" height="56" rx="16" fill="url(#bgGradient)" filter="url(#dropShadow)" />
   
-  <!-- Subtle Inner Ring for depth -->
-  <rect x="5.5" y="5.5" width="53" height="53" rx="13" stroke="white" stroke-opacity="0.15" stroke-width="3" />
+  <!-- Subtle Inner Border/Glow for Premium Feel -->
+  <rect x="5" y="5" width="54" height="54" rx="15" stroke="white" stroke-opacity="0.15" stroke-width="1.5" />
 
-  <!-- Stylized "P" Path -->
-  <path d="M26 16H34C41.732 16 48 21.3726 48 28C48 34.6274 41.732 40 34 40H30V50C30 51.1046 29.1046 52 28 52C26.8954 52 26 51.1046 26 50V16Z" fill="white" />
-  
-  <!-- Main AI Sparkle (Top Right) -->
-  <path d="M52 8L54.5 13.5L60 16L54.5 18.5L52 24L49.5 18.5L44 16L49.5 13.5L52 8Z" fill="#fbbf24" style="filter: drop-shadow(0px 1px 2px rgba(0,0,0,0.2));" />
-  
-  <!-- Secondary Sparkle (Bottom Left) -->
-  <path d="M14 44L15 46.5L17.5 47.5L15 48.5L14 51L13 48.5L10.5 47.5L13 46.5L14 44Z" fill="#fbbf24" fill-opacity="0.9" />
+  <!-- The "P" Glypth (Document Metaphor) -->
+  <g filter="url(#dropShadow)">
+    <!-- Vertical Stem -->
+    <path d="M 22 17 C 20.343 17 19 18.343 19 20 V 44 C 19 45.657 20.343 47 22 47 C 23.657 47 25 45.657 25 44 V 20 C 25 18.343 23.657 17 22 17 Z" fill="white"/>
+    <!-- The Loop/Bowl -->
+    <path d="M 25 17 H 34 C 41.732 17 48 23.268 48 31 C 48 38.732 41.732 45 34 45 H 28 V 39 H 34 C 38.418 39 42 35.418 42 31 C 42 26.582 38.418 23 34 23 H 25 V 17 Z" fill="white"/>
+  </g>
+
+  <!-- Main AI Sparkle (Gemini Style 4-Point Star) -->
+  <path d="M 52 8 C 52 8 53.5 13 56 15 C 53.5 17 52 22 52 22 C 52 22 50.5 17 48 15 C 50.5 13 52 8 52 8 Z" fill="url(#starGradient)" filter="url(#dropShadow)" />
+
+  <!-- Secondary Tiny Sparkle -->
+  <path d="M 14 48 C 14 48 14.5 50 16 51 C 14.5 52 14 54 14 54 C 14 54 13.5 52 12 51 C 13.5 50 14 48 14 48 Z" fill="#FCD34D" fill-opacity="0.9" />
 </svg>
