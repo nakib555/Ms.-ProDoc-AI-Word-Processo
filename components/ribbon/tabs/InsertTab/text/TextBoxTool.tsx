@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Type } from 'lucide-react';
+import { Type, Square } from 'lucide-react';
 import { useEditor } from '../../../../../contexts/EditorContext';
 import { useInsertTab } from '../InsertTabContext';
 import { DropdownButton } from '../common/InsertTools';
@@ -16,14 +16,22 @@ export const TextBoxTool: React.FC = () => {
         <p style="font-size: 0.9em; color: #64748b; margin-bottom: 0;">Add your side note content here.</p>
       </div>`;
       executeCommand('insertHTML', html);
+      closeMenu();
   };
 
   return (
     <>
-         <DropdownButton id="textbox_menu" icon={Type} label="Text Box" />
+         <DropdownButton 
+            id="textbox_menu" 
+            icon={Type} 
+            label="Text Box" 
+            iconClassName="text-slate-700 dark:text-slate-300"
+         />
          <MenuPortal id="textbox_menu" activeMenu={activeMenu} menuPos={menuPos} closeMenu={closeMenu}>
             <div className="p-1">
-                <button onClick={insertTextBox} className="w-full text-left px-3 py-2 hover:bg-slate-100 rounded-md text-xs font-medium text-slate-700">Simple Text Box</button>
+                <button onClick={insertTextBox} className="w-full text-left px-3 py-2 hover:bg-slate-100 rounded-md text-xs font-medium text-slate-700 flex items-center gap-2 group">
+                    <Square size={14} className="text-slate-400 group-hover:text-blue-600"/> Simple Text Box
+                </button>
             </div>
          </MenuPortal>
     </>

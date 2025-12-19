@@ -8,5 +8,6 @@ export const ThesaurusTool: React.FC = () => (
         icon={BookOpen} 
         label="Thesaurus" 
         onClick={() => alert("Thesaurus...")} 
+        iconClassName="text-orange-500 dark:text-orange-400"
     />
 );

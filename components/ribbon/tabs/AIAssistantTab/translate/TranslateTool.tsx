@@ -81,7 +81,7 @@ export const TranslateTool: React.FC = () => {
                      <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 px-1">Target Language</div>
                      <button 
                         onClick={() => setIsLangOpen(!isLangOpen)}
-                        className={`w-full flex items-center justify-between bg-white dark:bg-slate-800 border ${isLangOpen ? 'border-blue-500 ring-1 ring-blue-500/20' : 'border-slate-200 dark:border-slate-700 hover:border-blue-400'} rounded-md px-2.5 py-1.5 text-xs font-medium transition-all shadow-sm`}
+                        className={`w-full flex items-center justify-between bg-white dark:bg-slate-800 border ${isLangOpen ? 'border-blue-500 ring-1 ring-blue-500/20' : 'border-slate-200 dark:border-slate-700 hover:border-blue-400'} rounded-md px-2.5 py-1.5 text-xs font-medium transition-all shadow-sm group`}
                      >
                          <div className="flex items-center gap-2">
                              <Globe size={12} className="text-blue-600 dark:text-blue-400"/>

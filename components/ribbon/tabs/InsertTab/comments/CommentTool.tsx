@@ -18,6 +18,11 @@ export const CommentTool: React.FC = () => {
   };
 
   return (
-      <RibbonButton icon={MessageSquarePlus} label="Comment" onClick={insertComment} />
+      <RibbonButton 
+        icon={MessageSquarePlus} 
+        label="Comment" 
+        onClick={insertComment} 
+        iconClassName="text-violet-600 dark:text-violet-400"
+      />
   );
 };

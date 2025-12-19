@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { 
-  CaseSensitive, Eraser, ChevronDown 
+  CaseSensitive, Eraser, ChevronDown, Type, ArrowUpCircle, ArrowDownCircle
 } from 'lucide-react';
 import { useEditor } from '../../../../../contexts/EditorContext';
 import { ToolBtn } from '../common/HomeTools';
@@ -17,13 +17,8 @@ export const FontFormattingTools: React.FC = () => {
     const selection = window.getSelection();
     if (!selection || selection.rangeCount === 0) return;
     
-    const range = selection.getRangeAt(0);
-    const content = range.cloneContents();
     // Rough text extraction - in a real editor this needs robust DOM traversal to preserve tags
-    // For now, we use execCommand 'insertText' which replaces text but might strip some inline styles if not careful.
-    // A better approach for a rich editor is modifying text nodes directly.
     const text = selection.toString();
-    
     if (!text) return;
 
     let newText = text;
@@ -61,17 +56,27 @@ export const FontFormattingTools: React.FC = () => {
                 className={`p-1 rounded-md flex items-center justify-center transition-all h-7 relative group gap-0.5 ${activeMenu === menuId ? 'bg-slate-200 text-blue-700' : 'text-slate-600 hover:bg-slate-100 hover:text-blue-600'}`}
                 title="Change Case"
             >
-                <CaseSensitive className="w-4 h-4" strokeWidth={2} />
+                <CaseSensitive className="w-4 h-4 text-slate-700 group-hover:text-blue-600" strokeWidth={2} />
                 <ChevronDown size={8} className="text-slate-400" />
             </button>
 
-            <MenuPortal id={menuId} activeMenu={activeMenu} menuPos={menuPos} closeMenu={closeMenu} width={160}>
+            <MenuPortal id={menuId} activeMenu={activeMenu} menuPos={menuPos} closeMenu={closeMenu} width={180}>
                 <div className="p-1 flex flex-col">
-                    <button onClick={() => transformText('sentence')} className="text-left px-3 py-1.5 hover:bg-slate-100 rounded-sm text-xs text-slate-700">Sentence case.</button>
-                    <button onClick={() => transformText('lower')} className="text-left px-3 py-1.5 hover:bg-slate-100 rounded-sm text-xs text-slate-700">lowercase</button>
-                    <button onClick={() => transformText('upper')} className="text-left px-3 py-1.5 hover:bg-slate-100 rounded-sm text-xs text-slate-700">UPPERCASE</button>
-                    <button onClick={() => transformText('capitalize')} className="text-left px-3 py-1.5 hover:bg-slate-100 rounded-sm text-xs text-slate-700">Capitalize Each Word</button>
-                    <button onClick={() => transformText('toggle')} className="text-left px-3 py-1.5 hover:bg-slate-100 rounded-sm text-xs text-slate-700">tOGGLE cASE</button>
+                    <button onClick={() => transformText('sentence')} className="text-left px-3 py-1.5 hover:bg-slate-100 rounded-sm text-xs text-slate-700 flex items-center gap-2 group">
+                        <Type size={14} className="text-blue-500"/> Sentence case.
+                    </button>
+                    <button onClick={() => transformText('lower')} className="text-left px-3 py-1.5 hover:bg-slate-100 rounded-sm text-xs text-slate-700 flex items-center gap-2 group">
+                         <ArrowDownCircle size={14} className="text-emerald-500"/> lowercase
+                    </button>
+                    <button onClick={() => transformText('upper')} className="text-left px-3 py-1.5 hover:bg-slate-100 rounded-sm text-xs text-slate-700 flex items-center gap-2 group">
+                        <ArrowUpCircle size={14} className="text-orange-500"/> UPPERCASE
+                    </button>
+                    <button onClick={() => transformText('capitalize')} className="text-left px-3 py-1.5 hover:bg-slate-100 rounded-sm text-xs text-slate-700 flex items-center gap-2 group">
+                        <Type size={14} className="text-purple-500"/> Capitalize Each Word
+                    </button>
+                    <button onClick={() => transformText('toggle')} className="text-left px-3 py-1.5 hover:bg-slate-100 rounded-sm text-xs text-slate-700 flex items-center gap-2 group">
+                        <CaseSensitive size={14} className="text-rose-500"/> tOGGLE cASE
+                    </button>
                 </div>
             </MenuPortal>
         </div>
@@ -80,7 +85,8 @@ export const FontFormattingTools: React.FC = () => {
             icon={Eraser} 
             onClick={() => executeCommand('removeFormat')} 
             title="Clear All Formatting" 
-            className="text-pink-600 hover:text-pink-700" 
+            className="text-pink-600 hover:text-pink-700"
+            iconClass="text-pink-600 dark:text-pink-400"
         />
     </>
   );

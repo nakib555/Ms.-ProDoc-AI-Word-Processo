@@ -7,6 +7,6 @@ export const ReplaceTool: React.FC<{ onClick: () => void }> = ({ onClick }) => (
         className="flex items-center px-2 py-0.5 hover:bg-slate-100 rounded text-slate-600 hover:text-blue-600 text-[11px] transition-colors group text-left" 
         onClick={onClick}
     >
-       <Replace className="w-3.5 h-3.5 mr-2 text-rose-500 group-hover:text-rose-600" /> Replace
+       <Replace className="w-3.5 h-3.5 mr-2 text-blue-500 dark:text-blue-400 group-hover:text-blue-600" /> Replace
     </button>
 );

@@ -34,13 +34,20 @@ export const SizeTool: React.FC = () => {
       return FileText;
   };
 
+  const getColor = (id: string) => {
+      if (id.includes('Envelope')) return "text-orange-500";
+      if (id === 'Statement' || id === 'Note') return "text-yellow-500";
+      if (id === 'A3' || id === 'Tabloid') return "text-purple-500";
+      return "text-blue-500";
+  };
+
   return (
     <>
          <DropdownButton 
              id={menuId} 
              icon={FileText} 
              label="Size" 
-             iconClassName="text-cyan-600"
+             iconClassName="text-cyan-600 dark:text-cyan-500"
          />
          <MenuPortal id={menuId} activeMenu={activeMenu} menuPos={menuPos} closeMenu={closeMenu} width={260}>
              <div 
@@ -48,6 +55,7 @@ export const SizeTool: React.FC = () => {
              >
                  {PAPER_FORMATS.map((item) => {
                      const Icon = getIcon(item.id);
+                     const iconColor = getColor(item.id);
                      return (
                          <button 
                             key={item.id} 
@@ -55,7 +63,7 @@ export const SizeTool: React.FC = () => {
                             onMouseDown={(e) => e.preventDefault()}
                             className={`w-full text-left px-3 py-2 hover:bg-slate-100 rounded-md flex items-center gap-3 group transition-colors ${pageConfig.size === item.id ? 'bg-blue-50 text-blue-700 ring-1 ring-blue-200' : 'text-slate-700'}`}
                          >
-                             <Icon size={18} className={`flex-shrink-0 ${pageConfig.size === item.id ? 'text-blue-500' : 'text-slate-400 group-hover:text-slate-600'}`} strokeWidth={1.5} />
+                             <Icon size={18} className={`flex-shrink-0 ${pageConfig.size === item.id ? 'text-blue-500' : `text-slate-400 group-hover:${iconColor}`}`} strokeWidth={1.5} />
                              <div className="flex-1 min-w-0">
                                  <div className="font-medium text-xs truncate">{item.label}</div>
                                  <div className={`text-[10px] ${pageConfig.size === item.id ? 'text-blue-400' : 'text-slate-400'}`}>{item.width} x {item.height}</div>

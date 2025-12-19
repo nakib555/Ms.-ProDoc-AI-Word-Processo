@@ -6,7 +6,7 @@ import { useLayoutTab } from '../../LayoutTabContext';
 import { DropdownButton } from '../../common/LayoutTools';
 import { MenuPortal } from '../../../../common/MenuPortal';
 import { MARGIN_PRESETS } from '../../../../../../constants';
-import { MarginPreset, PageConfig, MarginValues } from '../../../../../../types';
+import { MarginPreset, MarginValues } from '../../../../../../types';
 
 const PageSetupDialog = React.lazy(() => import('./CustomMargin/PageSetupDialog').then(m => ({ default: m.PageSetupDialog })));
 
@@ -34,7 +34,7 @@ export const MarginsTool: React.FC = () => {
       setShowCustomDialog(true);
   };
 
-  const handleCustomSave = (newConfig: PageConfig) => {
+  const handleCustomSave = (newConfig: any) => {
       setPageConfig(newConfig);
       setShowCustomDialog(false);
   };
@@ -51,17 +51,21 @@ export const MarginsTool: React.FC = () => {
 
   const marginOptions = useMemo(() => (Object.entries(MARGIN_PRESETS) as [string, MarginValues][]).map(([key, val]) => {
       let icon = LayoutTemplate;
-      if (key === 'narrow') icon = Columns;
-      if (key === 'moderate') icon = MoveVertical;
-      if (key === 'wide') icon = ArrowLeftRight;
-      if (key === 'mirrored') icon = ArrowRightLeft;
-      if (key === 'office2003') icon = Monitor;
+      let colorClass = "text-slate-400";
+      
+      if (key === 'normal') { colorClass = "text-blue-500"; }
+      if (key === 'narrow') { icon = Columns; colorClass = "text-emerald-500"; }
+      if (key === 'moderate') { icon = MoveVertical; colorClass = "text-orange-500"; }
+      if (key === 'wide') { icon = ArrowLeftRight; colorClass = "text-purple-500"; }
+      if (key === 'mirrored') { icon = ArrowRightLeft; colorClass = "text-indigo-500"; }
+      if (key === 'office2003') { icon = Monitor; colorClass = "text-sky-500"; }
 
       return {
         id: key,
         label: formatLabel(key),
         desc: `Top ${val.top}" Bottom ${val.bottom}" Left ${val.left}" Right ${val.right}"`,
-        icon
+        icon,
+        colorClass
       };
   }), []);
 
@@ -71,7 +75,7 @@ export const MarginsTool: React.FC = () => {
              id={menuId} 
              icon={LayoutTemplate} 
              label="Margins" 
-             iconClassName="text-cyan-600"
+             iconClassName="text-cyan-600 dark:text-cyan-500"
          />
          <MenuPortal id={menuId} activeMenu={activeMenu} menuPos={menuPos} closeMenu={closeMenu} width={280}>
              <div className="p-1 space-y-0.5 max-h-[60vh] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-200">
@@ -82,7 +86,7 @@ export const MarginsTool: React.FC = () => {
                         onMouseDown={(e) => e.preventDefault()}
                         className={`w-full text-left px-3 py-2 hover:bg-slate-100 rounded-md flex items-center gap-3 group transition-colors ${pageConfig.marginPreset === option.id ? 'bg-blue-50 text-blue-700 ring-1 ring-blue-200' : 'text-slate-700'}`}
                      >
-                         <option.icon size={18} className={`flex-shrink-0 ${pageConfig.marginPreset === option.id ? 'text-blue-500' : 'text-slate-400 group-hover:text-slate-600'}`} strokeWidth={1.5} />
+                         <option.icon size={18} className={`flex-shrink-0 ${pageConfig.marginPreset === option.id ? 'text-blue-500' : option.colorClass}`} strokeWidth={1.5} />
                          <div className="flex-1 min-w-0">
                             <div className="text-xs font-medium truncate">{option.label}</div>
                             <div className={`text-[10px] truncate ${pageConfig.marginPreset === option.id ? 'text-blue-400' : 'text-slate-400'}`}>{option.desc}</div>

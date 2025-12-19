@@ -59,23 +59,29 @@ export const CoverPageTool: React.FC = () => {
          <MenuPortal id="cover_page" activeMenu={activeMenu} menuPos={menuPos} closeMenu={closeMenu}>
              <div className="px-3 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider bg-slate-50 border-b border-slate-100">Built-in</div>
              <button onClick={() => insertCoverPage('modern')} className="w-full text-left px-3 py-2 hover:bg-blue-50 text-xs font-medium text-slate-700 flex items-center gap-3 group transition-colors">
-                 <div className="w-8 h-10 bg-slate-200 border border-slate-300 rounded-sm group-hover:border-blue-300 group-hover:bg-white transition-colors shadow-sm"></div>
+                 <div className="w-8 h-10 bg-slate-200 border border-slate-300 rounded-sm group-hover:border-blue-300 group-hover:bg-white transition-colors shadow-sm relative overflow-hidden">
+                     <div className="h-2 w-full bg-blue-500 absolute top-0"></div>
+                 </div>
                  <div>
-                     <div className="font-semibold">Modern</div>
+                     <div className="font-semibold text-blue-900">Modern</div>
                      <div className="text-[10px] text-slate-400">Clean and professional</div>
                  </div>
              </button>
              <button onClick={() => insertCoverPage('creative')} className="w-full text-left px-3 py-2 hover:bg-blue-50 text-xs font-medium text-slate-700 flex items-center gap-3 group transition-colors">
-                 <div className="w-8 h-10 bg-slate-800 border border-slate-600 rounded-sm group-hover:border-blue-300 shadow-sm"></div>
+                 <div className="w-8 h-10 bg-slate-800 border border-slate-600 rounded-sm group-hover:border-blue-300 shadow-sm relative">
+                     <div className="w-2 h-2 bg-purple-500 rounded-full absolute bottom-2 right-2"></div>
+                 </div>
                  <div>
-                     <div className="font-semibold">Creative</div>
+                     <div className="font-semibold text-purple-900">Creative</div>
                      <div className="text-[10px] text-slate-400">Bold and dark</div>
                  </div>
              </button>
              <button onClick={() => insertCoverPage('minimal')} className="w-full text-left px-3 py-2 hover:bg-blue-50 text-xs font-medium text-slate-700 flex items-center gap-3 group transition-colors">
-                 <div className="w-8 h-10 bg-white border border-slate-300 rounded-sm group-hover:border-blue-300 shadow-sm"></div>
+                 <div className="w-8 h-10 bg-white border border-slate-300 rounded-sm group-hover:border-blue-300 shadow-sm flex items-center justify-center">
+                     <div className="w-4 h-[1px] bg-black"></div>
+                 </div>
                  <div>
-                     <div className="font-semibold">Minimal</div>
+                     <div className="font-semibold text-slate-900">Minimal</div>
                      <div className="text-[10px] text-slate-400">Simple text based</div>
                  </div>
              </button>

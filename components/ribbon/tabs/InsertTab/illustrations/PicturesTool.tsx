@@ -45,11 +45,11 @@ export const PicturesTool: React.FC = () => {
          />
          <MenuPortal id="pictures_menu" activeMenu={activeMenu} menuPos={menuPos} closeMenu={closeMenu}>
              <div className="p-1">
-                 <button onClick={() => insertImage('file')} className="w-full text-left px-3 py-2 hover:bg-slate-100 rounded-md text-xs font-medium text-slate-700 flex items-center">
-                     <Laptop size={14} className="mr-2 text-slate-500"/> This Device...
+                 <button onClick={() => insertImage('file')} className="w-full text-left px-3 py-2 hover:bg-slate-100 rounded-md text-xs font-medium text-slate-700 flex items-center group">
+                     <Laptop size={14} className="mr-2 text-slate-500 group-hover:text-blue-600"/> This Device...
                  </button>
-                 <button onClick={() => insertImage('url')} className="w-full text-left px-3 py-2 hover:bg-slate-100 rounded-md text-xs font-medium text-slate-700 flex items-center">
-                     <Globe size={14} className="mr-2 text-slate-500"/> Online Pictures...
+                 <button onClick={() => insertImage('url')} className="w-full text-left px-3 py-2 hover:bg-slate-100 rounded-md text-xs font-medium text-slate-700 flex items-center group">
+                     <Globe size={14} className="mr-2 text-emerald-500 group-hover:text-emerald-600"/> Online Pictures...
                  </button>
              </div>
          </MenuPortal>

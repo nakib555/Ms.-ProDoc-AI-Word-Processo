@@ -47,42 +47,42 @@ export const StandardFormattingTools: React.FC = () => {
             onClick={() => { executeCommand('bold'); checkFormats(); }} 
             title="Bold (Ctrl+B)" 
             active={activeFormats.bold}
-            iconClass="text-slate-800 dark:text-slate-200 font-bold"
+            iconClass="text-blue-700 dark:text-blue-400 font-bold"
          />
          <ToolBtn 
             icon={Italic} 
             onClick={() => { executeCommand('italic'); checkFormats(); }} 
             title="Italic (Ctrl+I)" 
             active={activeFormats.italic}
-            iconClass="text-slate-700 dark:text-slate-300"
+            iconClass="text-orange-600 dark:text-orange-400"
          />
          <ToolBtn 
             icon={Underline} 
             onClick={() => { executeCommand('underline'); checkFormats(); }} 
             title="Underline (Ctrl+U)" 
             active={activeFormats.underline}
-            iconClass="text-slate-700 dark:text-slate-300"
+            iconClass="text-emerald-600 dark:text-emerald-400"
          />
          <ToolBtn 
             icon={Strikethrough} 
             onClick={() => { executeCommand('strikeThrough'); checkFormats(); }} 
             title="Strikethrough" 
             active={activeFormats.strikethrough}
-            iconClass="text-slate-500"
+            iconClass="text-rose-500 dark:text-rose-400"
          />
          <ToolBtn 
             icon={Subscript} 
             onClick={() => { executeCommand('subscript'); checkFormats(); }} 
             title="Subscript (Ctrl+=)" 
             active={activeFormats.subscript}
-            iconClass="text-violet-500"
+            iconClass="text-purple-600 dark:text-purple-400"
          />
          <ToolBtn 
             icon={Superscript} 
             onClick={() => { executeCommand('superscript'); checkFormats(); }} 
             title="Superscript (Ctrl+Shift++)" 
             active={activeFormats.superscript}
-            iconClass="text-violet-500"
+            iconClass="text-purple-600 dark:text-purple-400"
          />
     </GroupRow>
   );
