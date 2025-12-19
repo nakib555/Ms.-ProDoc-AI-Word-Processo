@@ -1,43 +1,45 @@
 <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <!-- Vibrant Blue-Indigo Gradient Base -->
     <linearGradient id="iconGradient" x1="4" y1="4" x2="60" y2="60" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#3B82F6" /> <!-- Blue 500 -->
-      <stop offset="100%" stop-color="#4F46E5" /> <!-- Indigo 600 -->
+      <stop offset="0%" stop-color="#3B82F6" />
+      <stop offset="100%" stop-color="#4F46E5" />
     </linearGradient>
     
-    <!-- Golden Gradient for the AI Sparkle -->
     <linearGradient id="sparkleGradient" x1="46" y1="10" x2="54" y2="28" gradientUnits="userSpaceOnUse">
       <stop offset="0%" stop-color="#FCD34D" />
       <stop offset="100%" stop-color="#F59E0B" />
     </linearGradient>
 
-    <!-- Soft Drop Shadow for depth -->
-    <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="3" stdDeviation="2.5" flood-color="#000" flood-opacity="0.12"/>
-    </filter>
-    
-    <!-- Inner Glow for the page -->
-    <filter id="pageShadow" x="-10%" y="-10%" width="120%" height="120%">
-      <feDropShadow dx="0" dy="1" stdDeviation="1" flood-color="#000" flood-opacity="0.05"/>
+    <!-- Robust SVG 1.1 Shadow -->
+    <filter id="softShadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="2" />
+      <feOffset dx="0" dy="2" result="offsetblur"/>
+      <feFlood flood-color="#000000" flood-opacity="0.2"/>
+      <feComposite in2="offsetblur" operator="in"/>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
     </filter>
   </defs>
 
-  <!-- App Container (Squircle) -->
-  <rect x="4" y="4" width="56" height="56" rx="14" fill="url(#iconGradient)" filter="url(#softShadow)" />
+  <!-- App Container -->
+  <g filter="url(#softShadow)">
+    <rect x="4" y="4" width="56" height="56" rx="14" fill="url(#iconGradient)" />
+  </g>
   
   <!-- Document Page -->
-  <rect x="17" y="14" width="30" height="38" rx="3" fill="white" filter="url(#pageShadow)" />
+  <rect x="17" y="14" width="30" height="38" rx="3" fill="white" />
 
-  <!-- Abstract Content Lines (Visualizing Text) -->
-  <rect x="23" y="24" width="18" height="3" rx="1.5" fill="#DBEAFE" /> <!-- Light Blue -->
+  <!-- Content Lines -->
+  <rect x="23" y="24" width="18" height="3" rx="1.5" fill="#DBEAFE" />
   <rect x="23" y="31" width="18" height="3" rx="1.5" fill="#DBEAFE" />
   <rect x="23" y="38" width="12" height="3" rx="1.5" fill="#DBEAFE" />
 
-  <!-- The AI "Sparkle" (Floating Element) -->
-  <path d="M 52 8 C 52 8 53.5 13 56 15 C 53.5 17 52 22 52 22 C 52 22 50.5 17 48 15 C 50.5 13 52 8 52 8 Z" fill="url(#sparkleGradient)" filter="url(#softShadow)" />
+  <!-- AI Sparkle -->
+  <g filter="url(#softShadow)">
+      <path d="M 52 8 C 52 8 53.5 13 56 15 C 53.5 17 52 22 52 22 C 52 22 50.5 17 48 15 C 50.5 13 52 8 52 8 Z" fill="url(#sparkleGradient)" />
+  </g>
   
-  <!-- Secondary Tiny Sparkle for Magic Effect -->
   <circle cx="58" cy="28" r="1.5" fill="#FEF3C7" />
-
 </svg>
