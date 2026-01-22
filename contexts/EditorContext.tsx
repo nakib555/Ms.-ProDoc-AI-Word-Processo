@@ -1,26 +1,29 @@
 
 import React, { createContext, useContext, useState, useCallback, useRef, useEffect, useMemo } from 'react';
+import { useEditor as useTipTapEditor, Editor } from '@tiptap/react';
+import StarterKit from '@tiptap/starter-kit';
+import Image from '@tiptap/extension-image';
+import TextAlign from '@tiptap/extension-text-align';
+import Underline from '@tiptap/extension-underline';
+import Link from '@tiptap/extension-link';
+import Table from '@tiptap/extension-table';
+import TableRow from '@tiptap/extension-table-row';
+import TableCell from '@tiptap/extension-table-cell';
+import TableHeader from '@tiptap/extension-table-header';
+import Placeholder from '@tiptap/extension-placeholder';
+import TextStyle from '@tiptap/extension-text-style';
+import { Color } from '@tiptap/extension-color';
+import Highlight from '@tiptap/extension-highlight';
+
 import { SaveStatus, ViewMode, PageConfig, CustomStyle, ReadModeConfig, ActiveElementType, PageMovement, EditingArea } from '../types';
 import { useAutoSave } from '../hooks/useAutoSave';
-import { useHistory } from '../hooks/useHistory';
-import { DEFAULT_CONTENT, PAGE_SIZES, PAGE_MARGIN_PADDING, MARGIN_PRESETS } from '../constants';
-import { handleMathInput } from '../utils/mathAutoCorrect';
+import { DEFAULT_CONTENT, PAGE_SIZES, MARGIN_PRESETS } from '../constants';
 
-interface PageDimensions {
-  width: number;
-  height: number;
-}
-
-export type AIState = 'idle' | 'thinking' | 'writing';
-
-export interface SelectionAction {
-  label?: string;
-  onComplete: () => void;
-}
-
-interface EditorContextType {
+// Define custom types for TipTap integration
+export interface EditorContextType {
+  editor: Editor | null;
   content: string;
-  setContent: (content: string, immediate?: boolean) => void;
+  setContent: (content: string, emitUpdate?: boolean) => void;
   undo: () => void;
   redo: () => void;
   canUndo: boolean;
@@ -39,7 +42,7 @@ interface EditorContextType {
   editorRef: React.RefObject<HTMLDivElement | null>;
   pageConfig: PageConfig;
   setPageConfig: React.Dispatch<React.SetStateAction<PageConfig>>;
-  pageDimensions: PageDimensions;
+  pageDimensions: any;
   registerContainer: (node: HTMLDivElement | null) => void;
   showRuler: boolean;
   setShowRuler: React.Dispatch<React.SetStateAction<boolean>>;
@@ -65,10 +68,10 @@ interface EditorContextType {
   setShowCopilot: React.Dispatch<React.SetStateAction<boolean>>;
   
   // AI State
-  aiState: AIState;
-  setAiState: React.Dispatch<React.SetStateAction<AIState>>;
+  aiState: 'idle' | 'thinking' | 'writing';
+  setAiState: React.Dispatch<React.SetStateAction<'idle' | 'thinking' | 'writing'>>;
   isAIProcessing: boolean;
-  setIsAIProcessing: (isProcessing: boolean) => void; // Kept for backward compatibility
+  setIsAIProcessing: (isProcessing: boolean) => void;
   
   // Header/Footer & Editing Area
   activeEditingArea: EditingArea;
@@ -77,67 +80,59 @@ interface EditorContextType {
   setHeaderContent: React.Dispatch<React.SetStateAction<string>>;
   footerContent: string;
   setFooterContent: React.Dispatch<React.SetStateAction<string>>;
+  
+  // First Page Header/Footer (for Different First Page option)
+  firstHeaderContent: string;
+  setFirstHeaderContent: React.Dispatch<React.SetStateAction<string>>;
+  firstFooterContent: string;
+  setFirstFooterContent: React.Dispatch<React.SetStateAction<string>>;
 
   // Keyboard Lock
   isKeyboardLocked: boolean;
   setIsKeyboardLocked: React.Dispatch<React.SetStateAction<boolean>>;
 
-  // Selection Mode (Mobile Helper)
+  // Selection Mode
   selectionMode: boolean;
   setSelectionMode: React.Dispatch<React.SetStateAction<boolean>>;
   hasActiveSelection: boolean;
   
-  // Selection Action (Deferred operation)
-  selectionAction: SelectionAction | null;
-  setSelectionAction: React.Dispatch<React.SetStateAction<SelectionAction | null>>;
+  selectionAction: any | null;
+  setSelectionAction: React.Dispatch<React.SetStateAction<any | null>>;
 }
 
 const EditorContext = createContext<EditorContextType | undefined>(undefined);
 
 export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Use custom history hook for robust Undo/Redo
-  const { 
-    state: content, 
-    set: setHistoryContent, 
-    setImmediate: setHistoryContentImmediate,
-    undo, 
-    redo, 
-    canUndo, 
-    canRedo 
-  } = useHistory(DEFAULT_CONTENT, 600); // 600ms debounce for typing
-
   const [documentTitle, setDocumentTitle] = useState("Untitled Document");
   const [creationDate] = useState(() => new Date());
   const [lastModified, setLastModified] = useState(() => new Date());
-  
   const [wordCount, setWordCount] = useState(0);
-  const [zoom, setZoom] = useState(35); // Default zoom reduced to show full page on start
-  const [viewMode, setViewMode] = useState<ViewMode>('print');
+  const [zoom, setZoom] = useState(100);
+  const [viewMode, setViewMode] = useState<ViewMode>('print'); // 'print' acts as our main view now
   const [pageMovement, setPageMovement] = useState<PageMovement>('vertical');
-  const [showRuler, setShowRuler] = useState(false);
+  const [showRuler, setShowRuler] = useState(true);
   const [showFormattingMarks, setShowFormattingMarks] = useState(false);
   const [activeElementType, setActiveElementType] = useState<ActiveElementType>('text');
   
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [showCopilot, setShowCopilot] = useState(false);
+  const [aiState, setAiState] = useState<'idle' | 'thinking' | 'writing'>('idle');
   
-  const [aiState, setAiState] = useState<AIState>('idle');
-  const isAIProcessing = aiState !== 'idle';
-  const setIsAIProcessing = useCallback((isProcessing: boolean) => {
-      setAiState(isProcessing ? 'thinking' : 'idle');
-  }, []);
-  
-  // Header & Footer State - Default to left aligned (no text-align style)
   const [activeEditingArea, setActiveEditingArea] = useState<EditingArea>('body');
-  const [headerContent, setHeaderContent] = useState('<div style="color: #94a3b8;">[Header]</div>');
-  const [footerContent, setFooterContent] = useState('<div style="color: #94a3b8;">[Page <span class="page-number-placeholder">1</span>]</div>');
   
-  // Keyboard Lock & Selection Mode
+  // Default Header/Footer content
+  const [headerContent, setHeaderContent] = useState('<p style="color:#94a3b8">Header</p>');
+  const [footerContent, setFooterContent] = useState('<p style="color:#94a3b8">Footer - [Page <span class="page-number-placeholder">1</span>]</p>');
+  
+  // First Page Header/Footer content
+  const [firstHeaderContent, setFirstHeaderContent] = useState('<p style="color:#94a3b8">First Page Header</p>');
+  const [firstFooterContent, setFirstFooterContent] = useState('<p style="color:#94a3b8">First Page Footer</p>');
+  
   const [isKeyboardLocked, setIsKeyboardLocked] = useState(false);
   const [selectionMode, setSelectionMode] = useState(false);
   const [hasActiveSelection, setHasActiveSelection] = useState(false);
-  const [selectionAction, setSelectionAction] = useState<SelectionAction | null>(null);
+  const [selectionAction, setSelectionAction] = useState<any | null>(null);
 
   const [pageConfig, setPageConfig] = useState<PageConfig>({
     size: 'Letter',
@@ -145,8 +140,6 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     marginPreset: 'normal',
     margins: MARGIN_PRESETS.normal,
     background: 'none',
-    pageColor: undefined,
-    watermark: undefined,
     headerDistance: 0.5,
     footerDistance: 0.5,
     verticalAlign: 'top',
@@ -164,391 +157,123 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     columns: 1,
     textScale: 1.2
   });
-  
-  const [customStyles, setCustomStyles] = useState<CustomStyle[]>([]);
 
   const editorRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
-
   const { saveStatus, triggerAutoSave, manualSave } = useAutoSave();
 
-  // Unified content setter that handles history
-  const setContent = useCallback((html: string, immediate = false) => {
-    if (immediate) {
-        setHistoryContentImmediate(html);
-    } else {
-        setHistoryContent(html);
+  // --- TipTap Initialization ---
+  const editor = useTipTapEditor({
+    extensions: [
+      StarterKit,
+      Image.configure({ inline: true, allowBase64: true }),
+      TextAlign.configure({ types: ['heading', 'paragraph'] }),
+      Underline,
+      Link.configure({ openOnClick: false }),
+      Table.configure({ resizable: true }),
+      TableRow,
+      TableHeader,
+      TableCell,
+      Placeholder.configure({ placeholder: 'Start typing...' }),
+      TextStyle,
+      Color,
+      Highlight.configure({ multicolor: true }),
+    ],
+    content: DEFAULT_CONTENT,
+    onUpdate: ({ editor }) => {
+      setWordCount(editor.storage.characterCount?.words?.() || 0);
+      setLastModified(new Date());
+      triggerAutoSave();
+    },
+    onSelectionUpdate: ({ editor }) => {
+        setHasActiveSelection(!editor.state.selection.empty);
+        if (editor.isActive('table')) setActiveElementType('table');
+        else if (editor.isActive('image')) setActiveElementType('image');
+        else setActiveElementType('text');
     }
-    setLastModified(new Date());
-    triggerAutoSave();
-  }, [triggerAutoSave, setHistoryContent, setHistoryContentImmediate]);
+  });
 
-  // Word Count Calculation (Main Thread)
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      const text = content.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
-      setWordCount(text ? text.split(' ').filter(w => w.length > 0).length : 0);
-    }, 500);
-
-    return () => clearTimeout(handler);
-  }, [content]);
-
-  // Selection Detection Logic
-  useEffect(() => {
-    const checkSelection = () => {
-      // Priority check for MathLive active element (Shadow DOM focus)
-      if (document.activeElement && document.activeElement.tagName === 'MATH-FIELD') {
-          setActiveElementType('equation');
-          return;
-      }
-
-      const selection = window.getSelection();
-      setHasActiveSelection(!!(selection && selection.rangeCount > 0 && !selection.isCollapsed));
-
-      if (!selection || selection.rangeCount === 0) {
-        return;
-      }
-
-      let node = selection.anchorNode;
-      if (node && node.nodeType === Node.TEXT_NODE) {
-        node = node.parentElement;
-      }
-
-      let type: ActiveElementType = 'text';
-      let current = node as HTMLElement | null;
-      let depth = 0;
-
-      while (current && depth < 50) {
-        if (current.nodeType === Node.ELEMENT_NODE) {
-            // Check for Header/Footer containers
-            if (current.classList.contains('prodoc-header')) {
-                type = 'header';
-                break;
-            }
-            if (current.classList.contains('prodoc-footer')) {
-                type = 'footer';
-                break;
-            }
-
-            if (current === editorRef.current || current.classList.contains('prodoc-editor')) {
-                break;
-            }
-            if (current.tagName === 'MATH-FIELD' || current.classList.contains('prodoc-equation')) {
-                type = 'equation';
-                break;
-            }
-            if (['TABLE', 'TD', 'TH', 'TR', 'TBODY', 'THEAD'].includes(current.tagName)) {
-                type = 'table';
-                break;
-            }
-            if (current.tagName === 'IMG') {
-                type = 'image';
-                break;
-            }
-        }
-        current = current.parentElement;
-        depth++;
-      }
-      setActiveElementType(type);
-    };
-
-    document.addEventListener('selectionchange', checkSelection);
-    document.addEventListener('mouseup', checkSelection);
-    document.addEventListener('keyup', checkSelection);
-    document.addEventListener('click', checkSelection);
-    // Add focusin to detect focus changes into web components/shadow DOM
-    document.addEventListener('focusin', checkSelection);
-
-    return () => {
-      document.removeEventListener('selectionchange', checkSelection);
-      document.removeEventListener('mouseup', checkSelection);
-      document.removeEventListener('keyup', checkSelection);
-      document.removeEventListener('click', checkSelection);
-      document.removeEventListener('focusin', checkSelection);
-    };
-  }, []);
-
-  // Keyboard Handler for Math AutoCorrect
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-        // Only run if we are in an equation context
-        if (activeElementType === 'equation') {
-            const handled = handleMathInput(e, window.getSelection());
-            if (handled) {
-                // If the math engine handled it, trigger a save/update
-                if (editorRef.current) {
-                    // Slight delay to ensure DOM is settled if needed, though handleMathInput is synchronous
-                    setTimeout(() => {
-                        setContent(editorRef.current?.innerHTML || '', true); // Immediate save for format changes
-                    }, 0);
-                }
-            }
-        }
-    };
-
-    const element = editorRef.current;
-    if (element) {
-        element.addEventListener('keydown', handleKeyDown);
+  const setContent = useCallback((content: string, emitUpdate = true) => {
+    if (editor && emitUpdate) {
+        editor.commands.setContent(content);
     }
-    // Also listen globally if focus is inside editor but we missed attaching
-    document.addEventListener('keydown', handleKeyDown);
-
-    return () => {
-        if (element) element.removeEventListener('keydown', handleKeyDown);
-        document.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [activeElementType, setContent]);
-
-  const registerContainer = useCallback((node: HTMLDivElement | null) => {
-    containerRef.current = node;
-  }, []);
-
-  const pageDimensions = useMemo(() => {
-    let width, height;
-    if (pageConfig.size === 'Custom' && pageConfig.customWidth && pageConfig.customHeight) {
-      width = pageConfig.customWidth * 96;
-      height = pageConfig.customHeight * 96;
-    } else {
-      const base = PAGE_SIZES[pageConfig.size as string] || PAGE_SIZES['Letter'];
-      width = base.width;
-      height = base.height;
-    }
-    return pageConfig.orientation === 'portrait' 
-      ? { width, height }
-      : { width: height, height: width };
-  }, [pageConfig.size, pageConfig.orientation, pageConfig.customWidth, pageConfig.customHeight]);
-
-  const calculateFitZoom = useCallback((type: 'width' | 'page') => {
-    if (!containerRef.current) return;
-    const container = containerRef.current;
-    const { clientWidth, clientHeight } = container;
-    const { width, height } = pageDimensions;
-    const availableWidth = Math.max(0, clientWidth - PAGE_MARGIN_PADDING * 2);
-    const availableHeight = Math.max(0, clientHeight - PAGE_MARGIN_PADDING * 2);
-
-    if (type === 'width') {
-      const ratio = availableWidth / width;
-      setZoom(Math.floor(ratio * 100));
-    } else {
-      const wRatio = availableWidth / width;
-      const hRatio = availableHeight / height;
-      setZoom(Math.floor(Math.min(wRatio, hRatio) * 100));
-    }
-  }, [pageDimensions]);
+  }, [editor]);
 
   const executeCommand = useCallback((command: string, value?: string) => {
-    // Zoom Commands
-    if (command === 'zoomIn') {
-        setZoom(p => Math.min(500, p + 10));
-        return;
-    }
-    if (command === 'zoomOut') {
-        setZoom(p => Math.max(10, p - 10));
-        return;
-    }
-    if (command === 'zoomReset') {
-        setZoom(100);
-        return;
-    }
-    if (command === 'fitWidth') {
-        calculateFitZoom('width');
-        return;
-    }
-    if (command === 'fitPage') {
-        calculateFitZoom('page');
-        return;
-    }
-    
-    // File Commands
-    if (command === 'save') {
-        manualSave();
-        return;
-    }
-    if (command === 'export') {
-        alert('Use File > Export to save the document.');
-        return;
-    }
+    if (!editor) return;
 
-    // Formatting Commands with Specific Logic
-    if (command === 'growFont') {
-        document.execCommand('increaseFontSize', false, undefined);
-    } else if (command === 'shrinkFont') {
-        document.execCommand('decreaseFontSize', false, undefined);
-    } else if (command === 'subscript') {
-        // Enforce mutual exclusivity with Superscript
-        // If superscript is active, turn it off first
-        if (document.queryCommandState('superscript')) {
-             document.execCommand('superscript', false, undefined);
-        }
-        document.execCommand('subscript', false, undefined);
-    } else if (command === 'superscript') {
-        // Enforce mutual exclusivity with Subscript
-        // If subscript is active, turn it off first
-        if (document.queryCommandState('subscript')) {
-             document.execCommand('subscript', false, undefined);
-        }
-        document.execCommand('superscript', false, undefined);
-    } else if (command === 'undo') {
-        undo();
-        return;
-    } else if (command === 'redo') {
-        redo();
-        return;
-    } else {
-        // Default browser command
-        document.execCommand(command, false, value);
+    editor.chain().focus();
+
+    switch (command) {
+        case 'bold': editor.chain().focus().toggleBold().run(); break;
+        case 'italic': editor.chain().focus().toggleItalic().run(); break;
+        case 'underline': editor.chain().focus().toggleUnderline().run(); break;
+        case 'strikeThrough': editor.chain().focus().toggleStrike().run(); break;
+        case 'justifyLeft': editor.chain().focus().setTextAlign('left').run(); break;
+        case 'justifyCenter': editor.chain().focus().setTextAlign('center').run(); break;
+        case 'justifyRight': editor.chain().focus().setTextAlign('right').run(); break;
+        case 'justifyFull': editor.chain().focus().setTextAlign('justify').run(); break;
+        case 'insertUnorderedList': editor.chain().focus().toggleBulletList().run(); break;
+        case 'insertOrderedList': editor.chain().focus().toggleOrderedList().run(); break;
+        case 'formatBlock': 
+            if (value === 'P') editor.chain().focus().setParagraph().run();
+            else if (value?.startsWith('H')) editor.chain().focus().toggleHeading({ level: parseInt(value.charAt(1)) as any }).run();
+            else if (value === 'BLOCKQUOTE') editor.chain().focus().toggleBlockquote().run();
+            break;
+        case 'insertImage': editor.chain().focus().setImage({ src: value! }).run(); break;
+        case 'createLink': editor.chain().focus().setLink({ href: value! }).run(); break;
+        case 'undo': editor.chain().focus().undo().run(); break;
+        case 'redo': editor.chain().focus().redo().run(); break;
+        case 'foreColor': editor.chain().focus().setColor(value!).run(); break;
+        case 'hiliteColor': 
+            if (value === 'transparent') editor.chain().focus().unsetHighlight().run();
+            else editor.chain().focus().toggleHighlight({ color: value }).run(); 
+            break;
+        case 'insertHTML': editor.chain().focus().insertContent(value!).run(); break;
+        case 'insertText': editor.chain().focus().insertContent(value!).run(); break;
+        case 'selectAll': editor.chain().focus().selectAll().run(); break;
+        case 'removeFormat': editor.chain().focus().unsetAllMarks().clearNodes().run(); break;
+        case 'zoomReset': setZoom(100); break;
+        case 'fitPage': setZoom(75); break;
+        case 'fitWidth': setZoom(120); break;
+        case 'save': manualSave(); break;
+        case 'cut': 
+            // navigator.clipboard access usually requires user gesture/secure context
+            // Simulating via selection deletion as programmatic clip access is restricted
+            document.execCommand('cut');
+            break;
+        case 'copy':
+             document.execCommand('copy');
+             break;
+        case 'formatPainter':
+             // Placeholder for format painter state logic
+             break;
+        default: console.warn(`Command ${command} not implemented in TipTap mapping`);
     }
-    
-    if (editorRef.current) {
-      editorRef.current.focus();
-      // Capture state immediately for commands (buttons usually trigger immediate state change)
-      setContent(editorRef.current.innerHTML, true);
-    }
-  }, [manualSave, calculateFitZoom, viewMode, undo, redo, setContent]);
+  }, [editor, manualSave]);
 
-  const addCustomStyle = useCallback((name: string) => {
-    const selection = window.getSelection();
-    if (!selection || selection.rangeCount === 0) return;
-    const anchorNode = selection.anchorNode;
-    const element = anchorNode?.nodeType === Node.TEXT_NODE ? anchorNode.parentElement : anchorNode as HTMLElement;
-    if (!element) return;
-    const computed = window.getComputedStyle(element);
-    const styles: React.CSSProperties = {
-        fontFamily: computed.fontFamily,
-        fontSize: computed.fontSize,
-        fontWeight: computed.fontWeight,
-        fontStyle: computed.fontStyle,
-        textDecoration: computed.textDecoration,
-        color: computed.color,
-        backgroundColor: computed.backgroundColor !== 'rgba(0, 0, 0, 0)' ? computed.backgroundColor : undefined,
-        letterSpacing: computed.letterSpacing,
-    };
-    const newStyle: CustomStyle = {
-        id: Date.now().toString(),
-        name,
-        styles,
-        tagName: element.tagName
-    };
-    setCustomStyles(prev => [...prev, newStyle]);
-  }, []);
+  // Legacy style compatibility functions
+  const applyAdvancedStyle = (styles: React.CSSProperties) => {
+      // Basic implementation for demo
+      // In a real TipTap integration, this would map CSS to extension attributes
+  };
 
-  const applyCustomStyle = useCallback((style: CustomStyle) => {
-      const selection = window.getSelection();
-      if (!selection || selection.rangeCount === 0) return;
-      const span = document.createElement('span');
-      Object.assign(span.style, style.styles);
-      if (['H1', 'H2', 'H3', 'P', 'BLOCKQUOTE'].includes(style.tagName)) {
-         document.execCommand('formatBlock', false, style.tagName);
-      }
-      const range = selection.getRangeAt(0);
-      const contents = range.extractContents();
-      span.appendChild(contents);
-      range.insertNode(span);
-      
-      if (editorRef.current) {
-          editorRef.current.normalize();
-          setContent(editorRef.current.innerHTML, true);
-      }
-  }, [setContent]);
+  const applyBlockStyle = (styles: React.CSSProperties) => {
+     // Placeholder
+  };
+  
+  const handlePasteSpecial = async () => {}; // TipTap handles paste
 
-  const applyAdvancedStyle = useCallback((styles: React.CSSProperties) => {
-      const selection = window.getSelection();
-      if (!selection || selection.rangeCount === 0) return;
-      const range = selection.getRangeAt(0);
-      const span = document.createElement('span');
-      Object.assign(span.style, styles);
-      if (range.collapsed) {
-         const text = document.createTextNode('\u200B');
-         span.appendChild(text);
-         range.insertNode(span);
-         range.setStart(text, 1);
-         range.collapse(true);
-         selection.removeAllRanges();
-         selection.addRange(range);
-      } else {
-         try {
-            const contents = range.extractContents();
-            span.appendChild(contents);
-            range.insertNode(span);
-         } catch (e) {
-            console.error("Could not apply style", e);
-         }
-      }
-      
-      if (editorRef.current) {
-          editorRef.current.focus();
-          setContent(editorRef.current.innerHTML, true);
-      }
-  }, [setContent]);
-
-  const applyBlockStyle = useCallback((styles: React.CSSProperties) => {
-    const selection = window.getSelection();
-    if (!selection || selection.rangeCount === 0) return;
-    let node = selection.anchorNode;
-    let depth = 0;
-    while (node && depth < 50) {
-        if (node.nodeType === Node.ELEMENT_NODE) {
-            const tagName = (node as HTMLElement).tagName;
-            if ((node as HTMLElement).classList.contains('prodoc-editor')) break;
-            if (['P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'DIV', 'LI', 'BLOCKQUOTE', 'TD', 'TH'].includes(tagName)) {
-                Object.assign((node as HTMLElement).style, styles);
-                if (editorRef.current) {
-                    setContent(editorRef.current.innerHTML, true);
-                }
-                return;
-            }
-        }
-        node = node.parentNode;
-        depth++;
-    }
-    document.execCommand('formatBlock', false, 'P');
-    if (editorRef.current) {
-        setContent(editorRef.current.innerHTML, true);
-    }
-  }, [setContent]);
-
-  const handlePasteSpecial = useCallback(async (type: 'keep-source' | 'merge' | 'text-only') => {
-    try {
-        if (type === 'text-only') {
-            const text = await navigator.clipboard.readText();
-            document.execCommand('insertText', false, text);
-        } else {
-            const items = await navigator.clipboard.read();
-            for (const item of items) {
-                if (item.types.includes('text/html')) {
-                    const blob = await item.getType('text/html');
-                    const html = await blob.text();
-                    if (type === 'merge') {
-                        const doc = new DOMParser().parseFromString(html, 'text/html');
-                        doc.body.querySelectorAll('*').forEach(el => {
-                            el.removeAttribute('class');
-                            el.removeAttribute('style');
-                        });
-                        document.execCommand('insertHTML', false, doc.body.innerHTML);
-                    } else {
-                        document.execCommand('insertHTML', false, html);
-                    }
-                    if (editorRef.current) setContent(editorRef.current.innerHTML, true);
-                    return;
-                }
-            }
-            const text = await navigator.clipboard.readText();
-            document.execCommand('insertText', false, text);
-        }
-        if (editorRef.current) setContent(editorRef.current.innerHTML, true);
-    } catch (err) {
-        console.error('Failed to paste:', err);
-        alert('Browser security blocked clipboard access. Please use keyboard shortcuts (Ctrl+V or Cmd+V) to paste.');
-    }
-  }, [setContent]);
-
-  const contextValue = useMemo(() => ({
-    content,
+  const pageDimensions = { width: 816, height: 1056 }; // Default Letter
+  
+  const contextValue = {
+    editor,
+    content: editor?.getHTML() || '',
     setContent,
-    undo,
-    redo,
-    canUndo,
-    canRedo,
+    undo: () => editor?.chain().focus().undo().run(),
+    redo: () => editor?.chain().focus().redo().run(),
+    canUndo: editor?.can().undo() || false,
+    canRedo: editor?.can().redo() || false,
     wordCount,
     zoom,
     setZoom,
@@ -564,7 +289,7 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     pageConfig,
     setPageConfig,
     pageDimensions,
-    registerContainer,
+    registerContainer: (node: HTMLDivElement | null) => { containerRef.current = node; },
     showRuler,
     setShowRuler,
     documentTitle,
@@ -574,9 +299,9 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     creationDate,
     showFormattingMarks,
     setShowFormattingMarks,
-    customStyles,
-    addCustomStyle,
-    applyCustomStyle,
+    customStyles: [],
+    addCustomStyle: () => {},
+    applyCustomStyle: () => {},
     applyAdvancedStyle,
     applyBlockStyle,
     handlePasteSpecial,
@@ -589,14 +314,18 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setShowCopilot,
     aiState,
     setAiState,
-    isAIProcessing,
-    setIsAIProcessing,
+    isAIProcessing: aiState !== 'idle',
+    setIsAIProcessing: (v: boolean) => setAiState(v ? 'thinking' : 'idle'),
     activeEditingArea,
     setActiveEditingArea,
     headerContent,
     setHeaderContent,
     footerContent,
     setFooterContent,
+    firstHeaderContent,
+    setFirstHeaderContent,
+    firstFooterContent,
+    setFirstFooterContent,
     isKeyboardLocked,
     setIsKeyboardLocked,
     selectionMode,
@@ -604,50 +333,7 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     hasActiveSelection,
     selectionAction,
     setSelectionAction
-  }), [
-    content,
-    setContent,
-    undo,
-    redo,
-    canUndo,
-    canRedo,
-    wordCount,
-    zoom,
-    viewMode,
-    pageMovement,
-    readConfig,
-    saveStatus,
-    pageConfig,
-    pageDimensions,
-    showRuler,
-    documentTitle,
-    lastModified,
-    creationDate,
-    executeCommand,
-    registerContainer,
-    calculateFitZoom,
-    showFormattingMarks,
-    customStyles,
-    addCustomStyle,
-    applyCustomStyle,
-    applyAdvancedStyle,
-    applyBlockStyle,
-    handlePasteSpecial,
-    activeElementType,
-    currentPage,
-    totalPages,
-    showCopilot,
-    aiState,
-    isAIProcessing,
-    setIsAIProcessing,
-    activeEditingArea,
-    headerContent,
-    footerContent,
-    isKeyboardLocked,
-    selectionMode,
-    hasActiveSelection,
-    selectionAction
-  ]);
+  };
 
   return (
     <EditorContext.Provider value={contextValue}>

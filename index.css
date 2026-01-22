@@ -39,362 +39,106 @@
   scrollbar-width: none;  /* Firefox */
 }
 
-/* Editor specific styles */
-.prodoc-editor:focus {
+/* ProseMirror Styles for TipTap */
+.ProseMirror {
   outline: none;
+  min-height: 100%;
 }
 
-/* Content Constraints to Margins */
-.prodoc-editor {
-  overflow-wrap: break-word;
-  word-wrap: break-word;
-  white-space: pre-wrap; /* Preserve whitespace but wrap lines */
-  transition: color 0.3s ease;
-}
-
-.prodoc-editor img, 
-.prodoc-editor video, 
-.prodoc-editor canvas,
-.prodoc-editor svg {
-  max-width: 100%;
-  height: auto;
-  display: inline-block;
-  transition: transform 0.2s ease;
-}
-
-/* Table Styles - Word-like defaults */
-.prodoc-editor table {
-  border-collapse: collapse;
-  border-spacing: 0;
-  width: 100%;
-  margin-top: 1em;
-  margin-bottom: 1em;
-  box-sizing: border-box;
-  transition: all 0.2s ease;
-}
-
-.prodoc-editor th, .prodoc-editor td {
-  border: 1px solid #cbd5e1;
-  padding: 4px 8px;
-  min-width: 2em;
-  vertical-align: top;
-  position: relative;
-  transition: background-color 0.2s ease;
-}
-
-.dark .prodoc-editor th, .dark .prodoc-editor td {
-  border-color: #cbd5e1; /* Keep borders visible even in dark mode if page is white */
-}
-
-/* Ensure empty cells are clickable/visible */
-.prodoc-editor td:empty::after, .prodoc-editor th:empty::after {
-    content: '\00a0'; /* non-breaking space */
-    display: inline-block;
-}
-
-/* --- Page & Flow Animations --- */
-
-/* Keyframe for new pages appearing (Content Flow simulation) */
-@keyframes page-enter {
-  0% { 
-    opacity: 0; 
-    transform: translateY(20px) scale(0.98); 
-  }
-  100% { 
-    opacity: 1; 
-    transform: translateY(0) scale(1); 
-  }
-}
-
-/* Applied to the wrapper of each page in Print Layout */
-.prodoc-page-wrapper {
-  animation: page-enter 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
-  will-change: transform, opacity;
-}
-
-/* Smooth transition for the page sheet itself (Zoom, Resize) */
-.prodoc-page-sheet {
-  transition-property: width, height, transform, box-shadow, background-color;
-  transition-duration: 0.4s;
-  transition-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
-  will-change: transform, width, height;
-  box-sizing: border-box; /* Ensure padding is included in width/height calculations */
-}
-
-/* --- Smart Selection Mode (Mobile) --- */
-.smart-selection-active {
-  -webkit-touch-callout: none !important; /* Disable iOS callouts (magnifier, menu) */
-  -webkit-user-select: text !important;   /* Allow selection so programmatic ranges render */
-  user-select: text !important;
-  outline: none !important;
-}
-
-/* Enhance visibility of selection in this mode */
-.smart-selection-active::selection {
-  background-color: rgba(99, 102, 241, 0.3); /* indigo-500 with opacity */
-  color: inherit;
-}
-
-/* Global Selection Color for Dark Mode */
-.dark ::selection {
-  background-color: rgba(99, 102, 241, 0.5); /* indigo-500 */
-  color: white;
-}
-
-/* --- Placeholder for First Line --- */
-.prodoc-editor > p:first-child:has(br:only-child)::before {
-  content: "Start typing...";
-  color: #94a3b8; /* slate-400 */
-  position: absolute;
-  pointer-events: none;
-  user-select: none;
-  opacity: 0.6;
-}
-
-.prodoc-editor > p:first-child:empty::before {
-  content: "Start typing...";
-  color: #94a3b8;
-  position: absolute;
-  pointer-events: none;
-  user-select: none;
-  opacity: 0.6;
-}
-
-/* --- Page Break Visuals --- */
-.prodoc-page-break {
+.ProseMirror p.is-editor-empty:first-child::before {
+  color: #adb5bd;
+  content: attr(data-placeholder);
+  float: left;
   height: 0;
-  width: 100%;
-  display: block;
+  pointer-events: none;
 }
 
-.show-formatting-marks .prodoc-page-break {
-  height: auto;
-  border-bottom: 1px dotted #94a3b8;
-  margin: 10px 0;
-  position: relative;
-  text-align: center;
-  color: #94a3b8;
-  font-size: 10px;
-  font-family: sans-serif;
-  user-select: none;
-  animation: page-enter 0.3s ease-out;
+.ProseMirror ul,
+.ProseMirror ol {
+  padding: 0 1rem;
 }
 
-.show-formatting-marks .prodoc-page-break::after {
-  content: "Page Break";
-  background: #fff;
-  padding: 0 8px;
-  position: relative;
-  top: 6px;
+.ProseMirror h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1.1;
+  margin-bottom: 0.5rem;
 }
-.dark .show-formatting-marks .prodoc-page-break::after {
-    background: #1e293b;
-    color: #94a3b8;
-}
-
-/* --- MathLive / Equation Box Styles --- */
-
-/* The Wrapper Container */
-.equation-wrapper {
-  display: inline-flex;
-  align-items: stretch;
-  vertical-align: middle;
-  margin: 4px 2px;
-  border: 1px solid transparent;
-  position: relative;
-  border-radius: 4px;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  cursor: text; 
-  max-width: 100%; 
-  overflow-x: auto;
-}
-
-.equation-wrapper:hover {
-  background-color: #f8fafc;
-  border-color: #e2e8f0;
-}
-
-.equation-wrapper:focus-within {
-  border-color: #cbd5e1; 
-  background-color: #f1f5f9; 
-  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03);
-  transform: scale(1.02);
-}
-
-/* Handle (Left Grip) */
-.equation-handle {
-  display: none; 
-  width: 14px;
-  background-color: #cbd5e1; 
-  color: #475569; 
-  font-size: 12px;
-  line-height: 1;
-  align-items: center;
-  justify-content: center;
-  cursor: default;
-  user-select: none;
-  flex-shrink: 0;
-  font-family: sans-serif;
-  transition: opacity 0.2s;
-}
-
-.equation-wrapper:focus-within .equation-handle {
-  display: flex;
-  animation: page-enter 0.2s ease-out;
-}
-
-/* Dropdown Arrow (Right) */
-.equation-dropdown {
-  display: none; 
-  width: 14px;
-  color: #475569;
-  font-size: 8px;
-  align-items: flex-end;
-  justify-content: center;
-  cursor: pointer;
-  user-select: none;
-  padding-bottom: 4px;
-  flex-shrink: 0;
-}
-
-.equation-wrapper:focus-within .equation-dropdown {
-  display: flex;
-  animation: page-enter 0.2s ease-out;
-}
-
-.equation-wrapper math-field {
-  margin: 0 !important;
-  padding: 4px 8px !important;
-  background-color: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
-  min-width: 100px;
-  color: #1e293b; 
-  cursor: text;
-  max-width: 100%;
-}
-
-.equation-wrapper math-field:focus,
-.equation-wrapper math-field:focus-within {
-  outline: none !important;
-  background-color: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
-}
-
-math-field:not(.equation-wrapper math-field) {
-  display: inline-block;
-  font-size: 1.15em;
-  margin: 0 2px;
-  padding: 4px 8px;
-  background-color: #f8fafc;
-  border: 1px solid #cbd5e1;
-  border-radius: 4px;
-  color: #1e293b;
-  min-width: 100px;
-  vertical-align: middle;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-  transition: all 0.2s ease;
-  max-width: 100%;
-}
-
-math-field:not(.equation-wrapper math-field):focus, 
-math-field:not(.equation-wrapper math-field):focus-within {
-  outline: none;
-  border-color: #3b82f6;
-  background-color: #ffffff;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
-}
-
-/* Dark mode equation overrides */
-.dark .equation-wrapper:focus-within {
-  background-color: #1e293b;
-  border-color: #475569;
-}
-.dark .equation-wrapper:hover {
-  background-color: #1e293b;
-  border-color: #334155;
-}
-.dark .equation-handle {
-  background-color: #475569;
-  color: #94a3b8;
-}
-.dark .equation-dropdown {
-  color: #94a3b8;
-}
-.dark .equation-wrapper math-field {
-  color: #000; /* Keep black inside white page */
-}
-
-/* Formatting Marks */
-.show-formatting-marks p::after, 
-.show-formatting-marks div:not(.prodoc-page-break)::after,
-.show-formatting-marks h1::after,
-.show-formatting-marks h2::after,
-.show-formatting-marks h3::after,
-.show-formatting-marks h4::after,
-.show-formatting-marks h5::after,
-.show-formatting-marks h6::after,
-.show-formatting-marks li::after {
-  content: '¶';
-  color: #94a3b8;
-  font-size: 0.8em;
-  margin-left: 4px;
-  user-select: none;
-  opacity: 0.6;
-}
-
-/* Header & Footer Editing Styles */
-.header-footer-label {
-  position: absolute;
-  background-color: #2563eb; 
-  color: white;
-  padding: 2px 8px;
-  font-size: 10px;
+.ProseMirror h2 {
+  font-size: 1.5rem;
   font-weight: 600;
-  letter-spacing: 0.5px;
-  user-select: none;
-  z-index: 50;
-  white-space: nowrap;
-  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
-  font-family: 'Inter', sans-serif;
-  border-radius: 0 0 4px 4px; 
-  animation: slideInFromTop 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  margin-bottom: 0.5rem;
+}
+.ProseMirror h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
 }
 
-.header-footer-label.footer-tag {
-  border-radius: 4px 4px 0 0; 
-  animation: slideInFromBottom 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+.ProseMirror blockquote {
+  border-left: 3px solid #cbd5e1;
+  padding-left: 1rem;
+  margin-left: 0;
+  margin-right: 0;
+  font-style: italic;
 }
 
-@keyframes slideInFromBottom {
-  from { transform: translateY(100%); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
+.ProseMirror hr {
+  border: none;
+  border-top: 1px solid #cbd5e1;
+  margin: 2rem 0;
+}
+
+.ProseMirror table {
+  border-collapse: collapse;
+  margin: 0;
+  overflow: hidden;
+  table-layout: fixed;
+  width: 100%;
+}
+
+.ProseMirror td,
+.ProseMirror th {
+  border: 2px solid #ced4da;
+  box-sizing: border-box;
+  min-width: 1em;
+  padding: 3px 5px;
+  position: relative;
+  vertical-align: top;
+}
+
+.ProseMirror th {
+  background-color: #f1f3f5;
+  font-weight: bold;
+  text-align: left;
+}
+
+.ProseMirror .selectedCell:after {
+  background: rgba(200, 200, 255, 0.4);
+  content: "";
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  pointer-events: none;
+  position: absolute;
+  z-index: 2;
+}
+
+.ProseMirror img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 1rem 0;
+}
+
+.ProseMirror img.ProseMirror-selectednode {
+  outline: 3px solid #60a5fa;
 }
 
 /* Print styles */
 @media print {
   .no-print { display: none !important; }
-  body.printing-mode > *:not(#paged-print-container) { display: none !important; }
-  body.printing-mode #paged-print-container {
-    display: block !important;
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    margin: 0;
-    padding: 0;
-  }
-  .pagedjs_pages { width: 100%; display: block; }
-  .pagedjs_page { margin: 0 !important; box-shadow: none !important; break-after: page; }
-  .prodoc-page-break { display: block; break-after: page; page-break-after: always; height: 0; border: none !important; margin: 0; }
-  .prodoc-page-break::after { display: none; }
-  .header-footer-label { display: none !important; }
-  .equation-handle, .equation-dropdown { display: none !important; }
-}
-
-.pagedjs_page {
-  box-shadow: 0 0 0 1px rgba(0,0,0,0.1);
-  margin-bottom: 2em;
-  background: white;
+  body { background: white; }
+  .ProseMirror { padding: 0; margin: 0; }
 }

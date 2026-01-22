@@ -1,297 +1,128 @@
 
-import React, { useRef, useEffect, useLayoutEffect, useCallback, Suspense } from 'react';
+import React, { useState, useEffect } from 'react';
+import { EditorContent } from '@tiptap/react';
 import { useEditor } from '../contexts/EditorContext';
-import * as AutoSizerPkg from 'react-virtualized-auto-sizer';
+import { MiniToolbar } from './MiniToolbar';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
 
-// Safely resolve AutoSizer from the package (handles ESM/CJS interop on CDNs)
-const AutoSizer = (AutoSizerPkg as any).default || AutoSizerPkg;
-
-// Lazy Load Views with safety check
-const PrintLayoutView = React.lazy(() => 
-  import('./ribbon/tabs/ViewTab/views/PrintLayoutView')
-    .then(m => ({ default: m.PrintLayoutView }))
-    .catch(err => {
-      console.error("Failed to load PrintLayoutView", err);
-      return { default: () => <div className="p-4 text-red-500">Error loading Print Layout. Please refresh.</div> };
-    })
-);
-
-const WebLayoutView = React.lazy(() => 
-  import('./ribbon/tabs/ViewTab/views/WebLayoutTool')
-    .then(m => ({ default: m.WebLayoutView }))
-    .catch(err => {
-      console.error("Failed to load WebLayoutView", err);
-      return { default: () => <div className="p-4 text-red-500">Error loading Web Layout. Please refresh.</div> };
-    })
-);
-
-const ReadLayoutView = React.lazy(() => 
-  import('./ribbon/tabs/ViewTab/views/ReadLayoutView')
-    .then(m => ({ default: m.ReadLayoutView }))
-    .catch(err => {
-      console.error("Failed to load ReadLayoutView", err);
-      return { default: () => <div className="p-4 text-red-500">Error loading Read Mode. Please refresh.</div> };
-    })
-);
-
-const ViewLoading = () => (
-  <div className="flex flex-col items-center justify-center h-full w-full text-slate-400 gap-4">
-    <LoadingSpinner className="w-10 h-10" />
-    <span className="text-sm font-medium">Loading document view...</span>
-  </div>
-);
-
 const Editor: React.FC = () => {
-  const { 
-    content, 
-    setContent, 
-    zoom, 
-    setZoom,
-    viewMode, 
-    pageConfig, 
-    registerContainer, 
-    showRuler, 
-    showFormattingMarks,
-    editorRef 
-  } = useEditor();
-  
-  const containerRef = useRef<HTMLDivElement | null>(null);
-  // Store point relative to content for stable zooming
-  const pendingScrollRef = useRef<{ pointX: number, pointY: number, mouseX: number, mouseY: number } | null>(null);
-  const prevZoomRef = useRef<number>(zoom);
+  const { editor, zoom, pageConfig } = useEditor();
+  const [selectedImage, setSelectedImage] = useState<HTMLElement | null>(null);
 
-  // Stable callback for ref registration
-  // We pass this to the specific view which will attach it to the scrollable element
-  const handleRegister = useCallback((node: HTMLDivElement | null) => {
-      containerRef.current = node;
-      registerContainer(node);
-  }, [registerContainer]);
-
-  // Zoom-to-Cursor Logic (Mouse Wheel)
+  // --- Image Resizing Logic ---
   useEffect(() => {
-      const container = containerRef.current;
-      if (!container) return;
+      if (!editor) return;
 
-      const handleWheel = (e: WheelEvent) => {
-          // Handle Ctrl+Wheel for Zooming
-          if (e.ctrlKey || e.metaKey) {
-              e.preventDefault();
-
-              const rect = container.getBoundingClientRect();
-              // Calculate mouse position relative to the scrolling viewport
-              const mouseX = e.clientX - rect.left;
-              const mouseY = e.clientY - rect.top;
-
-              // Current scale
-              const scaleOld = zoom / 100;
-              
-              // Find content start offset (to handle centered layouts like Print View)
-              let contentOffsetLeft = 0;
-              let contentOffsetTop = 0;
-              
-              const firstPage = container.querySelector('.prodoc-page-wrapper') as HTMLElement;
-              if (firstPage) {
-                  contentOffsetLeft = firstPage.offsetLeft;
-                  contentOffsetTop = firstPage.offsetTop;
-              }
-              
-              // Calculate the point on the content (unscaled coordinates) under the mouse
-              const pointX = (container.scrollLeft + mouseX - contentOffsetLeft) / scaleOld;
-              const pointY = (container.scrollTop + mouseY - contentOffsetTop) / scaleOld;
-              
-              // Determine Zoom Direction and Step
-              const direction = e.deltaY > 0 ? -1 : 1; 
-              const zoomStep = 10; // 10% increments
-              
-              let nextZoom = zoom + (direction * zoomStep);
-              nextZoom = Math.max(10, Math.min(500, nextZoom));
-
-              if (nextZoom !== zoom) {
-                  // Store the target point and mouse position to restore after render
-                  pendingScrollRef.current = { pointX, pointY, mouseX, mouseY };
-                  setZoom(nextZoom);
-              }
+      const updateSelection = () => {
+          const { selection } = editor.state;
+          // Check if selection is an image node
+          if (selection.node && selection.node.type.name === 'image') {
+              // Find the DOM node
+              const domNode = editor.view.nodeDOM(selection.from) as HTMLElement;
+              if (domNode) setSelectedImage(domNode);
+          } else {
+              setSelectedImage(null);
           }
       };
 
-      container.addEventListener('wheel', handleWheel, { passive: false });
-      return () => container.removeEventListener('wheel', handleWheel);
-  }, [zoom, setZoom]);
+      editor.on('selectionUpdate', updateSelection);
+      return () => { editor.off('selectionUpdate', updateSelection); };
+  }, [editor]);
 
-  // Apply pending scroll adjustment after layout update (Zoom Logic)
-  useLayoutEffect(() => {
-      const container = containerRef.current;
-      if (!container) {
-          prevZoomRef.current = zoom;
-          return;
-      }
-
-      const rect = container.getBoundingClientRect();
-      const viewportW = rect.width;
-      const viewportH = rect.height;
-
-      const firstPage = container.querySelector('.prodoc-page-wrapper') as HTMLElement;
-      let newContentOffsetLeft = 0;
-      let newContentOffsetTop = 0;
-      let newContentWidth = 0;
+  // Image Resizer Component
+  const ImageResizer = ({ target }: { target: HTMLElement }) => {
+      if (!target) return null;
       
-      if (firstPage) {
-          newContentOffsetLeft = firstPage.offsetLeft;
-          newContentOffsetTop = firstPage.offsetTop;
-          newContentWidth = firstPage.offsetWidth;
-      }
+      const handleResize = (e: React.MouseEvent, direction: string) => {
+          e.preventDefault();
+          const startX = e.clientX;
+          const startWidth = target.clientWidth;
+          
+          const onMove = (ev: MouseEvent) => {
+              const delta = ev.clientX - startX;
+              const newWidth = direction === 'e' || direction === 'se' ? startWidth + delta : startWidth - delta;
+              target.style.width = `${Math.max(50, newWidth)}px`;
+              target.style.height = 'auto'; // Maintain aspect ratio
+          };
+          
+          const onUp = () => {
+              window.removeEventListener('mousemove', onMove);
+              window.removeEventListener('mouseup', onUp);
+              // Sync back to editor
+              if (editor) {
+                  editor.chain().focus().setNodeSelection(editor.state.selection.from).run();
+              }
+          };
+          
+          window.addEventListener('mousemove', onMove);
+          window.addEventListener('mouseup', onUp);
+      };
 
-      if (pendingScrollRef.current) {
-          // Case 1: Zoom to Mouse (Wheel)
-          const { pointX, pointY, mouseX, mouseY } = pendingScrollRef.current;
-          const scaleNew = zoom / 100;
-          
-          container.scrollLeft = (pointX * scaleNew) + newContentOffsetLeft - mouseX;
-          container.scrollTop = (pointY * scaleNew) + newContentOffsetTop - mouseY;
-          
-          pendingScrollRef.current = null;
-      } else if (prevZoomRef.current !== zoom) {
-          // Case 2: Zoom to Center or Caret (Button/Shortcut)
-          
-          const oldScale = prevZoomRef.current / 100;
-          const newScale = zoom / 100;
-          
-          // Check for selection to "Go towards cursor"
-          const sel = window.getSelection();
-          let hasValidSelection = false;
-          
-          // Only prioritize cursor if it's inside the editor
-          if (sel && sel.rangeCount > 0 && editorRef.current && editorRef.current.contains(sel.anchorNode)) {
-               const range = sel.getRangeAt(0);
-               const rangeRect = range.getBoundingClientRect();
-               
-               // Ensure rect is valid (not 0 size if collapsed, sometimes collapsed rects are tricky but usually have pos)
-               if (rangeRect.top !== 0 || rangeRect.left !== 0) {
-                   // Calculate how far the cursor is from the viewport center
-                   const caretX = rangeRect.left - rect.left;
-                   const caretY = rangeRect.top - rect.top;
-                   
-                   // Shift scroll to bring cursor to center
-                   const shiftX = caretX - (viewportW / 2);
-                   const shiftY = caretY - (viewportH / 2);
-                   
-                   container.scrollLeft += shiftX;
-                   container.scrollTop += shiftY;
-                   
-                   hasValidSelection = true;
-               }
-          }
-          
-          if (!hasValidSelection) {
-             // Default: Preserve Center of Viewport (Transform Origin: Center)
-             
-             // We attempt to map the previous center point to the new center point.
-             // OldContentWidth estimate
-             const baseWidth = newContentWidth / newScale;
-             const oldContentWidth = baseWidth * oldScale;
-             
-             // Estimate Old Offset based on flex centering logic
-             const oldOffsetLeft = Math.max(0, (viewportW - oldContentWidth) / 2);
-             // Assume Top Offset is relatively stable (padding) or assume vertical scroll continuity
-             // Simple centering is usually sufficient:
-             const oldOffsetTop = newContentOffsetTop; 
-             
-             const oldScrollLeft = container.scrollLeft;
-             const oldScrollTop = container.scrollTop;
-             
-             // Point P (Unscaled) at Center of Viewport
-             const pointX = (oldScrollLeft + (viewportW / 2) - oldOffsetLeft) / oldScale;
-             const pointY = (oldScrollTop + (viewportH / 2) - oldOffsetTop) / oldScale;
-
-             // Apply New Scroll to put P at Center
-             const targetVisX = (pointX * newScale) + newContentOffsetLeft;
-             const targetVisY = (pointY * newScale) + newContentOffsetTop;
-             
-             container.scrollLeft = targetVisX - (viewportW / 2);
-             container.scrollTop = targetVisY - (viewportH / 2);
-          }
-      }
+      const rect = target.getBoundingClientRect();
+      const editorRect = document.querySelector('.ProseMirror')?.getBoundingClientRect() || { top: 0, left: 0 };
       
-      prevZoomRef.current = zoom;
-  }, [zoom]);
+      // Calculate relative position to overlay on the editor
+      const style: React.CSSProperties = {
+          position: 'absolute',
+          top: target.offsetTop,
+          left: target.offsetLeft,
+          width: target.clientWidth,
+          height: target.clientHeight,
+          pointerEvents: 'none',
+          border: '2px solid #3b82f6',
+          zIndex: 50
+      };
 
-  // Read Mode Route
-  if (viewMode === 'read') {
       return (
-        <Suspense fallback={<ViewLoading />}>
-            <ReadLayoutView />
-        </Suspense>
+          <div style={style}>
+              <div 
+                className="absolute w-3 h-3 bg-white border border-blue-600 rounded-full -right-1.5 -bottom-1.5 cursor-se-resize pointer-events-auto shadow-sm"
+                onMouseDown={(e) => handleResize(e, 'se')}
+              ></div>
+               <div 
+                className="absolute w-3 h-3 bg-white border border-blue-600 rounded-full -right-1.5 top-1/2 -translate-y-1/2 cursor-e-resize pointer-events-auto shadow-sm"
+                onMouseDown={(e) => handleResize(e, 'e')}
+              ></div>
+          </div>
       );
-  }
-
-  // Web Layout Background
-  const getBackgroundStyle = (): React.CSSProperties => {
-      const base: React.CSSProperties = {
-          backgroundColor: pageConfig.pageColor || '#ffffff',
-      };
-      if (pageConfig.background === 'ruled') {
-          return {
-              ...base,
-              backgroundImage: 'linear-gradient(#e2e8f0 1px, transparent 1px)',
-              backgroundSize: '100% 2rem'
-          };
-      } else if (pageConfig.background === 'grid') {
-          return {
-              ...base,
-              backgroundImage: 'linear-gradient(#e2e8f0 1px, transparent 1px), linear-gradient(90deg, #e2e8f0 1px, transparent 1px)',
-              backgroundSize: '20px 20px'
-          };
-      }
-      return base;
   };
 
-  const isPrint = viewMode === 'print';
+  if (!editor) {
+    return (
+        <div className="flex items-center justify-center h-full">
+            <LoadingSpinner />
+        </div>
+    );
+  }
 
+  // Paper Scale
+  const scale = zoom / 100;
+  
+  // Paper Dimensions (Standard Letter)
+  const width = '8.5in';
+  const height = '11in';
+  
   return (
-    <div className={`flex-1 flex flex-col relative transition-colors duration-500 overflow-hidden ${isPrint ? 'bg-[#f1f5f9] dark:bg-[#020617]' : 'bg-white dark:bg-slate-900'}`}
-         style={!isPrint ? { backgroundColor: pageConfig.pageColor } : undefined}>
+    <div className="flex-1 flex flex-col items-center bg-[#f1f5f9] dark:bg-[#020617] overflow-auto py-8 relative" onClick={() => editor.chain().focus().run()}>
       
-      <AutoSizer>
-        {({ height, width }) => (
-            <div style={{ height, width }} className="relative">
-                <Suspense fallback={<ViewLoading />}>
-                    {isPrint ? (
-                        /* Print Layout: Vertical stack of Pages with Virtualization */
-                        <PrintLayoutView 
-                            width={width}
-                            height={height}
-                            content={content}
-                            setContent={setContent}
-                            pageConfig={pageConfig}
-                            zoom={zoom}
-                            showRuler={showRuler}
-                            showFormattingMarks={showFormattingMarks}
-                            containerRef={handleRegister}
-                        />
-                    ) : (
-                        /* Web Layout: Fluid View */
-                        <div 
-                            ref={handleRegister}
-                            className="w-full h-full overflow-y-auto overflow-x-auto scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-600 scrollbar-track-transparent"
-                        >
-                            <WebLayoutView 
-                                editorRef={editorRef}
-                                content={content}
-                                onInput={(e) => setContent(e.currentTarget.innerHTML)}
-                                onPaste={() => {}}
-                                onPageClick={() => {}}
-                                pageConfig={pageConfig}
-                                zoom={zoom}
-                                showFormattingMarks={showFormattingMarks}
-                                backgroundStyle={getBackgroundStyle()}
-                            />
-                        </div>
-                    )}
-                </Suspense>
-            </div>
-        )}
-      </AutoSizer>
+      {/* Contextual Toolbar */}
+      <MiniToolbar />
+
+      <div 
+        className="bg-white dark:bg-slate-900 shadow-lg transition-transform duration-200 origin-top"
+        style={{
+            width: width,
+            minHeight: height,
+            transform: `scale(${scale})`,
+            padding: '1in', // Default margins
+            boxSizing: 'border-box'
+        }}
+      >
+         <div className="relative">
+             <EditorContent editor={editor} className="min-h-[9in] outline-none" />
+             {selectedImage && <ImageResizer target={selectedImage} />}
+         </div>
+      </div>
     </div>
   );
 };
