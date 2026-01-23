@@ -405,10 +405,25 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
     }
   }, [currentPage, setCurrentPage]);
 
+  // Handle Ctrl + Wheel Zoom
+  const handleWheel = useCallback((e: WheelEvent) => {
+    if (e.ctrlKey) {
+      e.preventDefault();
+      const delta = e.deltaY > 0 ? 0.9 : 1.1;
+      setZoom(prev => Math.min(500, Math.max(10, prev * delta)));
+    }
+  }, [setZoom]);
+
   const setRefs = useCallback((node: HTMLDivElement | null) => {
+      if (scrollContainerRef.current) {
+          scrollContainerRef.current.removeEventListener('wheel', handleWheel);
+      }
+      if (node) {
+          node.addEventListener('wheel', handleWheel, { passive: false });
+      }
       scrollContainerRef.current = node;
       containerRef(node);
-  }, [containerRef]);
+  }, [containerRef, handleWheel]);
 
   const handleTouchStart = (e: React.TouchEvent) => {
     if (e.touches.length === 2) {

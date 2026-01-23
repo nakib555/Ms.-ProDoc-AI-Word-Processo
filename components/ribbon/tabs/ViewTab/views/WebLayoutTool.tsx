@@ -1,5 +1,5 @@
 
-import React, { useLayoutEffect, useRef } from 'react';
+import React, { useLayoutEffect, useRef, useEffect, useCallback } from 'react';
 import { Globe } from 'lucide-react';
 import { RibbonButton } from '../../../common/RibbonButton';
 import { useEditor } from '../../../../../contexts/EditorContext';
@@ -20,9 +20,6 @@ export const WebLayoutTool: React.FC = () => {
     </div>
   );
 };
-
-// ... (Rest of WebLayoutView logic, no changes needed below this point for icon coloring)
-// Must include full file content.
 
 interface WebLayoutViewProps {
   editorRef: React.RefObject<HTMLDivElement | null>;
@@ -50,9 +47,10 @@ export const WebLayoutView: React.FC<WebLayoutViewProps> = React.memo(({
   const scale = zoom / 100;
   const { isKeyboardLocked, selectionMode, setZoom } = useEditor();
   
-  // Refs for Pinch-to-Zoom
+  // Refs for Pinch-to-Zoom and Wheel
   const touchDistRef = useRef<number>(0);
   const startZoomRef = useRef<number>(0);
+  const containerRef = useRef<HTMLDivElement>(null);
   
   // Initialize MathLive for any equations
   useMathLive(content, editorRef);
@@ -85,6 +83,23 @@ export const WebLayoutView: React.FC<WebLayoutViewProps> = React.memo(({
     }
   }, [content, editorRef]);
 
+  // --- Zoom Logic (Ctrl+Wheel) ---
+  useEffect(() => {
+      const el = containerRef.current;
+      if (!el) return;
+
+      const handleWheel = (e: WheelEvent) => {
+          if (e.ctrlKey) {
+              e.preventDefault();
+              const delta = e.deltaY > 0 ? 0.9 : 1.1;
+              setZoom(prev => Math.min(500, Math.max(10, prev * delta)));
+          }
+      };
+
+      el.addEventListener('wheel', handleWheel, { passive: false });
+      return () => el.removeEventListener('wheel', handleWheel);
+  }, [setZoom]);
+
   // --- Pinch to Zoom Logic ---
   const handleTouchStart = (e: React.TouchEvent) => {
     if (e.touches.length === 2) {
@@ -116,6 +131,7 @@ export const WebLayoutView: React.FC<WebLayoutViewProps> = React.memo(({
 
   return (
     <div 
+        ref={containerRef}
         className="flex-1 w-full h-full relative touch-pan-x touch-pan-y"
         onClick={onPageClick}
         onMouseDown={(e) => {
