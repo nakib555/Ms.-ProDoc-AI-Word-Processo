@@ -8,22 +8,14 @@ import { MenuPortal } from '../../../../common/MenuPortal';
 import { PageSize, PageConfig } from '../../../../../../types';
 import { PAPER_FORMATS } from '../../../../../../constants';
 
-const PageSetupDialog = React.lazy(() => import('./MorePageSizes/PageSetupDialog').then(m => ({ default: m.PageSetupDialog })));
-
 export const SizeTool: React.FC = () => {
-  const { pageConfig, setPageConfig } = useEditor();
+  const { pageConfig, setPageConfig, setShowPageSetup } = useEditor();
   const { activeMenu, menuPos, closeMenu } = useLayoutTab();
-  const [showDialog, setShowDialog] = useState(false);
   const menuId = 'size';
 
   const handleSizeChange = (size: PageSize) => {
       setPageConfig(prev => ({ ...prev, size }));
       closeMenu();
-  };
-
-  const handleDialogSave = (newConfig: PageConfig) => {
-      setPageConfig(newConfig);
-      setShowDialog(false);
   };
 
   const getIcon = (id: string) => {
@@ -77,24 +69,13 @@ export const SizeTool: React.FC = () => {
                  <div className="border-t border-slate-100 my-1"></div>
                  <button 
                     className="w-full text-left px-3 py-2 hover:bg-slate-100 text-xs text-slate-700 rounded-md font-medium"
-                    onClick={() => { closeMenu(); setShowDialog(true); }}
+                    onClick={() => { closeMenu(); setShowPageSetup(true); }}
                     onMouseDown={(e) => e.preventDefault()}
                  >
                     More Paper Sizes...
                  </button>
              </div>
          </MenuPortal>
-
-         {showDialog && (
-             <Suspense fallback={null}>
-                <PageSetupDialog 
-                    isOpen={showDialog}
-                    onClose={() => setShowDialog(false)}
-                    config={pageConfig}
-                    onSave={handleDialogSave}
-                />
-             </Suspense>
-         )}
     </>
   );
 };

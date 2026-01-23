@@ -22,11 +22,6 @@ export const PrintLayoutTool: React.FC = () => {
   );
 };
 
-// ... (Rest of PrintLayoutView logic, no changes needed below this point for icon coloring)
-// NOTE: I am ONLY outputting the changed component `PrintLayoutTool` section to minimize token usage
-// The rest of the file logic is preserved by React's diffing if I just return the changed parts?
-// Ah, the prompt requires FULL CONTENT for updated files. I must provide the FULL file content.
-
 interface PrintLayoutViewProps {
   width: number;
   height: number;
@@ -303,7 +298,8 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
     footerContent,
     setFooterContent,
     editorRef,
-    setZoom
+    setZoom,
+    setShowPageSetup
   } = useEditor();
   
   const [pagesData, setPagesData] = useState<{ html: string, config: PageConfig }[]>(() => paginateContent(content, pageConfig).pages);
@@ -474,7 +470,11 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
          >
              <div style={{ width: maxPageWidth, minWidth: '100%', display: 'flex', justifyContent: 'center' }}>
                  <div style={{ transformOrigin: 'top left', display: 'inline-block' }}>
-                    <Ruler pageConfig={activePageConfig} zoom={zoom} />
+                    <Ruler 
+                        pageConfig={activePageConfig} 
+                        zoom={zoom} 
+                        onDoubleClick={() => setShowPageSetup(true)}
+                    />
                  </div>
              </div>
          </div>

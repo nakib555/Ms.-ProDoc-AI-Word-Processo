@@ -8,12 +8,9 @@ import { MenuPortal } from '../../../../common/MenuPortal';
 import { MARGIN_PRESETS } from '../../../../../../constants';
 import { MarginPreset, MarginValues } from '../../../../../../types';
 
-const PageSetupDialog = React.lazy(() => import('./CustomMargin/PageSetupDialog').then(m => ({ default: m.PageSetupDialog })));
-
 export const MarginsTool: React.FC = () => {
-  const { setPageConfig, pageConfig } = useEditor();
+  const { setPageConfig, pageConfig, setShowPageSetup } = useEditor();
   const { activeMenu, menuPos, closeMenu } = useLayoutTab();
-  const [showCustomDialog, setShowCustomDialog] = useState(false);
   const menuId = 'margins';
 
   const handleMarginChange = (preset: MarginPreset) => {
@@ -31,12 +28,7 @@ export const MarginsTool: React.FC = () => {
 
   const openCustomDialog = () => {
       closeMenu();
-      setShowCustomDialog(true);
-  };
-
-  const handleCustomSave = (newConfig: any) => {
-      setPageConfig(newConfig);
-      setShowCustomDialog(false);
+      setShowPageSetup(true);
   };
 
   const formatLabel = (key: string) => {
@@ -109,17 +101,6 @@ export const MarginsTool: React.FC = () => {
                  </button>
              </div>
          </MenuPortal>
-
-         {showCustomDialog && (
-             <Suspense fallback={null}>
-                <PageSetupDialog 
-                    isOpen={showCustomDialog}
-                    onClose={() => setShowCustomDialog(false)}
-                    config={pageConfig}
-                    onSave={handleCustomSave}
-                />
-             </Suspense>
-         )}
     </>
   );
 };

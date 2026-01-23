@@ -6,9 +6,10 @@ import { PAGE_SIZES, PAGE_MARGIN_PADDING } from '../constants';
 interface RulerProps {
   pageConfig: PageConfig;
   zoom: number;
+  onDoubleClick?: () => void;
 }
 
-export const Ruler: React.FC<RulerProps> = React.memo(({ pageConfig, zoom }) => {
+export const Ruler: React.FC<RulerProps> = React.memo(({ pageConfig, zoom, onDoubleClick }) => {
   
   // Width in px (96 DPI)
   const width = useMemo(() => {
@@ -71,7 +72,9 @@ export const Ruler: React.FC<RulerProps> = React.memo(({ pageConfig, zoom }) => 
 
   return (
     <div 
-      className="h-6 bg-[#D1D5DB] border-b border-slate-300 flex items-end relative select-none no-print z-10 shadow-sm transition-all duration-300 ease-[cubic-bezier(0.2,0,0,1)] origin-top-left"
+      onDoubleClick={onDoubleClick}
+      className="h-6 bg-[#D1D5DB] border-b border-slate-300 flex items-end relative select-none no-print z-10 shadow-sm transition-all duration-300 ease-[cubic-bezier(0.2,0,0,1)] origin-top-left cursor-default"
+      title="Double-click to open Page Setup"
       style={{ 
         width: `${width}px`,
         transform: `scale(${scale})`,
@@ -81,7 +84,7 @@ export const Ruler: React.FC<RulerProps> = React.memo(({ pageConfig, zoom }) => 
     >
       {/* White writable area representation */}
       <div 
-        className="absolute top-0 bottom-0 bg-white border-x border-slate-300 h-full z-0"
+        className="absolute top-0 bottom-0 bg-white border-x border-slate-300 h-full z-0 pointer-events-none"
         style={{
           left: `${margins.left}px`,
           right: `${margins.right}px`
@@ -89,13 +92,14 @@ export const Ruler: React.FC<RulerProps> = React.memo(({ pageConfig, zoom }) => 
       ></div>
 
       {/* Ticks Container */}
-      <div className="w-full h-full bg-transparent relative overflow-hidden z-10">
+      <div className="w-full h-full bg-transparent relative overflow-hidden z-10 pointer-events-none">
         {ticks}
         
-        {/* Left Indent Markers */}
+        {/* Left Indent Markers - made interactive later, currently visual only but receive double click */}
         <div 
-          className="absolute top-0 h-full w-3 cursor-ew-resize group z-20 hover:brightness-110 transition-all"
+          className="absolute top-0 h-full w-3 cursor-ew-resize group z-20 hover:brightness-110 transition-all pointer-events-auto"
           style={{ left: `${margins.left - 6}px` }}
+          onDoubleClick={(e) => { e.stopPropagation(); onDoubleClick?.(); }}
         >
             {/* Hanging Indent (Top Triangle) */}
             <div className="w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-t-[6px] border-t-[#4b5563] absolute top-0 left-0 drop-shadow-sm" title="First Line Indent"></div>
@@ -107,8 +111,9 @@ export const Ruler: React.FC<RulerProps> = React.memo(({ pageConfig, zoom }) => 
         
         {/* Right Indent Marker */}
         <div 
-           className="absolute top-0 h-full w-3 cursor-ew-resize group z-20 hover:brightness-110 transition-all"
+           className="absolute top-0 h-full w-3 cursor-ew-resize group z-20 hover:brightness-110 transition-all pointer-events-auto"
            style={{ left: `${width - margins.right - 5}px` }}
+           onDoubleClick={(e) => { e.stopPropagation(); onDoubleClick?.(); }}
         >
              <div className="w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-b-[8px] border-b-[#4b5563] absolute top-[11px] left-0 drop-shadow-sm" title="Right Indent"></div>
         </div>

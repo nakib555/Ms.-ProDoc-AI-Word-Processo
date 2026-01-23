@@ -5,15 +5,18 @@ import Editor from './components/Editor';
 import StatusBar from './components/StatusBar';
 import { ReadModeToolbar } from './components/ribbon/tabs/ViewTab/views/ReadMode/ReadModeToolbar';
 import { MobileSelectionToolbar } from './components/MobileSelectionToolbar';
+import { RibbonHeader } from './components/ribbon/RibbonHeader';
+import { CopilotSidebar } from './components/CopilotSidebar';
 import { RibbonTab } from './types';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
 import { EditorProvider, useEditor } from './contexts/EditorContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { PageSetupDialog } from './components/ribbon/tabs/LayoutTab/page_setup/Margins/CustomMargin/PageSetupDialog';
 
 const AppContent: React.FC = () => {
   const [activeTab, setActiveTab] = useState<RibbonTab | null>(RibbonTab.HOME);
-  const { aiState, viewMode } = useEditor();
+  const { aiState, viewMode, showPageSetup, setShowPageSetup, pageConfig, setPageConfig } = useEditor();
   
   // Automatically switch away from AI Assistant tab if in Web Layout
   useEffect(() => {
@@ -32,6 +35,8 @@ const AppContent: React.FC = () => {
     <div className="h-[100dvh] flex flex-col bg-white dark:bg-[#020617] overflow-hidden text-slate-900 dark:text-slate-100 font-sans transition-colors duration-300">
       
       {isReadMode && <ReadModeToolbar />}
+
+      {!isReadMode && <RibbonHeader toggleSidebar={() => {}} />}
 
       <div className="flex flex-col flex-1 overflow-hidden relative">
         {!isReadMode && (
@@ -63,11 +68,26 @@ const AppContent: React.FC = () => {
               </div>
             )}
           </div>
+          
+          <CopilotSidebar />
         </div>
       </div>
 
       <MobileSelectionToolbar />
       {!isReadMode && <StatusBar />}
+
+      {/* Global Page Setup Dialog */}
+      {showPageSetup && (
+        <PageSetupDialog 
+            isOpen={showPageSetup}
+            onClose={() => setShowPageSetup(false)}
+            config={pageConfig}
+            onSave={(newConfig) => {
+                setPageConfig(newConfig);
+                setShowPageSetup(false);
+            }}
+        />
+      )}
     </div>
   );
 };

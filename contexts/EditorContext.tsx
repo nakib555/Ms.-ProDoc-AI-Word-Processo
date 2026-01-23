@@ -70,6 +70,8 @@ export interface EditorContextType {
   editorRef: React.RefObject<HTMLDivElement | null>;
   pageConfig: PageConfig;
   setPageConfig: React.Dispatch<React.SetStateAction<PageConfig>>;
+  showPageSetup: boolean;
+  setShowPageSetup: React.Dispatch<React.SetStateAction<boolean>>;
   pageDimensions: any;
   registerContainer: (node: HTMLDivElement | null) => void;
   showRuler: boolean;
@@ -141,6 +143,7 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [showRuler, setShowRuler] = useState(true);
   const [showFormattingMarks, setShowFormattingMarks] = useState(false);
   const [activeElementType, setActiveElementType] = useState<ActiveElementType>('text');
+  const [showPageSetup, setShowPageSetup] = useState(false);
   
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -315,6 +318,8 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     editorRef,
     pageConfig,
     setPageConfig,
+    showPageSetup,
+    setShowPageSetup,
     pageDimensions,
     registerContainer: (node: HTMLDivElement | null) => { containerRef.current = node; },
     showRuler,
