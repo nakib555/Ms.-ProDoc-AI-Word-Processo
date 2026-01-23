@@ -139,13 +139,16 @@
 /* Page Break Visualization in Editor */
 .prodoc-page-break {
   border-top: 1px dashed #94a3b8;
-  margin: 1.5rem 0;
+  margin: 1rem 0;
   position: relative;
   height: 0;
   page-break-after: always;
+  break-after: page;
   display: block;
+  width: 100%;
 }
 
+/* Label for editor view (hidden in print automatically via layout engine, but good for draft view) */
 .prodoc-page-break::after {
   content: 'Page Break';
   position: absolute;
@@ -166,6 +169,16 @@
   color: #94a3b8;
 }
 
+/* Section Break Visualization */
+.prodoc-section-break {
+    border-top: 2px dotted #64748b;
+    margin: 1.5rem 0;
+    position: relative;
+    height: 0;
+    display: block;
+    width: 100%;
+}
+
 /* Print styles */
 @media print {
   .no-print { display: none !important; }
@@ -176,8 +189,13 @@
       height: 0;
       border: none;
       margin: 0;
+      break-after: page;
+      page-break-after: always;
   }
   .prodoc-page-break::after {
+      display: none;
+  }
+  .prodoc-section-break {
       display: none;
   }
 }

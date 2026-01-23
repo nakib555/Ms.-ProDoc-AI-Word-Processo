@@ -45,6 +45,12 @@ const PageBreakExtension = Node.create({
       },
     };
   },
+
+  addKeyboardShortcuts() {
+    return {
+      'Mod-Enter': () => this.editor.commands.setPageBreak(),
+    }
+  },
 });
 
 // Define custom types for TipTap integration
@@ -269,6 +275,7 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         case 'fitPage': setZoom(75); break;
         case 'fitWidth': setZoom(120); break;
         case 'save': manualSave(); break;
+        case 'pageBreak': editor.chain().focus().setPageBreak().run(); break;
         case 'cut': 
             document.execCommand('cut');
             break;

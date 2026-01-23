@@ -136,9 +136,6 @@ const splitBlock = (
             // Check for explicit page breaks inside cells
             if (containsPageBreak(row)) {
                  // Force split at this row.
-                 // If the break is inside row i, we should ideally split inside the row, 
-                 // but for table robustness we usually push the whole row to next page.
-                 // Or if it's the first row, we push table.
                  if (i === 0) {
                      return { keep: null, move: originalNode.cloneNode(true) as HTMLElement };
                  }
@@ -290,6 +287,7 @@ export const paginateContent = (html: string, initialConfig: PageConfig): Pagina
 
   let currentPageNodes: HTMLElement[] = [];
   let currentH = 0;
+  let lastWasBreak = false; // Track if the last item processed forced a break
 
   const flushPage = () => {
       const div = document.createElement('div');
@@ -315,6 +313,7 @@ export const paginateContent = (html: string, initialConfig: PageConfig): Pagina
           else if (pages.length === 0) { // Force blank first page if section break is first item
                pages.push({ html: '<p><br/></p>', config: initialConfig }); 
           }
+          lastWasBreak = true;
           continue;
       }
       
@@ -323,8 +322,11 @@ export const paginateContent = (html: string, initialConfig: PageConfig): Pagina
       if (isPageBreak) { 
           currentPageNodes.push(node); // Keep break marker on current page
           flushPage(); 
+          lastWasBreak = true;
           continue; 
       }
+
+      lastWasBreak = false;
 
       const remainingForStart = Math.max(0, currentFrame.bodyHeight - currentH - SAFETY_BUFFER);
       if (currentH > 0 && remainingForStart < MIN_LINE_HEIGHT) { flushPage(); i--; continue; }
@@ -360,8 +362,13 @@ export const paginateContent = (html: string, initialConfig: PageConfig): Pagina
       }
   }
 
-  if (currentPageNodes.length > 0) flushPage();
-  if (pages.length === 0) pages.push({ html: '<p><br></p>', config: initialConfig });
+  if (currentPageNodes.length > 0) {
+      flushPage();
+  } else if (lastWasBreak || pages.length === 0) {
+      // If document ends with a break (page or section), force a new blank page
+      pages.push({ html: '<p><br></p>', config: { ...currentConfig } });
+  }
+
   sandbox.destroy();
   return { pages, pageHeight: initialFrame.height, pageWidth: initialFrame.width };
 };

@@ -10,7 +10,7 @@ export const PageBreakTool: React.FC = () => {
     <SmallRibbonButton 
         icon={SeparatorHorizontal} 
         label="Page Break" 
-        onClick={() => executeCommand('insertHTML', '<div class="prodoc-page-break" style="page-break-after: always; height: 0; width: 100%; display: block;"></div>&#8203;')} 
+        onClick={() => executeCommand('pageBreak')} 
     />
   );
 };

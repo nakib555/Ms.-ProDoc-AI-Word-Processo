@@ -47,7 +47,7 @@ export const RibbonHeader: React.FC<RibbonHeaderProps> = ({ toggleSidebar }) => 
   };
 
   const handleNewPage = () => {
-      executeCommand('insertHTML', '<div class="prodoc-page-break" style="page-break-after: always; height: 0; width: 100%; display: block;"></div><p><br/></p>');
+      executeCommand('pageBreak');
   };
 
   return (

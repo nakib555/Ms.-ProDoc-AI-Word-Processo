@@ -37,7 +37,7 @@ export const BreaksTool: React.FC = () => {
          <MenuPortal id={menuId} activeMenu={activeMenu} menuPos={menuPos} closeMenu={closeMenu} width={220}>
              <div className="p-2">
                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Page Breaks</div>
-                 <button onClick={() => { executeCommand('insertHTML', '<div class="prodoc-page-break" style="page-break-after: always; height: 0; width: 100%; display: block;"></div><p><br/></p>'); closeMenu(); }} className="w-full text-left px-2 py-1.5 hover:bg-slate-100 rounded text-xs text-slate-700 flex items-center gap-2 mb-1 group">
+                 <button onClick={() => { executeCommand('pageBreak'); closeMenu(); }} className="w-full text-left px-2 py-1.5 hover:bg-slate-100 rounded text-xs text-slate-700 flex items-center gap-2 mb-1 group">
                      <PanelTop size={14} className="text-slate-400 group-hover:text-blue-600"/> Page
                  </button>
                  <button className="w-full text-left px-2 py-1.5 hover:bg-slate-100 rounded text-xs text-slate-700 flex items-center gap-2 mb-1 group" onClick={() => closeMenu()}>
